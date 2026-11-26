@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tuyển sinh thạc sĩ MBA, MMS, MSCM - {{ config.site_name }}</title>
+<meta name="description" content="Tuyển sinh thạc sĩ MBA, Marketing and Sales, Quản lý chuỗi cung ứng. Đăng ký để chuyên viên tuyển sinh tư vấn lộ trình học, học phí và học bổng.">
+<meta name="theme-color" content="#00528c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --ink: #0b2a45;
+  --blue: #00528c;
+  --blue-deep: #003f6d;
+  --paper: #f4f7fb;
+  --white: #ffffff;
+  --rule: #cfdceb;
+  --muted: #55657a;
+  --sun: #f2b705;
+  --sun-soft: #fff4cc;
+  --ok: #0b7a55;
+  --band-1: #dceaf6;
+  --band-2: #b8d4ec;
+  --max: 1180px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); font-size: 16px; line-height: 1.6; }
+a { color: var(--blue); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 6px; }
+[hidden] { display: none !important; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 28px; }
+
+.top { background: var(--white); border-bottom: 1px solid var(--rule); position: sticky; top: 0; z-index: 50; }
+.top .wrap { display: flex; align-items: center; gap: 24px; height: 68px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); min-width: 0; }
+.brand-mark { width: 40px; height: 40px; border-radius: 12px; background: var(--blue); display: grid; place-items: center; flex: none; }
+.brand-mark svg { width: 24px; height: 24px; }
+.brand-name { font-weight: 700; font-size: 15px; line-height: 1.25; }
+.menu { display: flex; gap: 22px; margin-left: auto; }
+.menu a { color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 500; }
+.menu a:hover { color: var(--blue); }
+.top-actions { display: flex; gap: 10px; align-items: center; }
+.pill { display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 14.5px; white-space: nowrap; border: 0; cursor: pointer; }
+.pill-solid { background: var(--blue); color: #fff; }
+.pill-solid:hover { background: var(--blue-deep); }
+.pill-line { box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--ink); background: transparent; }
+.pill-line:hover { box-shadow: inset 0 0 0 1.5px var(--blue); color: var(--blue); }
+
+.hero { padding: 56px 0 40px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: start; }
+.deadline { display: inline-flex; align-items: center; gap: 10px; background: var(--sun-soft); color: var(--ink); border-radius: 999px; padding: 6px 14px 6px 6px; font-size: 14px; font-weight: 600; margin-bottom: 22px; }
+.deadline b { background: var(--sun); border-radius: 999px; padding: 2px 10px; font-weight: 800; }
+.hero h1 { font-size: clamp(38px, 5.2vw, 64px); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 0 0 20px; max-width: 12ch; }
+.hero .lead { font-size: 18.5px; color: var(--muted); margin: 0 0 28px; max-width: 50ch; }
+.gets { list-style: none; margin: 0 0 32px; padding: 0; display: grid; gap: 14px; max-width: 54ch; }
+.gets li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
+.gets svg { width: 28px; height: 28px; }
+.gets b { display: block; }
+.gets span { color: var(--muted); font-size: 15px; }
+.hero-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 14.5px; color: var(--muted); }
+.hero-meta strong { display: block; color: var(--ink); font-size: 15.5px; }
+
+.form-card { background: var(--white); border-radius: 22px; padding: 28px; box-shadow: 0 1px 0 var(--rule), 0 24px 60px -24px rgba(11, 42, 69, .35); border: 1px solid var(--rule); position: relative; }
+.form-card h2 { margin: 0 0 4px; font-size: 24px; line-height: 1.25; letter-spacing: -.01em; }
+.form-card .sub { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
+.f { display: grid; gap: 14px; }
+.f label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+.f input, .f select, .f textarea { width: 100%; height: 46px; border: 1.5px solid var(--rule); border-radius: 12px; padding: 0 14px; background: #fbfcfe; font-size: 15px; font-weight: 400; }
+.f textarea { height: auto; min-height: 76px; padding: 10px 14px; resize: vertical; }
+.f input:focus, .f select:focus, .f textarea:focus { outline: none; border-color: var(--blue); background: #fff; box-shadow: 0 0 0 4px rgba(0, 82, 140, .12); }
+.f .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.programs-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.programs-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.programs-pick span { display: grid; place-items: center; height: 42px; border-radius: 10px; border: 1.5px solid var(--rule); font-weight: 700; font-size: 14px; cursor: pointer; background: #fbfcfe; }
+.programs-pick input:checked + span { border-color: var(--blue); background: var(--blue); color: #fff; }
+.programs-pick input:focus-visible + span { outline: 3px solid var(--sun); outline-offset: 2px; }
+.event-chip { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--band-1); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.event-chip button { background: none; border: 0; color: var(--blue); font-weight: 600; cursor: pointer; padding: 0; }
+.consent { display: flex !important; grid-template-columns: none !important; gap: 10px; align-items: flex-start; font-weight: 400 !important; font-size: 13.5px !important; color: var(--muted); }
+.consent input { width: 18px !important; height: 18px !important; margin: 2px 0 0; flex: none; }
+.submit { height: 52px; border: 0; border-radius: 14px; background: var(--blue); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; }
+.submit:hover { background: var(--blue-deep); }
+.submit:disabled { opacity: .6; cursor: default; }
+.form-error { color: #b42318; font-size: 14px; min-height: 1.2em; margin: 0; }
+.trust { margin: 14px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+.done { text-align: left; }
+.done .tick { width: 56px; height: 56px; border-radius: 50%; background: #dcf5ea; display: grid; place-items: center; margin-bottom: 16px; }
+.done .tick svg { width: 30px; height: 30px; }
+.done h2 { margin-bottom: 8px; }
+.done p { color: var(--muted); margin: 0 0 12px; }
+.done ol { margin: 0 0 18px; padding-left: 20px; color: var(--ink); }
+.done li { margin: 4px 0; }
+
+.year { padding: 8px 0 64px; }
+.year h2 { font-size: 22px; margin: 0 0 4px; }
+.year .phase { color: var(--muted); margin: 0; }
+.year-scroll { overflow-x: auto; padding: 40px 2px 6px; }
+.year-grid { position: relative; min-width: 760px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: 8px; }
+.m { font-size: 13px; color: var(--muted); padding: 0 0 8px 8px; border-left: 1px solid var(--rule); }
+.m.y { color: var(--ink); font-weight: 700; }
+.band { height: 46px; border-radius: 10px; padding: 0 14px; display: flex; align-items: center; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b1 { background: var(--band-1); }
+.b2 { background: var(--band-2); }
+.b3 { background: var(--ink); color: #fff; }
+.pin { height: 34px; display: flex; align-items: center; justify-content: center; }
+.pin span { font-size: 13px; font-weight: 600; color: var(--blue); background: var(--white); border: 1.5px solid var(--blue); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.today { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--sun); pointer-events: none; z-index: 2; }
+.today b { position: absolute; top: -32px; left: -1px; transform: translateX(-50%); background: var(--sun); color: var(--ink); font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.year-note { font-size: 14px; color: var(--muted); margin: 14px 0 0; }
+
+section.block { padding: 72px 0; border-top: 1px solid var(--rule); }
+section.block h2.t { font-size: clamp(28px, 3.2vw, 38px); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 10px; font-weight: 800; max-width: 22ch; }
+section.block .intro { color: var(--muted); margin: 0 0 40px; max-width: 60ch; font-size: 17px; }
+
+.why { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; }
+.why > div { padding: 22px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 44px 1fr; gap: 16px; }
+.why svg { width: 44px; height: 44px; }
+.why h3 { margin: 0 0 4px; font-size: 18px; }
+.why p { margin: 0; color: var(--muted); }
+
+.programs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.program { padding: 4px 32px 8px; border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.program:first-child { border-left: 0; padding-left: 0; }
+.program .code { font-size: 64px; line-height: 1; font-weight: 800; letter-spacing: -.04em; color: var(--blue); }
+.program h3 { margin: 0; font-size: 18px; line-height: 1.35; }
+.program p { margin: 0; color: var(--muted); }
+.program .for { font-size: 14.5px; color: var(--ink); background: var(--band-1); border-radius: 10px; padding: 10px 12px; flex: 1; }
+.program .for b { display: block; font-size: 13px; color: var(--muted); font-weight: 600; }
+.linkbtn { align-self: flex-start; background: none; border: 0; padding: 6px 0; font-weight: 700; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+.linkbtn:hover { color: var(--blue-deep); }
+
+.live { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; }
+.live h3 { font-size: 18px; margin: 0 0 14px; }
+.items { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.items li { padding: 18px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 6px; }
+.items .t { font-weight: 700; font-size: 17px; }
+.items .d { color: var(--muted); font-size: 14.5px; }
+.items .k { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag { font-size: 12.5px; font-weight: 600; color: var(--blue); background: var(--band-1); border-radius: 999px; padding: 2px 10px; }
+.empty { padding: 18px 0; color: var(--muted); border-bottom: 1px solid var(--rule); }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 18px 0; border-top: 1px solid var(--rule); }
+.steps li::before { content: counter(step); width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 15px; }
+.steps li.here::before { background: var(--sun); color: var(--ink); }
+.steps b { display: block; margin-bottom: 2px; }
+.steps .you { display: inline-block; margin-left: 8px; font-size: 12.5px; font-weight: 700; background: var(--sun-soft); border-radius: 999px; padding: 1px 9px; vertical-align: 2px; }
+.steps span.s { color: var(--muted); font-size: 15px; }
+
+.faq { max-width: 820px; border-top: 1px solid var(--rule); }
+.faq details { border-bottom: 1px solid var(--rule); }
+.faq summary { cursor: pointer; list-style: none; padding: 20px 40px 20px 0; font-weight: 700; font-size: 17px; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; position: absolute; right: 8px; top: 50%; width: 10px; height: 10px; border-right: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: translateY(-70%) rotate(45deg); transition: transform .2s ease; }
+.faq details[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.faq details p { margin: 0 0 20px; color: var(--muted); max-width: 70ch; }
+.faq-note { margin: 18px 0 0; color: var(--muted); font-size: 15px; }
+
+.final { background: var(--ink); color: #fff; padding: 64px 0; }
+.final .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; }
+.final h2 { margin: 0 0 8px; font-size: clamp(26px, 3.2vw, 36px); line-height: 1.15; font-weight: 800; letter-spacing: -.02em; }
+.final p { margin: 0; color: rgba(255,255,255,.78); max-width: 58ch; }
+.final .pill { height: 52px; padding: 0 26px; font-size: 16px; background: var(--sun); color: var(--ink); }
+.final .pill:hover { background: #ffcd2e; }
+
+.foot { padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+.foot .wrap { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
+
+@media (max-width: 1020px) {
+  .menu { display: none; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+  .hero h1 { max-width: 16ch; }
+}
+@media (max-width: 860px) {
+  .programs { grid-template-columns: 1fr; }
+  .program { border-left: 0; padding: 22px 0; border-top: 1px solid var(--rule); }
+  .program:first-child { border-top: 0; padding-top: 0; }
+  .live, .steps, .why { grid-template-columns: 1fr; }
+  .live { gap: 32px; }
+  .final .wrap { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .wrap { padding: 0 18px; }
+  .brand-name { font-size: 13.5px; }
+  .top-actions .pill-solid { display: none; }
+  .hero { padding-top: 32px; }
+  .hero .lead { font-size: 16.5px; }
+  .form-card { padding: 22px 18px; border-radius: 18px; }
+  .f .two { grid-template-columns: 1fr; }
+  section.block { padding: 52px 0; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v5c3.5 2.5 8.5 2.5 12 0v-5"/><path d="M22 9v6" stroke-linecap="round"/></svg></span>
+      <span class="brand-name">{{ config.site_name }}</span>
+    </a>
+    <nav class="menu" aria-label="Mục lục trang">
+      <a href="#chuong-trinh">Chương trình</a>
+      <a href="#lich-tuyen-sinh">Lịch tuyển sinh</a>
+      <a href="#su-kien">Sự kiện</a>
+      <a href="#hoi-dap">Hỏi đáp</a>
+    </nav>
+    <div class="top-actions">
+      <a class="pill pill-solid" href="#dang-ky">Đăng ký tư vấn</a>
+      <a class="pill pill-line" href="{{ url_for('login') }}">Đăng nhập</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        {% if overview.deadline_days is not none and overview.rounds %}
+        <div class="deadline"><b>Còn {{ overview.deadline_days }} ngày</b> đến hạn nộp hồ sơ {{ overview.rounds[0].name }}</div>
+        {% endif %}
+        <h1>Thạc sĩ quốc tế, lộ trình riêng cho bạn</h1>
+        <p class="lead">MBA, Marketing and Sales, Quản lý chuỗi cung ứng. Liên kết trường đối tác quốc tế, cơ hội bằng kép và học bổng. Để lại thông tin, một chuyên viên tuyển sinh sẽ tư vấn riêng cho bạn.</p>
+        <ul class="gets">
+          <li>{{ icons.check|safe }}<div><b>Chuyên viên phụ trách riêng</b><span>Liên hệ bạn trong giờ làm việc, theo khung giờ bạn chọn.</span></div></li>
+          <li>{{ icons.check|safe }}<div><b>Học phí và học bổng theo chương trình</b><span>Nhận bảng chi tiết cho đúng chương trình và khóa bạn quan tâm.</span></div></li>
+          <li>{{ icons.check|safe }}<div><b>Hướng dẫn hồ sơ đợt gần nhất</b><span>Checklist giấy tờ, lịch thi viết và phỏng vấn.</span></div></li>
+        </ul>
+        <div class="hero-meta">
+          <div><strong>{{ now.phase_short }}</strong>Giai đoạn tuyển sinh hiện tại</div>
+          <div><strong>Tháng {{ now.next_mba }}</strong>Đợt tuyển sinh MBA gần nhất</div>
+          {% if overview.events %}<div><strong>{{ overview.events[0].starts_at }}</strong>{{ overview.events[0].title }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-card" id="dang-ky">
+        <form class="f" id="reg-form" novalidate>
+          <div>
+            <h2>Nhận tư vấn miễn phí</h2>
+            <p class="sub">Điền 1 phút, chuyên viên tuyển sinh sẽ liên hệ bạn.</p>
+          </div>
+          <div class="event-chip" id="event-chip" hidden><span></span><button type="button" id="event-clear">Bỏ chọn</button></div>
+          <input type="hidden" name="event_id" value="">
+          <label>Họ và tên<input name="full_name" autocomplete="name" required></label>
+          <div class="two">
+            <label>Số điện thoại<input name="phone" inputmode="tel" autocomplete="tel" placeholder="09xx xxx xxx"></label>
+            <label>Email<input name="email" type="email" autocomplete="email"></label>
+          </div>
+          <div>
+            <label style="margin-bottom:6px" id="pg-label">Chương trình quan tâm</label>
+            <div class="programs-pick" role="radiogroup" aria-labelledby="pg-label">
+              {% for code in ["MBA", "MMS", "MSCM"] %}
+              <label style="display:block;font-weight:inherit"><input type="radio" name="program" value="{{ code }}"><span>{{ code }}</span></label>
+              {% endfor %}
+              <label style="display:block;font-weight:inherit"><input type="radio" name="program" value="" checked><span style="font-weight:600;font-size:13px">Chưa chọn</span></label>
+            </div>
+          </div>
+          <div class="two">
+            <label>Liên hệ tôi
+              <select name="contact_time">
+                <option value="office">Trong giờ hành chính</option>
+                <option value="morning">Buổi sáng</option>
+                <option value="afternoon">Buổi chiều</option>
+                <option value="evening">Buổi tối</option>
+                <option value="weekend">Cuối tuần</option>
+              </select>
+            </label>
+            <label>Dự kiến nhập học
+              <select name="intake">
+                <option value="">Chưa xác định</option>
+                <option value="Tháng 5/{{ now.next_year }}">Tháng 5/{{ now.next_year }}</option>
+                <option value="Tháng 8/{{ now.next_year }}">Tháng 8/{{ now.next_year }}</option>
+              </select>
+            </label>
+          </div>
+          <label>Bạn muốn được tư vấn thêm điều gì? <textarea name="message" placeholder="Ví dụ: chưa có chứng chỉ tiếng Anh, muốn biết về học bổng"></textarea></label>
+          <label class="consent"><input type="checkbox" name="consent"> Tôi đồng ý cho trung tâm dùng thông tin này để liên hệ tư vấn tuyển sinh.</label>
+          <p class="form-error" id="form-error" role="alert"></p>
+          <button class="submit" type="submit" id="submit-btn">Gửi đăng ký tư vấn</button>
+        </form>
+        <div class="done" id="done" hidden>
+          <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0b7a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+          <h2>Đã nhận đăng ký của bạn</h2>
+          <p id="done-text"></p>
+          <ol>
+            <li>Chuyên viên tuyển sinh phụ trách gọi hoặc email cho bạn.</li>
+            <li>Bạn nhận thông tin chương trình, học phí, học bổng và hướng dẫn hồ sơ.</li>
+            <li>Chuyên viên đồng hành đến khi bạn nộp hồ sơ dự tuyển.</li>
+          </ol>
+          <p>Trong lúc chờ, bạn có thể hỏi nhanh trợ lý {{ config.name }} ở góc phải màn hình.</p>
+        </div>
+        <p class="trust">Thông tin chỉ dùng để tư vấn tuyển sinh.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="year" id="lich-tuyen-sinh" aria-label="Lịch tuyển sinh trong năm">
+    <div class="wrap">
+      <h2>Lịch tuyển sinh trong năm</h2>
+      <p class="phase">Bây giờ là tháng {{ now.month }}/{{ now.year }}. {{ now.phase }}</p>
+      <div class="year-scroll">
+        <div class="year-grid">
+          {% for m in months %}
+          <div class="m{% if m.marked %} y{% endif %}" style="grid-row: 1; grid-column: {{ loop.index }}">{{ m.label }}</div>
+          {% endfor %}
+          <div class="band b1" style="grid-row: 2; grid-column: 1 / span 6">Tư vấn, đăng ký quan tâm</div>
+          <div class="band b2" style="grid-row: 3; grid-column: 6 / span 7">Nhận hồ sơ, thi viết và phỏng vấn</div>
+          <div class="band b3" style="grid-row: 4; grid-column: 11 / span 2">Xét duyệt trúng tuyển</div>
+          <div class="pin" style="grid-row: 5; grid-column: 8"><span>Đợt MBA tháng 5</span></div>
+          <div class="pin" style="grid-row: 5; grid-column: 11"><span>Đợt MBA tháng 8</span></div>
+          <div class="today" style="left: {{ '%.2f'|format(now.position * 100) }}%" aria-hidden="true"><b>Hôm nay</b></div>
+        </div>
+      </div>
+      <p class="year-note">Đăng ký sớm trong giai đoạn tư vấn để chuẩn bị chứng chỉ tiếng Anh và hồ sơ kịp đợt tuyển sinh gần nhất.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2 class="t">Vì sao học viên chọn chương trình của trung tâm</h2>
+      <p class="intro">Những điều bạn nhận được khi theo học, ngoài tấm bằng thạc sĩ.</p>
+      <div class="why">
+        <div>{{ icons.globe|safe }}<div><h3>Trao đổi quốc tế, bằng kép</h3><p>Trao đổi một học kỳ hoặc bằng kép tại trường đối tác, có hỗ trợ thủ tục visa và nhập cảnh.</p></div></div>
+        <div>{{ icons.award|safe }}<div><h3>Ba nguồn học bổng</h3><p>Học bổng của trung tâm, của trường đối tác và học bổng chính phủ nước đối tác.</p></div></div>
+        <div>{{ icons.people|safe }}<div><h3>Hội đồng tuyển sinh có cựu học viên</h3><p>Phỏng vấn cùng đại diện trung tâm, trường đối tác và cựu học viên, để hiểu đúng kỳ vọng của chương trình.</p></div></div>
+        <div>{{ icons.net|safe }}<div><h3>Mạng lưới cựu học viên</h3><p>Sau tốt nghiệp, bạn là thành viên mạng lưới cựu học viên của trung tâm.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="chuong-trinh">
+    <div class="wrap">
+      <h2 class="t">Chọn chương trình phù hợp với công việc của bạn</h2>
+      <p class="intro">Chưa chắc chương trình nào hợp? Đăng ký và để chuyên viên tư vấn dựa trên kinh nghiệm của bạn.</p>
+      <div class="programs">
+        <article class="program">
+          <div class="code">MBA</div>
+          <h3>Thạc sĩ Quản trị kinh doanh</h3>
+          <p>Liên kết trường đối tác quốc tế. Tuyển sinh hai đợt mỗi năm, tháng 5 và tháng 8.</p>
+          <div class="for"><b>Phù hợp với</b>Người đang làm quản lý hoặc chuẩn bị lên vị trí quản lý.</div>
+          <button class="linkbtn" type="button" data-program="MBA">Nhận tư vấn MBA</button>
+        </article>
+        <article class="program">
+          <div class="code">MMS</div>
+          <h3>Master in Marketing and Sales</h3>
+          <p>Thạc sĩ về Marketing và Bán hàng.</p>
+          <div class="for"><b>Phù hợp với</b>Người làm marketing, kinh doanh, phát triển thị trường.</div>
+          <button class="linkbtn" type="button" data-program="MMS">Nhận tư vấn MMS</button>
+        </article>
+        <article class="program">
+          <div class="code">MSCM</div>
+          <h3>Master Supply Chain Management</h3>
+          <p>Thạc sĩ Quản lý chuỗi cung ứng.</p>
+          <div class="for"><b>Phù hợp với</b>Người làm logistics, mua hàng, sản xuất, vận hành.</div>
+          <button class="linkbtn" type="button" data-program="MSCM">Nhận tư vấn MSCM</button>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="su-kien">
+    <div class="wrap">
+      <h2 class="t">Đợt tuyển sinh và sự kiện sắp tới</h2>
+      <p class="intro">Gặp chuyên viên và cựu học viên tại Info Day, workshop trước khi quyết định.</p>
+      <div class="live">
+        <div>
+          <h3>Sự kiện sắp tới</h3>
+          <ul class="items">
+            {% for e in overview.events %}
+            <li>
+              <span class="t">{{ e.title }}</span>
+              <span class="d">{{ e.type }}{% if e.starts_at %}, {{ e.starts_at }}{% endif %}{% if e.location %}, {{ e.location }}{% endif %}</span>
+              <span class="k">{% for p in e.programs %}<span class="tag">{{ p }}</span>{% endfor %}
+                <button class="linkbtn" type="button" data-event="{{ e.id }}" data-event-title="{{ e.title }}, {{ e.starts_at }}">Đăng ký tham dự</button></span>
+            </li>
+            {% else %}
+            <li class="empty">Sự kiện mới sẽ được thông báo sớm. Đăng ký nhận tư vấn để được mời tham dự Info Day và workshop.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div>
+          <h3>Đợt đang nhận hồ sơ</h3>
+          <ul class="items">
+            {% for r in overview.rounds %}
+            <li>
+              <span class="t">{{ r.name }}</span>
+              <span class="d">{% if r.intake %}Khóa nhập học {{ r.intake }}. {% endif %}{% if r.closed_at %}Hạn nộp hồ sơ {{ r.closed_at }}.{% endif %}{% if r.exam_timeline %} Thi viết: {{ r.exam_timeline }}.{% endif %}{% if r.interview_timeline %} Phỏng vấn: {{ r.interview_timeline }}.{% endif %}</span>
+              {% if r.programs %}<span class="k">{% for p in r.programs %}<span class="tag">{{ p }}</span>{% endfor %}</span>{% endif %}
+            </li>
+            {% else %}
+            <li class="empty">Hiện chưa có đợt nào đang nhận hồ sơ. Đăng ký nhận tư vấn để được báo ngay khi mở đợt mới.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="quy-trinh">
+    <div class="wrap">
+      <h2 class="t">Từ đăng ký tư vấn đến trúng tuyển</h2>
+      <p class="intro">Bảy bước, có chuyên viên đồng hành từ bước đầu tiên.</p>
+      <ol class="steps">
+        <li class="here"><div><b>Tư vấn <span class="you">Bắt đầu từ đây</span></b><span class="s">Chuyên viên liên hệ, gửi thông tin chương trình, timeline và hướng dẫn hồ sơ.</span></div></li>
+        <li><div><b>Nộp hồ sơ</b><span class="s">Trung tâm kiểm tra, gửi checklist để bạn xác nhận và hướng dẫn bổ sung nếu thiếu.</span></div></li>
+        <li><div><b>Thi viết</b><span class="s">Ứng viên đủ điều kiện nhận phiếu báo thi có số báo danh.</span></div></li>
+        <li><div><b>Phỏng vấn</b><span class="s">Đăng ký lịch ngay sau ngày thi viết, phỏng vấn cùng hội đồng ba thành viên.</span></div></li>
+        <li><div><b>Kết quả đầu vào</b><span class="s">Điểm thi viết và điểm phỏng vấn được gửi tới từng ứng viên.</span></div></li>
+        <li><div><b>Xét duyệt trúng tuyển</b><span class="s">Hồ sơ, xác nhận văn bằng và chứng chỉ tiếng Anh được trường đại học chủ quản xét duyệt.</span></div></li>
+        <li><div><b>Thông báo trúng tuyển</b><span class="s">Nộp lệ phí và học phí theo hướng dẫn để trở thành học viên chính thức.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  {% if overview.faqs %}
+  <section class="block" id="hoi-dap">
+    <div class="wrap">
+      <h2 class="t">Câu hỏi thường gặp</h2>
+      <p class="intro">Những câu người quan tâm hỏi nhiều nhất.</p>
+      <div class="faq">
+        {% for f in overview.faqs %}
+        <details{% if loop.first %} open{% endif %}><summary>{{ f.question }}</summary><p>{{ f.answer }}</p></details>
+        {% endfor %}
+      </div>
+      <p class="faq-note">Câu hỏi khác? Trợ lý {{ config.name }} ở góc phải màn hình trả lời ngay.</p>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="final">
+    <div class="wrap">
+      <div>
+        <h2>Bắt đầu lộ trình thạc sĩ của bạn</h2>
+        <p>Đăng ký trong giai đoạn tư vấn để có đủ thời gian chuẩn bị hồ sơ và chứng chỉ tiếng Anh cho đợt tuyển sinh tháng {{ now.next_mba }}.</p>
+      </div>
+      <a class="pill" href="#dang-ky">Đăng ký nhận tư vấn</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>{{ config.site_name }}{% if config.hotline %}. Hotline {{ config.hotline }}{% endif %}{% if config.contact_email %}. Email <a href="mailto:{{ config.contact_email }}">{{ config.contact_email }}</a>{% endif %}</span>
+    <span>Học viên và cán bộ: <a href="{{ url_for('login') }}">đăng nhập SmartUni</a></span>
+  </div>
+</footer>
+
+<script src="{{ url_for('admission_embed_js') }}" async></script>
+<script>
+(function () {
+  var API = {{ (url_for('admission_public') + '/api')|tojson }};
+  var form = document.getElementById("reg-form");
+  var errEl = document.getElementById("form-error");
+  var btn = document.getElementById("submit-btn");
+  var chip = document.getElementById("event-chip");
+
+  function focusForm() {
+    document.getElementById("dang-ky").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    setTimeout(function () { form.full_name.focus({ preventScroll: true }); }, 400);
+  }
+  function setProgram(code) {
+    var input = form.querySelector('input[name="program"][value="' + code + '"]');
+    if (input) input.checked = true;
+  }
+  function setEvent(id, title) {
+    form.event_id.value = id || "";
+    chip.hidden = !id;
+    chip.querySelector("span").textContent = id ? "Đăng ký tham dự: " + title : "";
+  }
+  document.querySelectorAll("[data-program]").forEach(function (b) {
+    b.addEventListener("click", function () { setProgram(b.getAttribute("data-program")); focusForm(); });
+  });
+  document.querySelectorAll("[data-event]").forEach(function (b) {
+    b.addEventListener("click", function () { setEvent(b.getAttribute("data-event"), b.getAttribute("data-event-title")); focusForm(); });
+  });
+  document.getElementById("event-clear").addEventListener("click", function () { setEvent("", ""); });
+
+  form.addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    errEl.textContent = "";
+    var data = Object.fromEntries(new FormData(form));
+    data.consent = !!form.consent.checked;
+    if (!data.full_name.trim()) { errEl.textContent = "Vui lòng nhập họ tên."; form.full_name.focus(); return; }
+    if (!data.phone.trim() && !data.email.trim()) { errEl.textContent = "Vui lòng nhập số điện thoại hoặc email để chuyên viên liên hệ."; form.phone.focus(); return; }
+    if (!data.consent) { errEl.textContent = "Vui lòng đồng ý để trung tâm liên hệ tư vấn."; return; }
+    try { data.session = localStorage.getItem("smartuni_admission_session") || ""; } catch (e) { data.session = ""; }
+    btn.disabled = true;
+    btn.textContent = "Đang gửi...";
+    try {
+      var res = await fetch(API + "/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      var out = {};
+      try { out = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error(out.error || "Chưa gửi được đăng ký, vui lòng thử lại.");
+      var phrases = { office: "trong giờ hành chính", morning: "vào buổi sáng", afternoon: "vào buổi chiều", evening: "vào buổi tối", weekend: "vào cuối tuần" };
+      var when = phrases[data.contact_time] || phrases.office;
+      document.getElementById("done-text").textContent =
+        "Cảm ơn " + data.full_name.trim() + ". Chuyên viên tuyển sinh sẽ liên hệ qua " + (data.phone.trim() || data.email.trim()) + " " + when + ".";
+      form.hidden = true;
+      document.getElementById("done").hidden = false;
+    } catch (e) {
+      errEl.textContent = e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Gửi đăng ký tư vấn";
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -632,6 +632,15 @@ def init_db():
         except Exception as e:
             print(f"Warning: CRM tables failed: {e}")
 
+        try:
+            from admission_bot import bootstrap as bootstrap_admission_bot
+
+            seeded = bootstrap_admission_bot(conn, DATA_DIR)
+            if seeded["docs"] or seeded["faqs"]:
+                print(f"Seeded admission bot: {seeded['docs']} docs, {seeded['faqs']} FAQ")
+        except Exception as e:
+            print(f"Warning: admission bot tables failed: {e}")
+
         conn.commit()
 
 
@@ -12926,6 +12935,11 @@ def set_project_chat_feedback(project_id, chat_id):
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+from admission_bot import register_routes as _register_admission_bot
+
+_register_admission_bot(app, get_db, _crm_actor_ok, UPLOADS_DIR, DB_PATH_STR)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", DEFAULT_PORT))
     debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"

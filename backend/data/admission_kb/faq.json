@@ -1,0 +1,37 @@
+[
+  {
+    "question": "Một năm có mấy đợt tuyển sinh MBA?",
+    "answer": "Chương trình MBA tổ chức 2 đợt tuyển sinh mỗi năm: đợt tháng 5 và đợt tháng 8. Lịch thi viết và phỏng vấn cụ thể của từng đợt được gửi qua email sau khi bạn nộp hồ sơ.",
+    "program_code": "MBA"
+  },
+  {
+    "question": "Quy trình xét tuyển gồm những bước nào?",
+    "answer": "Quy trình gồm 7 bước: 1) tư vấn và nhận hướng dẫn hồ sơ; 2) nộp hồ sơ và xác nhận checklist; 3) thi viết; 4) phỏng vấn với hội đồng; 5) nhận kết quả đầu vào; 6) xét duyệt trúng tuyển cùng trường đại học chủ quản; 7) thông báo trúng tuyển và nộp học phí để trở thành học viên chính thức.",
+    "program_code": ""
+  },
+  {
+    "question": "Ai phỏng vấn ứng viên?",
+    "answer": "Mỗi ứng viên phỏng vấn với một hội đồng thường gồm 3 thành viên: đại diện trung tâm, đại diện trường đối tác và đại diện cựu học viên.",
+    "program_code": ""
+  },
+  {
+    "question": "Học phí bao nhiêu?",
+    "answer": "Học phí khác nhau theo chương trình và khóa tuyển sinh, kèm các chính sách học bổng và chia đợt thanh toán. Bạn đăng ký nhận tư vấn, chuyên viên tuyển sinh sẽ gửi bảng học phí và học bổng chi tiết cho chương trình bạn quan tâm.",
+    "program_code": ""
+  },
+  {
+    "question": "Đăng ký nhận tư vấn xong thì sao?",
+    "answer": "Yêu cầu của bạn được giao cho một chuyên viên tuyển sinh phụ trách riêng. Chuyên viên sẽ liên hệ trong giờ làm việc theo khung giờ bạn chọn để tư vấn lộ trình học, học phí, học bổng và hướng dẫn chuẩn bị hồ sơ.",
+    "program_code": ""
+  },
+  {
+    "question": "MMS là chương trình gì?",
+    "answer": "MMS là Master in Marketing and Sales, chương trình thạc sĩ về Marketing và Bán hàng, phù hợp với người làm marketing, kinh doanh, phát triển thị trường.",
+    "program_code": "MMS"
+  },
+  {
+    "question": "MSCM là chương trình gì?",
+    "answer": "MSCM là Master Supply Chain Management, chương trình thạc sĩ Quản lý chuỗi cung ứng, phù hợp với người làm logistics, mua hàng, sản xuất, vận hành.",
+    "program_code": "MSCM"
+  }
+]

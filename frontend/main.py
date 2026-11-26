@@ -35,6 +35,7 @@ API_BASE = os.environ.get("API_BASE_URL", "http://127.0.0.1:8026").rstrip("/")
 USERS_URL = f"{API_BASE}/users"
 
 LOGIN_REQUIRED = os.environ.get("LOGIN_REQUIRED", "true").lower() == "true"
+from admission_bot_routes import PUBLIC_ENDPOINTS as ADMISSION_PUBLIC_ENDPOINTS
 STORAGES_URL = f"{API_BASE}/storages"
 ARTICLES_URL = f"{API_BASE}/articles"
 THESES_URL = f"{API_BASE}/theses"
@@ -1056,7 +1057,7 @@ def require_login():
         "search_index",
         "api_admin_search",
         "set_language",
-    ):
+    ) or request.endpoint in ADMISSION_PUBLIC_ENDPOINTS:
         return
     if "user" not in session:
         # For JSON/fetch requests, return 401 JSON so client can handle (avoids HTML-in-JSON parse error)
@@ -1109,7 +1110,9 @@ def _normalize_storages(data):
 def index():
     if session.get("user"):
         return redirect(url_for("ops_home"))
-    return redirect(url_for("login"))
+    from admission_bot_routes import render_landing
+
+    return render_landing(API_BASE)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -8084,6 +8087,11 @@ def api_projects_chat(project_id):
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+from admission_bot_routes import register_admission_bot
+
+register_admission_bot(app, API_BASE, _api_proxy, _user_has_perm, _is_exec_viewer, _user_scopes_header)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8027))
     debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"

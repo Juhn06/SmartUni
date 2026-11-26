@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+{% block title %}Yêu cầu tư vấn và chatbot - SmartUni{% endblock %}
+{% block extra_head %}
+<style>
+.cb { display: grid; gap: 16px; }
+.cb .form-control { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: var(--text); }
+.cb .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 82, 140, .12); }
+.cb textarea.form-control { resize: vertical; line-height: 1.45; }
+.cb input[type=file].form-control { padding: 6px; }
+.cb-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.cb-tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer; color: var(--text-muted); font-weight: 500; }
+.cb-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.cb-tab .cb-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.cb-panel { display: none; }
+.cb-panel.active { display: grid; gap: 16px; }
+.cb-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.cb-kpi { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.cb-kpi .v { font-size: 26px; font-weight: 700; color: var(--neu-navy); }
+.cb-kpi .l { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.cb-kpi.warn .v { color: var(--danger); }
+.cb-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.cb-card h3 { margin: 0 0 12px; font-size: 15px; }
+.cb-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.cb-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.cb-flow span.step { background: var(--accent-light); color: var(--neu-navy); padding: 6px 10px; border-radius: 8px; }
+.cb-flow span.arrow { color: var(--text-muted); }
+.cb-bars { display: grid; gap: 8px; }
+.cb-bar { display: grid; grid-template-columns: 150px 1fr 36px; gap: 8px; align-items: center; font-size: 13px; }
+.cb-bar .track { background: #eef2f7; border-radius: 999px; height: 10px; overflow: hidden; }
+.cb-bar .fill { background: var(--accent); height: 100%; border-radius: 999px; }
+.cb-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 120px; }
+.cb-day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); height: 100%; justify-content: flex-end; }
+.cb-day .col { width: 100%; max-width: 34px; background: var(--neu-blue-soft); border-radius: 6px 6px 0 0; position: relative; min-height: 2px; }
+.cb-day .col .lead { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); border-radius: 6px 6px 0 0; }
+.cb-legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+.cb-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.cb-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cb-toolbar .form-control { width: auto; min-width: 150px; }
+.cb-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eef2f7; color: var(--text-muted); white-space: nowrap; }
+.cb-badge.hot { background: #fde2e1; color: #b42318; }
+.cb-badge.high { background: #fff1d6; color: #9a5b00; }
+.cb-badge.medium { background: var(--accent-light); color: var(--neu-navy); }
+.cb-badge.human, .cb-badge.handoff { background: #fde2e1; color: #b42318; }
+.cb-badge.ok { background: #dcf5ea; color: #0b7a55; }
+.cb-convs { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 16px; min-height: 520px; }
+.cb-list { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; overflow-y: auto; max-height: 70vh; }
+.cb-item { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: grid; gap: 4px; }
+.cb-item:hover, .cb-item.active { background: var(--accent-light); }
+.cb-item .top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.cb-item .name { font-weight: 600; }
+.cb-item .meta { font-size: 12px; color: var(--text-muted); }
+.cb-item .q { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-detail { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; max-height: 70vh; }
+.cb-detail-head { padding: 14px 16px; border-bottom: 1px solid var(--border); display: grid; gap: 8px; }
+.cb-detail-head .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cb-thread { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
+.cb-msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.cb-msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+.cb-msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--border); }
+.cb-msg.staff { align-self: flex-start; background: var(--accent-light); border: 1px solid #9cc7e6; }
+.cb-msg.system { align-self: center; background: #eef2f7; font-size: 12px; color: var(--text-muted); }
+.cb-msg .info { font-size: 11px; color: var(--text-muted); margin-top: 4px; white-space: normal; }
+.cb-msg.user .info { color: rgba(255,255,255,.75); }
+.cb-reply { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); align-items: flex-end; }
+.cb-reply textarea { flex: 1; min-height: 44px; }
+.cb-empty { color: var(--text-muted); text-align: center; padding: 40px 16px; }
+.cb-form { display: grid; gap: 10px; }
+.cb-form label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; }
+.cb-form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.cb-hits { display: grid; gap: 8px; }
+.cb-hit { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.cb-hit .h { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; margin-bottom: 4px; }
+.cb-hit .t { color: var(--text-muted); white-space: pre-wrap; }
+.cb-answer { white-space: pre-wrap; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.cb-code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 10px; white-space: pre-wrap; word-break: break-all; }
+.cb-muted { color: var(--text-muted); font-size: 13px; }
+.cb-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.cb-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; margin: 0 0 16px; }
+.cb-info dt { font-size: 12.5px; color: var(--text-muted); }
+.cb-info dd { margin: 0; font-weight: 600; font-size: 14px; word-break: break-word; }
+.cb-note { background: #fff8e1; border: 1px solid #f5dd8b; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+.cb-sub { margin: 16px 0 8px; font-size: 14px; }
+.cb-mini-thread { display: flex; flex-direction: column; gap: 6px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 10px; max-height: 260px; overflow-y: auto; }
+.cb-mini-thread .cb-msg { font-size: 13px; max-width: 90%; }
+.cb-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cb-log li { border-left: 3px solid var(--accent-light); padding: 4px 0 4px 10px; font-size: 13.5px; }
+.cb-toast { position: fixed; right: 20px; bottom: 20px; background: var(--neu-navy); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; display: none; z-index: 9999; }
+.cb-toast.on { display: block; }
+@media (max-width: 900px) { .cb-convs { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Yêu cầu tư vấn và chatbot</h1>
+  </div>
+  <div class="page-title-actions">
+    <button class="btn btn-secondary btn-sm" type="button" id="preview-bot">Xem bot như người dùng</button>
+  </div>
+</div>
+
+<div class="cb">
+  <div class="cb-tabs" role="tablist">
+    <button class="cb-tab active" data-tab="requests" type="button">Yêu cầu tư vấn <span class="cb-count" id="count-requests" hidden></span></button>
+    <button class="cb-tab" data-tab="overview" type="button">Tổng quan</button>
+    <button class="cb-tab" data-tab="convs" type="button">Hội thoại bot <span class="cb-count" id="count-waiting" hidden></span></button>
+    <button class="cb-tab" data-tab="gaps" type="button">Câu chưa trả lời <span class="cb-count" id="count-gaps" hidden></span></button>
+    <button class="cb-tab" data-tab="kb" type="button">Kho kiến thức</button>
+    <button class="cb-tab" data-tab="faq" type="button">FAQ</button>
+    <button class="cb-tab" data-tab="test" type="button">Chat thử</button>
+    <button class="cb-tab" data-tab="settings" type="button">Cấu hình</button>
+  </div>
+
+  <section class="cb-panel active" data-panel="requests">
+    <div class="cb-toolbar">
+      <select class="form-control" id="req-status">
+        <option value="open">Đang xử lý</option>
+        <option value="new">Mới, chờ liên hệ</option>
+        <option value="contacted">Đã liên hệ</option>
+        <option value="caring">Đang chăm sóc</option>
+        <option value="converted">Đã nộp hồ sơ</option>
+        <option value="closed">Đóng</option>
+        <option value="">Tất cả</option>
+      </select>
+      <input class="form-control" id="req-q" placeholder="Tìm tên, SĐT, email, công ty">
+      <label class="cb-muted"><input type="checkbox" id="req-mine"> Chỉ yêu cầu giao cho tôi</label>
+      <label class="cb-muted"><input type="checkbox" id="req-overdue"> Quá hạn liên hệ</label>
+      <button class="btn btn-secondary btn-sm" type="button" id="req-reload">Tải lại</button>
+    </div>
+    <div class="cb-convs">
+      <div class="cb-list" id="req-list"></div>
+      <div class="cb-detail" id="req-detail"><div class="cb-empty">Chọn một yêu cầu để xem và tiếp nhận</div></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="overview">
+    <div class="cb-kpis" id="kpis"></div>
+    <div class="cb-card">
+      <h3>Luồng xử lý</h3>
+      <div class="cb-flow">
+        <span class="step">Người quan tâm xem trang giới thiệu, hỏi UniBot</span><span class="arrow">→</span>
+        <span class="step">Bot trả lời thông tin chung từ tài liệu, FAQ, dữ liệu tuyển sinh</span><span class="arrow">→</span>
+        <span class="step">Đăng ký nhận tư vấn (form trang hoặc trong bot)</span><span class="arrow">→</span>
+        <span class="step">Tạo hồ sơ nguồn Tiềm năng + giao chuyên viên + nhắc liên hệ</span><span class="arrow">→</span>
+        <span class="step">Chuyên viên tiếp nhận, gọi, ghi nhật ký chăm sóc</span><span class="arrow">→</span>
+        <span class="step">Câu bot chưa trả lời → FAQ mới</span>
+      </div>
+    </div>
+    <div class="cb-grid2">
+      <div class="cb-card"><h3>7 ngày gần nhất</h3><div class="cb-days" id="days"></div>
+        <div class="cb-legend"><span><i style="background:var(--neu-blue-soft)"></i>Hội thoại</span><span><i style="background:var(--accent)"></i>Thành hồ sơ CRM</span></div>
+      </div>
+      <div class="cb-card"><h3>Người hỏi quan tâm điều gì</h3><div class="cb-bars" id="intents"></div></div>
+    </div>
+    <div class="cb-card"><h3>Mô hình trả lời</h3><div id="llm-status" class="cb-muted"></div></div>
+  </section>
+
+  <section class="cb-panel" data-panel="convs">
+    <div class="cb-toolbar">
+      <input class="form-control" id="conv-q" placeholder="Tìm tên, SĐT, email, nội dung">
+      <select class="form-control" id="conv-level">
+        <option value="">Mọi mức quan tâm</option>
+        <option value="hot">Rất nóng</option><option value="high">Cao</option><option value="medium">Trung bình</option><option value="low">Thấp</option>
+      </select>
+      <select class="form-control" id="conv-status">
+        <option value="">Mọi trạng thái</option>
+        <option value="open">Bot đang trả lời</option><option value="handoff">Chờ chuyên viên</option><option value="human">Chuyên viên đang hỗ trợ</option><option value="closed">Đã đóng</option>
+      </select>
+      <label class="cb-muted"><input type="checkbox" id="conv-waiting"> Chỉ hội thoại cần người hỗ trợ</label>
+      <button class="btn btn-secondary btn-sm" type="button" id="conv-reload">Tải lại</button>
+    </div>
+    <div class="cb-convs">
+      <div class="cb-list" id="conv-list"></div>
+      <div class="cb-detail" id="conv-detail"><div class="cb-empty">Chọn một hội thoại để xem chi tiết</div></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="gaps">
+    <div class="cb-card">
+      <h3>Câu hỏi bot chưa trả lời được</h3>
+      <p class="cb-muted">Trả lời một lần, bot sẽ dùng câu trả lời đó cho mọi câu hỏi tương tự về sau. Các câu gần giống sẽ được đánh dấu đã xử lý cùng lúc.</p>
+      <div class="ops-table-wrap"><table class="ops-table">
+        <thead><tr><th>Thời gian</th><th>Câu hỏi</th><th>Người hỏi</th><th style="width:40%">Câu trả lời chuẩn</th><th></th></tr></thead>
+        <tbody id="gap-rows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="kb">
+    <div class="cb-grid2">
+      <div class="cb-card">
+        <h3>Tải tài liệu lên</h3>
+        <form class="cb-form" id="upload-form">
+          <label>Tệp (PDF, DOCX, XLSX, TXT, MD; chọn được nhiều tệp)<input class="form-control" type="file" name="files" multiple accept=".pdf,.docx,.xlsx,.xlsm,.txt,.md,.csv" required></label>
+          <div class="row">
+            <label>Chương trình<select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
+            <label>Tiêu đề (khi tải 1 tệp)<input class="form-control" name="title"></label>
+          </div>
+          <div><button class="btn btn-primary btn-sm" type="submit">Tải lên và học</button></div>
+          <div class="cb-muted" id="upload-result"></div>
+        </form>
+      </div>
+      <div class="cb-card">
+        <h3>Nhập nội dung trực tiếp</h3>
+        <form class="cb-form" id="text-form">
+          <div class="row">
+            <label>Tiêu đề<input class="form-control" name="title" required></label>
+            <label>Chương trình<select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
+          </div>
+          <label>Nội dung<textarea class="form-control" name="content" rows="6" required placeholder="Dán thông báo tuyển sinh, mô tả chương trình, học phí..."></textarea></label>
+          <div><button class="btn btn-primary btn-sm" type="submit">Lưu vào kho</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="cb-card">
+      <h3>Tài liệu trong kho <span class="cb-muted" id="kb-summary"></span></h3>
+      <div class="ops-table-wrap"><table class="ops-table">
+        <thead><tr><th>Tiêu đề</th><th>Chương trình</th><th>Nguồn</th><th>Đoạn</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr></thead>
+        <tbody id="doc-rows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="faq">
+    <div class="cb-card">
+      <h3 id="faq-form-title">Thêm câu hỏi thường gặp</h3>
+      <form class="cb-form" id="faq-form">
+        <input type="hidden" name="id">
+        <div class="row">
+          <label>Câu hỏi<input class="form-control" name="question" required></label>
+          <label>Chương trình<select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
+        </div>
+        <label>Câu trả lời<textarea class="form-control" name="answer" rows="3" required></textarea></label>
+        <div class="cb-actions"><button class="btn btn-primary btn-sm" type="submit">Lưu</button><button class="btn btn-secondary btn-sm" type="button" id="faq-cancel" hidden>Hủy sửa</button></div>
+      </form>
+    </div>
+    <div class="cb-card">
+      <div class="ops-table-wrap"><table class="ops-table">
+        <thead><tr><th>Câu hỏi</th><th>Câu trả lời</th><th>Chương trình</th><th>Lượt dùng</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="faq-rows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="test">
+    <div class="cb-card">
+      <h3>Chat thử và xem bot lấy thông tin từ đâu</h3>
+      <form class="cb-form" id="test-form">
+        <div class="row">
+          <label>Câu hỏi<input class="form-control" name="question" required placeholder="Ví dụ: học phí MBA bao nhiêu?"></label>
+          <label>Chương trình<select class="form-control" name="program_code"><option value="">Tự nhận diện</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
+        </div>
+        <div><button class="btn btn-primary btn-sm" type="submit">Hỏi thử</button></div>
+      </form>
+    </div>
+    <div class="cb-grid2" id="test-result" hidden>
+      <div class="cb-card"><h3>Câu trả lời</h3><div id="test-meta" class="cb-muted" style="margin-bottom:8px"></div><div class="cb-answer" id="test-answer"></div></div>
+      <div class="cb-card"><h3>Đoạn tài liệu được truy xuất</h3><div class="cb-hits" id="test-hits"></div></div>
+    </div>
+  </section>
+
+  <section class="cb-panel" data-panel="settings">
+    <div class="cb-grid2">
+      <div class="cb-card">
+        <h3>Thông tin hiển thị</h3>
+        <form class="cb-form" id="settings-form">
+          <div class="row">
+            <label>Tên bot<input class="form-control" name="name"></label>
+            <label>Dòng mô tả dưới tên bot<input class="form-control" name="org_name"></label>
+          </div>
+          <label>Tên trung tâm (hiện trên trang giới thiệu)<input class="form-control" name="site_name"></label>
+          <label>Lời chào<textarea class="form-control" name="greeting" rows="3"></textarea></label>
+          <div class="row">
+            <label>Hotline<input class="form-control" name="hotline"></label>
+            <label>Email liên hệ<input class="form-control" name="contact_email"></label>
+          </div>
+          <label>Gợi ý câu hỏi nhanh (phân cách bằng |)<input class="form-control" name="quick_replies"></label>
+          <div class="row">
+            <label>Mô hình AI (LLM)
+              <select class="form-control" name="llm_enabled"><option value="auto">Tự động (dùng khi có API key)</option><option value="on">Luôn bật</option><option value="off">Tắt, chỉ trích xuất tài liệu</option></select>
+            </label>
+            <label>Hỏi thông tin liên hệ sau số câu<input class="form-control" type="number" min="1" max="10" name="ask_contact_after"></label>
+          </div>
+          <div><button class="btn btn-primary btn-sm" type="submit">Lưu cấu hình</button></div>
+        </form>
+      </div>
+      <div class="cb-card">
+        <h3>Nhúng chatbot vào website trung tâm</h3>
+        <p class="cb-muted">Bot đã nằm sẵn ở góc phải <a href="{{ url_for('index') }}" target="_blank" rel="noopener">trang giới thiệu tuyển sinh</a> của SmartUni. Để gắn lên website khác của trung tâm, dán đoạn mã sau vào cuối thẻ body.</p>
+        <div class="cb-code" id="embed-code"></div>
+        <p class="cb-muted" style="margin-top:12px">Link mở trang giới thiệu với khung chat bật sẵn (dùng cho mã QR trên tờ rơi): <a href="{{ url_for('admission_public') }}" target="_blank" rel="noopener" id="public-link"></a></p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="cb-toast" id="toast"></div>
+
+<script>
+(function () {
+  const BASE = "/api/ops/chatbot";
+  const LEVELS = { hot: "Rất nóng", high: "Cao", medium: "Trung bình", low: "Thấp" };
+  const STATUS = { open: "Bot đang trả lời", handoff: "Chờ chuyên viên", human: "Chuyên viên hỗ trợ", closed: "Đã đóng" };
+  const MODES = { llm: "AI tạo câu trả lời", extractive: "Trích từ tài liệu", faq: "FAQ", fallback: "Chưa trả lời được", greeting: "Chào hỏi", smalltalk: "Giao tiếp", contact: "Ghi nhận liên hệ", handoff: "Chuyển chuyên viên" };
+  let currentConv = null;
+  let convTimer = null;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2600); }
+  function fmt(ts) { if (!ts) return ""; const d = new Date(ts.replace(" ", "T")); return isNaN(d) ? ts : d.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }); }
+
+  async function api(path, opts) {
+    opts = opts || {};
+    const headers = Object.assign({ "X-Requested-With": "XMLHttpRequest" }, opts.body && !(opts.body instanceof FormData) ? { "Content-Type": "application/json" } : {});
+    const res = await fetch(BASE + path, Object.assign({}, opts, { headers }));
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || "Lỗi máy chủ");
+    return data;
+  }
+
+  document.querySelectorAll(".cb-tab").forEach(btn => btn.addEventListener("click", () => openTab(btn.dataset.tab)));
+  function openTab(name) {
+    document.querySelectorAll(".cb-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".cb-panel").forEach(p => p.classList.toggle("active", p.dataset.panel === name));
+    ({ requests: loadRequests, overview: loadStats, convs: loadConvs, gaps: loadGaps, kb: loadDocs, faq: loadFaqs, settings: loadSettings })[name]?.();
+    if (history.replaceState) history.replaceState(null, "", "#" + name);
+  }
+
+  async function loadStats() {
+    const s = await api("/stats");
+    const k = [
+      [s.requests_new, "Yêu cầu tư vấn mới", s.requests_new > 0],
+      [s.requests_overdue, "Quá hạn liên hệ", s.requests_overdue > 0],
+      [s.requests_week, "Đăng ký tư vấn 7 ngày"],
+      [s.conversations_today, "Hội thoại hôm nay"],
+      [s.conversations_total, "Tổng hội thoại"],
+      [s.leads_total, "Hồ sơ nguồn tạo từ bot"],
+      [s.leads_hot, "Khách quan tâm cao"],
+      [s.answer_rate == null ? "–" : s.answer_rate + "%", "Tỉ lệ trả lời được"],
+      [s.waiting_human, "Chờ chuyên viên", s.waiting_human > 0],
+      [s.gaps_open, "Câu chưa trả lời", s.gaps_open > 0],
+      [s.kb_docs + " / " + s.faqs, "Tài liệu / FAQ"],
+    ];
+    document.getElementById("kpis").innerHTML = k.map(([v, l, w]) => `<div class="cb-kpi ${w ? "warn" : ""}"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join("");
+    const max = Math.max(1, ...s.daily.map(d => d.conversations));
+    document.getElementById("days").innerHTML = s.daily.map(d => {
+      const h = Math.round(100 * d.conversations / max);
+      const lh = d.conversations ? Math.round(100 * d.leads / d.conversations) : 0;
+      return `<div class="cb-day" title="${d.conversations} hội thoại, ${d.leads} hồ sơ"><div class="col" style="height:${h}%"><div class="lead" style="height:${lh}%"></div></div>${d.date.slice(8, 10)}/${d.date.slice(5, 7)}</div>`;
+    }).join("");
+    const imax = Math.max(1, ...s.intents.map(i => i.count));
+    document.getElementById("intents").innerHTML = s.intents.length ? s.intents.map(i => `<div class="cb-bar"><span>${esc(i.label)}</span><div class="track"><div class="fill" style="width:${Math.round(100 * i.count / imax)}%"></div></div><b>${i.count}</b></div>`).join("") : '<div class="cb-muted">Chưa có dữ liệu</div>';
+    const llm = s.llm;
+    document.getElementById("llm-status").innerHTML = llm.enabled
+      ? `Đang dùng mô hình <b>${esc(llm.model)}</b> để diễn đạt câu trả lời từ tài liệu (chế độ ${esc(llm.mode)}). Nếu mô hình lỗi, bot tự chuyển sang trích xuất trực tiếp từ tài liệu.`
+      : `Chưa cấu hình API key cho mô hình AI: bot đang trả lời bằng cách trích xuất câu liên quan nhất từ tài liệu và FAQ. Thêm OPENAI_API_KEY (hoặc OPENAI_BASE_URL cho Ollama) vào backend/.env để bật.`;
+    setCount("count-requests", s.requests_new);
+    setCount("count-waiting", s.waiting_human);
+    setCount("count-gaps", s.gaps_open);
+  }
+
+  const REQ_BADGE = { new: "human", contacted: "medium", caring: "high", converted: "ok", closed: "" };
+  let currentReq = null;
+
+  function reqBadge(r) { return `<span class="cb-badge ${REQ_BADGE[r.status] || ""}">${esc(r.status_label)}</span>`; }
+  function dueText(r) {
+    if (r.status !== "new" || !r.sla_due_at) return r.first_contact_at ? "Liên hệ lần đầu " + fmt(r.first_contact_at) : "";
+    return (r.overdue ? "Quá hạn liên hệ từ " : "Cần liên hệ trước ") + fmt(r.sla_due_at);
+  }
+
+  async function loadRequests() {
+    const p = new URLSearchParams();
+    p.set("status", document.getElementById("req-status").value);
+    const q = document.getElementById("req-q").value.trim();
+    if (q) p.set("q", q);
+    if (document.getElementById("req-mine").checked) p.set("mine", "1");
+    if (document.getElementById("req-overdue").checked) p.set("overdue", "1");
+    const rows = await api("/requests?" + p.toString());
+    const list = document.getElementById("req-list");
+    if (!rows.length) { list.innerHTML = '<div class="cb-empty">Không có yêu cầu nào trong bộ lọc này</div>'; return; }
+    list.innerHTML = rows.map(r => `
+      <div class="cb-item ${currentReq === r.id ? "active" : ""}" data-id="${r.id}">
+        <div class="top"><span class="name">${esc(r.full_name)}</span>${reqBadge(r)}</div>
+        <div class="meta">${esc([r.phone, r.email].filter(Boolean).join(" · "))}</div>
+        <div class="meta">${esc([r.program || "Chưa chọn chương trình", r.source_label].join(" · "))}${r.event_title ? " · Sự kiện: " + esc(r.event_title) : ""}</div>
+        <div class="top"><span class="meta" style="${r.overdue ? "color:var(--danger);font-weight:600" : ""}">${esc(dueText(r))}</span><span class="meta">${esc(r.assigned_name || "Chưa phân công")}</span></div>
+      </div>`).join("");
+    list.querySelectorAll(".cb-item").forEach(el => el.addEventListener("click", () => openRequest(+el.dataset.id)));
+  }
+
+  async function openRequest(id) {
+    currentReq = id;
+    document.querySelectorAll("#req-list .cb-item").forEach(el => el.classList.toggle("active", +el.dataset.id === id));
+    const r = await api("/requests/" + id);
+    const d = document.getElementById("req-detail");
+    const info = [
+      ["Số điện thoại", r.phone], ["Email", r.email], ["Chương trình", r.program], ["Công ty", r.company], ["Chức danh", r.job_title],
+      ["Dự kiến nhập học", r.intake], ["Muốn được liên hệ", r.contact_time_label], ["Nguồn", r.source_label], ["Sự kiện đăng ký", r.event_title],
+      ["Đăng ký lúc", fmt(r.created_at)], ["Hạn liên hệ", r.status === "new" ? fmt(r.sla_due_at) : ""], ["Mức quan tâm (bot)", r.lead_level ? (LEVELS[r.lead_level] || r.lead_level) + (r.lead_score != null ? " · " + r.lead_score + "/100" : "") : ""],
+    ].filter(([, v]) => v);
+    const mineNote = r.me && r.assigned_user_id === r.me.user_id;
+    const people = (r.consultants || []).map(p => `<option value="${p.id}" ${p.id === r.assigned_user_id ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+    const bot = (r.messages || []).filter(m => m.role !== "system");
+    const crmLink = r.profile_id ? `<a class="btn btn-secondary btn-sm" href="{{ url_for('ops_admissions_crm_source') }}?q=${encodeURIComponent(r.full_name)}">Hồ sơ nguồn CRM #${r.profile_id}</a>` : "";
+    d.innerHTML = `
+      <div class="cb-detail-head">
+        <div class="row"><b style="font-size:17px">${esc(r.full_name)}</b>${reqBadge(r)}${r.overdue ? '<span class="cb-badge human">Quá hạn liên hệ</span>' : ""}</div>
+        <div class="row cb-muted">Phụ trách: <b style="color:var(--text)">${esc(r.assigned_name || "Chưa phân công")}</b>${mineNote ? " (bạn)" : ""}</div>
+        <div class="row">
+          ${!mineNote ? '<button class="btn btn-primary btn-sm" data-act="claim">Tôi tiếp nhận</button>' : ""}
+          <select class="form-control" id="req-assign" style="width:auto;min-width:180px"><option value="">Giao cho chuyên viên...</option>${people}</select>
+          ${crmLink}
+        </div>
+      </div>
+      <div class="cb-thread" style="background:#fff">
+        <dl class="cb-info">${info.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+        ${r.message ? `<div class="cb-note"><b>Lời nhắn của khách</b><div>${esc(r.message)}</div></div>` : ""}
+        <h4 class="cb-sub">Đã hỏi UniBot trước khi đăng ký</h4>
+        ${bot.length ? `<div class="cb-mini-thread">${bot.map(m => `<div class="cb-msg ${esc(m.role)}">${esc(m.content)}</div>`).join("")}</div>` : '<div class="cb-muted">Khách đăng ký trực tiếp, chưa hỏi bot.</div>'}
+        <h4 class="cb-sub">Nhật ký chăm sóc</h4>
+        ${(r.care_log || []).length ? `<ul class="cb-log">${r.care_log.map(c => `<li><span class="cb-muted">${fmt(c.logged_at)} · ${esc(c.actor || "")}</span><div>${esc(c.note || "")}</div></li>`).join("")}</ul>` : '<div class="cb-muted">Chưa có ghi chú.</div>'}
+      </div>
+      <form class="cb-reply" id="req-form" style="flex-direction:column;align-items:stretch">
+        <textarea class="form-control" name="note" rows="2" placeholder="Ghi chú cuộc gọi / email (vào nhật ký chăm sóc CRM)"></textarea>
+        <div class="cb-actions" style="align-items:center">
+          <select class="form-control" name="channel" style="width:auto"><option value="phone">Gọi điện</option><option value="email">Email</option><option value="zalo">Zalo</option><option value="meeting">Gặp trực tiếp</option></select>
+          <label class="cb-muted">Hẹn liên hệ lại <input class="form-control" type="date" name="follow_up_date" style="width:auto;display:inline-block"></label>
+          <span style="flex:1"></span>
+          <button class="btn btn-secondary btn-sm" type="submit" data-status="contacted">Đã liên hệ</button>
+          <button class="btn btn-secondary btn-sm" type="submit" data-status="caring">Đang chăm sóc</button>
+          <button class="btn btn-secondary btn-sm" type="submit" data-status="converted">Đã nộp hồ sơ</button>
+          <button class="btn btn-secondary btn-sm" type="submit" data-status="closed">Đóng</button>
+          <button class="btn btn-primary btn-sm" type="submit" data-status="">Lưu ghi chú</button>
+        </div>
+      </form>`;
+    d.querySelector('[data-act="claim"]')?.addEventListener("click", async () => {
+      try { await api(`/requests/${id}`, { method: "POST", body: JSON.stringify({ claim: true }) }); toast("Bạn đã tiếp nhận yêu cầu"); openRequest(id); loadRequests(); }
+      catch (e) { toast(e.message); }
+    });
+    d.querySelector("#req-assign").addEventListener("change", async ev => {
+      if (!ev.target.value) return;
+      try { await api(`/requests/${id}`, { method: "POST", body: JSON.stringify({ assign_to: ev.target.value }) }); toast("Đã giao yêu cầu"); openRequest(id); loadRequests(); }
+      catch (e) { toast(e.message); }
+    });
+    const form = d.querySelector("#req-form");
+    form.addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const status = ev.submitter ? ev.submitter.dataset.status : "";
+      const body = { note: form.note.value.trim(), channel: form.channel.value, follow_up_date: form.follow_up_date.value };
+      if (status) body.status = status;
+      if (!status && !body.note) { toast("Nhập ghi chú trước khi lưu"); return; }
+      try { await api(`/requests/${id}`, { method: "POST", body: JSON.stringify(body) }); toast("Đã cập nhật, nhật ký chăm sóc CRM đã ghi"); openRequest(id); loadRequests(); loadStats(); }
+      catch (e) { toast(e.message); }
+    });
+  }
+
+  document.getElementById("req-q").addEventListener("input", debounce(loadRequests, 350));
+  ["req-status", "req-mine", "req-overdue"].forEach(id => document.getElementById(id).addEventListener("change", loadRequests));
+  document.getElementById("req-reload").addEventListener("click", loadRequests);
+
+  function setCount(id, n) { const el = document.getElementById(id); el.hidden = !n; el.textContent = n || ""; }
+
+  function levelBadge(l) { return `<span class="cb-badge ${esc(l)}">${esc(LEVELS[l] || l || "–")}</span>`; }
+  function statusBadge(s) { return `<span class="cb-badge ${s === "handoff" || s === "human" ? s : s === "open" ? "ok" : ""}">${esc(STATUS[s] || s)}</span>`; }
+
+  async function loadConvs() {
+    const p = new URLSearchParams();
+    const q = document.getElementById("conv-q").value.trim();
+    if (q) p.set("q", q);
+    const lv = document.getElementById("conv-level").value; if (lv) p.set("level", lv);
+    const st = document.getElementById("conv-status").value; if (st) p.set("status", st);
+    if (document.getElementById("conv-waiting").checked) p.set("needs_human", "1");
+    const rows = await api("/conversations?" + p.toString());
+    const list = document.getElementById("conv-list");
+    if (!rows.length) { list.innerHTML = '<div class="cb-empty">Chưa có hội thoại</div>'; return; }
+    list.innerHTML = rows.map(c => `
+      <div class="cb-item ${currentConv === c.id ? "active" : ""}" data-id="${c.id}">
+        <div class="top"><span class="name">${esc(c.visitor_name || "Khách ẩn danh")}</span>${levelBadge(c.lead_level)}</div>
+        <div class="meta">${esc([c.phone, c.email, c.program_interest].filter(Boolean).join(" · ") || "Chưa để lại liên hệ")}</div>
+        <div class="q">${esc(c.last_question || "")}</div>
+        <div class="top"><span class="meta">${fmt(c.last_message_at)} · ${c.user_messages} câu hỏi${c.profile_id ? " · Đã vào CRM" : ""}</span>${c.needs_human && c.status !== "closed" ? '<span class="cb-badge human">Cần hỗ trợ</span>' : statusBadge(c.status)}</div>
+      </div>`).join("");
+    list.querySelectorAll(".cb-item").forEach(el => el.addEventListener("click", () => openConv(+el.dataset.id)));
+  }
+
+  async function openConv(id) {
+    currentConv = id;
+    document.querySelectorAll(".cb-item").forEach(el => el.classList.toggle("active", +el.dataset.id === id));
+    const c = await api("/conversations/" + id);
+    const d = document.getElementById("conv-detail");
+    const profile = c.profile ? `<a class="btn btn-secondary btn-sm" href="{{ url_for('ops_admissions_crm_source') }}?q=${encodeURIComponent(c.profile.full_name)}">Hồ sơ CRM #${c.profile.id}</a>` : (c.phone || c.email ? '<button class="btn btn-secondary btn-sm" data-act="sync">Tạo hồ sơ CRM</button>' : "");
+    d.innerHTML = `
+      <div class="cb-detail-head">
+        <div class="row"><b>${esc(c.visitor_name || "Khách ẩn danh")}</b>${levelBadge(c.lead_level)}<span class="cb-muted">Điểm quan tâm ${c.lead_score}/100</span>${statusBadge(c.status)}</div>
+        <div class="row cb-muted">${esc([c.phone, c.email, c.program_interest ? "Quan tâm " + c.program_interest : ""].filter(Boolean).join(" · ") || "Chưa có liên hệ")}</div>
+        <div class="row cb-muted">${(c.intent_labels || []).map(l => `<span class="cb-badge">${esc(l)}</span>`).join(" ")}</div>
+        <div class="row">${profile}
+          ${c.status !== "human" ? '<button class="btn btn-secondary btn-sm" data-act="human">Chuyên viên tiếp nhận</button>' : '<button class="btn btn-secondary btn-sm" data-act="open">Trả lại cho bot</button>'}
+          ${c.status !== "closed" ? '<button class="btn btn-secondary btn-sm" data-act="closed">Đóng hội thoại</button>' : ""}
+        </div>
+      </div>
+      <div class="cb-thread" id="thread">${c.messages.map(m => `
+        <div class="cb-msg ${esc(m.role)}">${esc(m.content)}${m.role === "bot" ? `<div class="info">${esc(MODES[m.mode] || m.mode || "")}${m.confidence != null ? " · độ khớp " + Math.round(m.confidence * 100) + "%" : ""}${(m.sources || []).length ? " · nguồn: " + m.sources.map(s => esc(s.kind === "faq" ? "FAQ" : s.title)).join(", ") : ""}</div>` : m.role === "staff" ? `<div class="info">${esc(m.author || "Chuyên viên")} · ${fmt(m.created_at)}</div>` : m.role === "user" ? `<div class="info">${fmt(m.created_at)}</div>` : ""}</div>`).join("")}</div>
+      <form class="cb-reply" id="reply-form">
+        <textarea class="form-control" name="text" rows="2" placeholder="Trả lời trực tiếp cho khách (khách thấy ngay trong khung chat)"></textarea>
+        <button class="btn btn-primary btn-sm" type="submit">Gửi</button>
+      </form>`;
+    const th = document.getElementById("thread"); th.scrollTop = th.scrollHeight;
+    d.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+      const act = b.dataset.act;
+      try {
+        if (act === "sync") { await api(`/conversations/${id}/sync-crm`, { method: "POST", body: "{}" }); toast("Đã tạo hồ sơ nguồn trong CRM"); }
+        else { await api(`/conversations/${id}/status`, { method: "POST", body: JSON.stringify({ status: act }) }); toast("Đã cập nhật"); }
+        openConv(id); loadConvs();
+      } catch (e) { toast(e.message); }
+    }));
+    document.getElementById("reply-form").addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const text = ev.target.text.value.trim();
+      if (!text) return;
+      try { await api(`/conversations/${id}/reply`, { method: "POST", body: JSON.stringify({ text, takeover: true }) }); openConv(id); loadConvs(); }
+      catch (e) { toast(e.message); }
+    });
+  }
+
+  ["conv-q"].forEach(id => document.getElementById(id).addEventListener("input", debounce(loadConvs, 350)));
+  ["conv-level", "conv-status", "conv-waiting"].forEach(id => document.getElementById(id).addEventListener("change", loadConvs));
+  document.getElementById("conv-reload").addEventListener("click", loadConvs);
+  function debounce(fn, ms) { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; }
+
+  async function loadGaps() {
+    const rows = await api("/gaps?status=open");
+    const tb = document.getElementById("gap-rows");
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" class="cb-empty">Không còn câu hỏi nào chờ xử lý</td></tr>'; return; }
+    tb.innerHTML = rows.map(g => `
+      <tr data-id="${g.id}">
+        <td>${fmt(g.created_at)}</td>
+        <td><input class="form-control" name="question" value="${esc(g.question)}"></td>
+        <td>${esc(g.visitor_name || "Ẩn danh")}${g.program_interest ? "<br><span class='cb-muted'>" + esc(g.program_interest) + "</span>" : ""}</td>
+        <td><textarea class="form-control" name="answer" rows="2" placeholder="Nhập câu trả lời chính thức"></textarea></td>
+        <td><div class="cb-actions"><button class="btn btn-primary btn-sm" data-act="save">Lưu thành FAQ</button><button class="btn btn-secondary btn-sm" data-act="dismiss">Bỏ qua</button></div></td>
+      </tr>`).join("");
+    tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+      const body = b.dataset.act === "dismiss" ? { dismiss: true } : { question: tr.querySelector("[name=question]").value, answer: tr.querySelector("[name=answer]").value };
+      if (!body.dismiss && !body.answer.trim()) { toast("Nhập câu trả lời trước khi lưu"); return; }
+      try { await api(`/gaps/${tr.dataset.id}/resolve`, { method: "POST", body: JSON.stringify(body) }); toast(body.dismiss ? "Đã bỏ qua" : "Đã thêm vào FAQ, bot sẽ trả lời được câu này"); loadGaps(); loadStats(); }
+      catch (e) { toast(e.message); }
+    })));
+  }
+
+  async function loadDocs() {
+    const rows = await api("/docs");
+    const chunks = rows.filter(r => r.status === "active").reduce((a, r) => a + (r.chunk_count || 0), 0);
+    document.getElementById("kb-summary").textContent = `(${rows.length} tài liệu, ${chunks} đoạn đang dùng)`;
+    const tb = document.getElementById("doc-rows");
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" class="cb-empty">Kho trống. Tải tài liệu tuyển sinh lên để bot bắt đầu trả lời.</td></tr>'; return; }
+    tb.innerHTML = rows.map(d => `
+      <tr data-id="${d.id}">
+        <td><b>${esc(d.title)}</b>${d.file_name ? "<br><span class='cb-muted'>" + esc(d.file_name) + "</span>" : ""}</td>
+        <td>${esc(d.program_code || "Chung")}</td>
+        <td>${d.source_type === "file" ? "Tệp" : "Nhập tay"}</td>
+        <td>${d.chunk_count}</td>
+        <td>${d.status === "active" ? '<span class="cb-badge ok">Đang dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
+        <td>${fmt(d.updated_at)}</td>
+        <td><div class="cb-actions"><button class="btn btn-secondary btn-sm" data-act="toggle">${d.status === "active" ? "Tắt" : "Bật"}</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
+      </tr>`).join("");
+    tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+      const id = tr.dataset.id;
+      try {
+        if (b.dataset.act === "delete") { if (!confirm("Xóa tài liệu này khỏi kho kiến thức?")) return; await api(`/docs/${id}`, { method: "DELETE" }); }
+        else { const on = b.textContent.trim() === "Bật"; await api(`/docs/${id}`, { method: "PUT", body: JSON.stringify({ status: on ? "active" : "inactive" }) }); }
+        loadDocs();
+      } catch (e) { toast(e.message); }
+    })));
+  }
+
+  document.getElementById("upload-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const out = document.getElementById("upload-result");
+    out.textContent = "Đang đọc tài liệu...";
+    try {
+      const data = await api("/docs/upload", { method: "POST", body: new FormData(ev.target) });
+      const hidden = data.imported.reduce((a, d) => a + (d.hidden_personal || 0), 0);
+      out.textContent = `Đã học ${data.imported.length} tệp` + (hidden ? `, đã tự ẩn ${hidden} thông tin cá nhân` : "") + (data.failed.length ? `; không nạp: ${data.failed.map(f => f.file + " (" + f.error + ")").join("; ")}` : "");
+      ev.target.reset();
+      loadDocs();
+    } catch (e) { out.textContent = e.message; }
+  });
+
+  document.getElementById("text-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    try { await api("/docs", { method: "POST", body: JSON.stringify(f) }); ev.target.reset(); toast("Đã thêm vào kho kiến thức"); loadDocs(); }
+    catch (e) { toast(e.message); }
+  });
+
+  async function loadFaqs() {
+    const rows = await api("/faqs");
+    const tb = document.getElementById("faq-rows");
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="6" class="cb-empty">Chưa có FAQ</td></tr>'; return; }
+    tb.innerHTML = rows.map(f => `
+      <tr data-id="${f.id}">
+        <td><b>${esc(f.question)}</b></td><td>${esc(f.answer)}</td><td>${esc(f.program_code || "Chung")}</td><td>${f.hits}</td>
+        <td>${f.status === "active" ? '<span class="cb-badge ok">Đang dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
+        <td><div class="cb-actions"><button class="btn btn-secondary btn-sm" data-act="edit">Sửa</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
+      </tr>`).join("");
+    tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+      const f = rows.find(r => r.id === +tr.dataset.id);
+      if (b.dataset.act === "edit") {
+        const form = document.getElementById("faq-form");
+        form.id.value = f.id; form.question.value = f.question; form.answer.value = f.answer; form.program_code.value = f.program_code || "";
+        document.getElementById("faq-form-title").textContent = "Sửa câu hỏi thường gặp";
+        document.getElementById("faq-cancel").hidden = false;
+        form.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (!confirm("Xóa FAQ này?")) return;
+      try { await api(`/faqs/${f.id}`, { method: "DELETE" }); loadFaqs(); } catch (e) { toast(e.message); }
+    })));
+  }
+
+  function resetFaqForm() {
+    const form = document.getElementById("faq-form");
+    form.reset(); form.id.value = "";
+    document.getElementById("faq-form-title").textContent = "Thêm câu hỏi thường gặp";
+    document.getElementById("faq-cancel").hidden = true;
+  }
+  document.getElementById("faq-cancel").addEventListener("click", resetFaqForm);
+  document.getElementById("faq-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    try {
+      if (f.id) await api(`/faqs/${f.id}`, { method: "PUT", body: JSON.stringify(f) });
+      else await api("/faqs", { method: "POST", body: JSON.stringify(f) });
+      resetFaqForm(); toast("Đã lưu FAQ"); loadFaqs();
+    } catch (e) { toast(e.message); }
+  });
+
+  document.getElementById("test-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    try {
+      const r = await api("/test", { method: "POST", body: JSON.stringify(f) });
+      document.getElementById("test-result").hidden = false;
+      document.getElementById("test-answer").textContent = r.reply;
+      document.getElementById("test-meta").innerHTML = `${r.answered ? '<span class="cb-badge ok">Trả lời được</span>' : '<span class="cb-badge human">Chuyển chuyên viên</span>'} ${esc(MODES[r.mode] || r.mode)} · độ khớp ${Math.round((r.confidence || 0) * 100)}%${r.program ? " · chương trình " + esc(r.program) : ""}${r.intents.length ? " · ý định: " + esc(r.intents.join(", ")) : ""}`;
+      document.getElementById("test-hits").innerHTML = r.hits.length ? r.hits.map((h, i) => `
+        <div class="cb-hit"><div class="h"><span>[${i + 1}] ${esc(h.kind === "faq" ? "FAQ: " + h.title : h.kind === "live" ? "Dữ liệu hệ thống: " + h.title : h.title)}</span><span class="cb-muted">BM25 ${h.score ?? "–"} · phủ ${Math.round((h.coverage || 0) * 100)}%${h.fused ? " · hybrid " + h.fused : ""}</span></div><div class="t">${esc(h.text)}</div></div>`).join("") : '<div class="cb-muted">Không tìm thấy đoạn nào liên quan</div>';
+    } catch (e) { toast(e.message); }
+  });
+
+  async function loadSettings() {
+    const s = await api("/settings");
+    const form = document.getElementById("settings-form");
+    ["name", "org_name", "site_name", "greeting", "hotline", "contact_email", "llm_enabled", "ask_contact_after"].forEach(k => { if (form[k]) form[k].value = s[k] ?? ""; });
+    form.quick_replies.value = s.quick_replies_raw || "";
+    const origin = location.origin;
+    document.getElementById("embed-code").textContent = `<script src="${origin}{{ url_for('admission_embed_js') }}" async><\/script>`;
+    const link = document.getElementById("public-link");
+    link.textContent = origin + "{{ url_for('admission_public') }}";
+  }
+  document.getElementById("settings-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try { await api("/settings", { method: "PUT", body: JSON.stringify(Object.fromEntries(new FormData(ev.target))) }); toast("Đã lưu cấu hình"); loadStats(); }
+    catch (e) { toast(e.message); }
+  });
+
+  setInterval(() => {
+    if (document.hidden) return;
+    const active = document.querySelector(".cb-tab.active")?.dataset.tab;
+    if (active === "convs") { loadConvs(); if (currentConv) refreshThread(); }
+    if (active === "requests") { loadRequests(); loadStats(); }
+  }, 15000);
+
+  async function refreshThread() {
+    const th = document.getElementById("thread");
+    const ta = document.querySelector("#reply-form textarea");
+    if (!th || (ta && ta.value.trim())) return;
+    const before = th.children.length;
+    const c = await api("/conversations/" + currentConv);
+    if (c.messages.length !== before) openConv(currentConv);
+  }
+
+  document.getElementById("preview-bot").addEventListener("click", () => {
+    if (window.SmartUniBot) { window.SmartUniBot.open(); return; }
+    const s = document.createElement("script");
+    s.src = "{{ url_for('admission_embed_js') }}";
+    s.onload = () => window.SmartUniBot && window.SmartUniBot.open();
+    document.body.appendChild(s);
+  });
+
+  const start = (location.hash || "#requests").slice(1);
+  loadStats().catch(e => toast(e.message));
+  openTab(["requests", "overview", "convs", "gaps", "kb", "faq", "test", "settings"].includes(start) ? start : "requests");
+})();
+</script>
+{% endblock %}

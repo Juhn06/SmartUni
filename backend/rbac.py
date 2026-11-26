@@ -160,6 +160,16 @@ MENU_ITEMS = [
         "workflow": "Nhắc trước đợt chăm sóc: in danh sách / email / gọi điện",
     },
     {
+        "code": "admissions.chatbot",
+        "label": "Yêu cầu tư vấn & chatbot",
+        "label_en": "Consultation requests & chatbot",
+        "group": "2.TS.Tư vấn",
+        "group_en": "2.TS.Consulting",
+        "route": "ops_admissions_chatbot",
+        "sort": 8.5,
+        "workflow": "Người quan tâm đăng ký tư vấn trên trang giới thiệu hoặc qua UniBot → giao chuyên viên → liên hệ, ghi nhật ký chăm sóc",
+    },
+    {
         "code": "admissions.crm_reports",
         "label": "Báo cáo CRM",
         "label_en": "CRM reports",
@@ -1481,6 +1491,10 @@ DEPT_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
 # - Admin: quản trị toàn bộ bản ghi dữ liệu nghiệp vụ (ops), không gồm cấu hình RBAC
 # - ThaoP: toàn quyền (is_admin) — mọi dữ liệu + mọi báo cáo + cấu hình hệ thống
 # ---------------------------------------------------------------------------
+for _dept_codes in DEPT_DEFAULT_PERMISSIONS.values():
+    if "admissions.crm_source" in _dept_codes and "admissions.chatbot" not in _dept_codes:
+        _dept_codes.insert(_dept_codes.index("admissions.crm_source") + 1, "admissions.chatbot")
+
 ALL_MENU_CODES = [m["code"] for m in MENU_ITEMS]
 OPS_VIEW_CODES = [c for c in ALL_MENU_CODES if not str(c).startswith("admin.")]
 
@@ -1823,6 +1837,7 @@ _MBA_MANAGER_NAV: dict[str, tuple[str, str | None, int, str | None]] = {
     "admissions.crm_source": ("Dữ liệu khách hàng", None, 1, "Dữ liệu khách hàng"),
     "admissions.crm_activities": ("Dữ liệu khách hàng", "Chăm sóc", 1, None),
     "admissions.crm_reminders": ("Dữ liệu khách hàng", "Chăm sóc", 1, None),
+    "admissions.chatbot": ("Dữ liệu khách hàng", "Chăm sóc", 1, None),
     "admissions.applications": ("Quản lý hồ sơ ứng tuyển", None, 2, None),
     "admissions.rounds": ("Quản lý hồ sơ ứng tuyển", "Đợt", 2, None),
     "admissions.written_exams": ("Quản lý hồ sơ ứng tuyển", "Cùng hồ sơ", 2, None),

@@ -9,6 +9,7 @@ SmartUni là hệ thống web hỗ trợ chuyển đổi số nghiệp vụ củ
 Các phân hệ chính:
 
 - Tuyển sinh và CRM: kho dữ liệu nguồn, đợt chăm sóc, đợt xét tuyển, hồ sơ thí sinh, chấm điểm phỏng vấn.
+- Chatbot tư vấn tuyển sinh: trả lời người quan tâm 24/7 từ tài liệu chính thức, tự tạo hồ sơ nguồn CRM, chấm mức quan tâm, nhắc chuyên viên gọi lại (xem mục 10).
 - Điều phối chương trình MBA / MMS / MSCM: danh sách học viên, lớp – môn, điểm, điểm danh, luận văn.
 - Giảng dạy và eLearning: bài giảng theo buổi, tài liệu, bài tập thực hành, trắc nghiệm, điểm danh bằng QR.
 - Thủ quỹ – Kế toán: kế hoạch thu, sổ thu và công nợ, hoàn phí, hồ sơ xuất hóa đơn.
@@ -47,6 +48,8 @@ Source/
 │   ├── ops_bulk_import.py   Nhập dữ liệu hàng loạt từ Excel
 │   ├── admission_ops.py     Đợt tuyển sinh, hồ sơ thí sinh
 │   ├── crm_ops.py           CRM tuyển sinh
+│   ├── admission_bot.py     Chatbot tư vấn: kho kiến thức, truy xuất BM25 + vector, trả lời, đẩy lead vào CRM
+│   ├── import_admission_kb.py  Nạp cả thư mục tài liệu tuyển sinh vào kho kiến thức
 │   ├── mba_ops.py           Điều phối MBA
 │   ├── mms_program.py       Chương trình MMS
 │   ├── mscm_coord.py        Điều phối MSCM
@@ -67,7 +70,7 @@ Source/
 │   ├── rag_service.py       Xử lý PDF, embedding, hỏi đáp RAG
 │   ├── canvas_bridge.py     Kết nối Canvas LMS
 │   ├── doc_preview.py       Xem trước tài liệu trong ứng dụng
-│   ├── data/                Thư mục chứa PDF cho chức năng nhập hàng loạt
+│   ├── data/                PDF nhập hàng loạt; admission_kb/ là kho kiến thức khởi tạo của chatbot
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env.example         Mẫu biến môi trường
@@ -76,6 +79,7 @@ Source/
 │   ├── ops_modules.py       Cấu hình giao diện các phân hệ nghiệp vụ
 │   ├── i18n.py              Chuỗi giao diện Việt / Anh
 │   ├── guide_content.py     Nội dung trang hướng dẫn
+│   ├── admission_bot_routes.py  Trang tư vấn công khai, widget nhúng, proxy API chatbot
 │   ├── templates/           Giao diện HTML
 │   ├── static/              CSS, hình ảnh
 │   ├── requirements.txt
@@ -196,3 +200,66 @@ Dữ liệu SQLite, file tải lên và chỉ mục ChromaDB được lưu trong
 
 - Mã nguồn nộp kèm không chứa dữ liệu thật của đơn vị (danh sách học viên, điểm, cơ sở dữ liệu vận hành) để bảo vệ thông tin cá nhân.
 - Chức năng hỏi đáp RAG cần cấu hình LLM; các phân hệ nghiệp vụ khác hoạt động độc lập không cần LLM.
+
+## 10. Chatbot tư vấn tuyển sinh
+
+### Bài toán
+
+Ở bước chăm sóc người quan tâm, câu hỏi về học phí, điều kiện, hồ sơ, lịch thi đến liên tục và ngoài giờ hành chính. Trả lời chậm làm mất ứng viên; trả lời bằng chatbot thông thường thì không biết ai là người tiềm năng. Chatbot của SmartUni gắn thẳng vào quy trình CRM tuyển sinh sẵn có.
+
+### Luồng xử lý
+
+```
+Người quan tâm hỏi trên web (/tu-van hoặc widget nhúng)
+  -> Nhận diện chương trình (MBA/MMS/MSCM) và ý định (học phí, hạn nộp, hồ sơ, điều kiện, học bổng, lịch học, sự kiện)
+  -> Truy xuất lai: BM25 tiếng Việt không dấu + bigram, kết hợp vector ChromaDB (Reciprocal Rank Fusion) khi có API embedding
+     Nguồn: tài liệu tuyển sinh, FAQ do chuyên viên duyệt, dữ liệu sống từ hệ thống (đợt tuyển sinh đang mở, sự kiện sắp tới)
+  -> Trả lời có ghi nguồn
+     Có LLM: LLM chỉ được diễn đạt lại từ tài liệu, không có thông tin thì trả về mã [CHUA_CO_THONG_TIN]
+     Không có LLM: trích câu liên quan nhất từ tài liệu
+     Độ khớp thấp: không đoán, chuyển chuyên viên và ghi vào danh sách câu chưa trả lời
+  -> Thu liên hệ (form trong khung chat hoặc tự nhận diện SĐT, email, họ tên trong tin nhắn)
+  -> Chấm điểm quan tâm 0-100 -> tạo/cập nhật Hồ sơ nguồn CRM (nguồn chatbot), ghi nhật ký chăm sóc
+  -> Mức cao/rất nóng hoặc khách đòi gặp người -> tạo Nhắc nhở CRM gọi lại
+  -> Chuyên viên trả lời trực tiếp trong cùng khung chat (tiếp nhận / trả lại cho bot)
+  -> Câu chưa trả lời -> chuyên viên nhập câu trả lời chuẩn -> thành FAQ, các câu tương tự tự đóng
+```
+
+### Sử dụng
+
+- Trang giới thiệu tuyển sinh công khai tại `http://localhost:8027/` (người chưa đăng nhập): chương trình, lịch tuyển sinh trong năm có đánh dấu tháng hiện tại, đợt đang mở và sự kiện lấy trực tiếp từ hệ thống, quy trình xét tuyển, học bổng, nút Đăng nhập cho học viên và cán bộ.
+- Biểu tượng UniBot nổi ở góc phải trang giới thiệu; bấm vào để mở khung chat, không cần đăng nhập. Nút Đăng ký nhận tư vấn trên trang mở form để lại liên hệ trong khung chat của bot. Link `http://localhost:8027/tu-van` mở trang giới thiệu với khung chat bật sẵn (dùng cho mã QR).
+- Nhúng vào website trung tâm: thêm `<script src="http://<domain>/tu-van/embed.js" async></script>` vào cuối thẻ body, biểu tượng bot sẽ xuất hiện ở góc phải.
+- Kho kiến thức ban đầu nằm ở `backend/data/admission_kb/` (tổng hợp từ tài liệu nghiệp vụ tuyển sinh, nạp tự động khi cơ sở dữ liệu chưa có tài liệu). Bộ phận Tuyển sinh bổ sung thông báo tuyển sinh chính thức (học phí, điều kiện tiếng Anh) tại tab Kho kiến thức.
+- Khi tải tài liệu lên, hệ thống tự ẩn số điện thoại, email, số CCCD và từ chối tệp có dạng danh sách cá nhân (danh sách học viên, ứng viên) để bot công khai không làm lộ dữ liệu.
+- Màn hình quản lý: menu Tuyển sinh -> Chatbot tư vấn (`/ops/tuyen-sinh/chatbot`), dành cho bộ phận Tuyển sinh, Marcom tuyển sinh, Điều phối MBA, Ban giám đốc. Gồm: tổng quan, hội thoại, câu chưa trả lời, kho kiến thức, FAQ, chat thử (xem đoạn tài liệu được truy xuất và điểm), cấu hình.
+- Nạp cả thư mục tài liệu: `cd backend && python import_admission_kb.py <thư mục>` (PDF, DOCX, XLSX, TXT, MD; tệp đã nạp sẽ được bỏ qua).
+
+### Đăng ký nhận tư vấn và giao chuyên viên
+
+Bot chỉ trả lời thông tin chung; việc tư vấn chi tiết (lộ trình, học phí, học bổng, hồ sơ) do chuyên viên tuyển sinh thực hiện. Khi người quan tâm đăng ký nhận tư vấn (form trên trang giới thiệu, đăng ký sự kiện, form trong khung chat, hoặc để lại số điện thoại khi chat):
+
+1. Tạo hoặc cập nhật Hồ sơ nguồn CRM ở trạng thái Tiềm năng, mức quan tâm theo điểm bot chấm, nguồn Website hoặc Chatbot.
+2. Tạo Yêu cầu tư vấn, tự giao cho chuyên viên bộ phận Tuyển sinh đang ít việc nhất (cột PIC của hồ sơ nguồn).
+3. Đặt hạn liên hệ (2 giờ làm việc, ngoài giờ thì 10:00 ngày làm việc kế tiếp) và tạo Nhắc nhở CRM cho chuyên viên.
+4. Ghi nhật ký chăm sóc kèm nội dung khách đã hỏi bot; nếu đăng ký sự kiện thì thêm khách vào danh sách tham dự của đợt chăm sóc.
+5. Chuyên viên vào Tuyển sinh, Yêu cầu tư vấn & chatbot, tab Yêu cầu tư vấn: tiếp nhận, xem lịch sử hỏi bot, ghi chú cuộc gọi (vào nhật ký CRM), chuyển trạng thái Đã liên hệ, Đang chăm sóc, Đã nộp hồ sơ.
+
+Trung tâm trong hệ thống là trung tâm đào tạo sau đại học giả định; tên hiển thị đổi được ở tab Cấu hình.
+
+### Cấu hình mô hình
+
+| Biến | Ý nghĩa |
+|---|---|
+| `OPENAI_API_KEY` | Bật LLM và vector search qua OpenAI |
+| `OPENAI_BASE_URL` | Dùng máy chủ tương thích OpenAI khác, ví dụ Ollama `http://localhost:11434/v1` |
+| `CHAT_MODEL`, `EMBED_MODEL` | Mô hình hội thoại và embedding |
+| `BOT_VECTOR` | `off` để chỉ dùng BM25 |
+
+Không cấu hình gì, bot vẫn hoạt động ở chế độ trích xuất từ tài liệu và FAQ.
+
+### Bảo vệ
+
+- Giới hạn tần suất theo IP và phiên chat; tin nhắn tối đa 1000 ký tự.
+- Chỉ lưu liên hệ khi người dùng đồng ý; không bịa học phí, ngày tháng (bắt buộc trích từ tài liệu).
+

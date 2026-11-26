@@ -2404,6 +2404,15 @@ OPS_MODULES = {
         "edit_path": "crm-activities",
         "workflow": "Tên sự kiện · thời gian · chương trình · chi tiết chăm sóc",
     },
+    "admissions.chatbot": {
+        "title": "Yêu cầu tư vấn & chatbot",
+        "desc": (
+            "Tiếp nhận yêu cầu tư vấn từ trang giới thiệu và UniBot, xem khách đã hỏi bot gì, "
+            "liên hệ và ghi nhật ký chăm sóc; quản lý kho kiến thức của bot."
+        ),
+        "endpoint": "ops_admissions_chatbot",
+        "mode": "manage",
+    },
     "admissions.crm_reminders": {
         "title": "Nhắc nhở CRM",
         "desc": (
