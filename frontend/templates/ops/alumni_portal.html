@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Cổng cựu học viên - SmartUni{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ profile.full_name }}</h1>
+    <p class="page-desc">{{ profile.program_code }} · Khóa {{ profile.cohort or '—' }} · Lớp {{ profile.class_name or '—' }}</p>
+  </div>
+</div>
+
+<form id="alumni-profile" class="ops-form" style="max-width:36rem">
+  <label class="ops-field"><span class="ops-field-label">Email</span>
+    <input class="form-control" name="email" value="{{ profile.email or '' }}" />
+  </label>
+  <label class="ops-field"><span class="ops-field-label">Điện thoại</span>
+    <input class="form-control" name="phone" value="{{ profile.phone or '' }}" />
+  </label>
+  <label class="ops-field"><span class="ops-field-label">Đơn vị</span>
+    <input class="form-control" name="company" value="{{ profile.company or '' }}" />
+  </label>
+  <label class="ops-field"><span class="ops-field-label">Lĩnh vực</span>
+    <input class="form-control" name="activity_keywords" value="{{ profile.activity_keywords or '' }}" />
+  </label>
+  <button class="btn btn-primary btn-sm" type="submit">Lưu thông tin</button>
+</form>
+
+<h2 class="ops-section-title" style="margin-top:1.5rem">Sự kiện</h2>
+<p class="page-desc">Sự kiện chung của chương trình và sự kiện đã mời bạn.</p>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr><th>Sự kiện</th><th>Ngày</th><th>Địa điểm</th><th>Mời riêng</th></tr>
+    </thead>
+    <tbody>
+      {% for ev in profile.events %}
+      <tr>
+        <td>{{ ev.title }}{% if ev.description %}<br><small>{{ ev.description }}</small>{% endif %}</td>
+        <td>{{ ev.event_date or '—' }}</td>
+        <td>{{ ev.location or '—' }}</td>
+        <td>{% if ev.invited %}Đã mời{% else %}Chung{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="ops-empty">Chưa có sự kiện.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+document.getElementById('alumni-profile').addEventListener('submit', function(ev){
+  ev.preventDefault();
+  var fd = new FormData(ev.target);
+  var body = {};
+  fd.forEach(function(v, k){ body[k] = v; });
+  fetch('/api/ops/alumni/me', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); }).then(function(res){
+    if (!res.ok || res.d.error) alert(res.d.error || 'Không lưu được');
+    else alert('Đã lưu thông tin.');
+  }).catch(function(e){ alert(e.message); });
+});
+</script>
+{% endblock %}

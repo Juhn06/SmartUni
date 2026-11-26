@@ -1,0 +1,56 @@
+name: CI
+
+# Cửa sổ build: bắt lỗi cú pháp TRƯỚC khi auto-deploy kéo commit về server.
+# Xem docs/deployment.md để biết auto-deploy (cron trên server) hoạt động thế nào.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile all modules
+        run: python -m compileall -q .
+        working-directory: backend
+
+  frontend:
+    name: Frontend syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile all modules
+        run: python -m compileall -q .
+        working-directory: frontend
+
+  compose:
+    name: Compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker compose file
+        run: |
+          # backend/.env is gitignored; Compose v2 still errors if the file is missing
+          # unless required: false. Touch an empty file so CI matches production layout.
+          touch backend/.env
+          docker compose config -q

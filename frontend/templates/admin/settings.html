@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}System settings{% else %}Cấu hình hệ thống{% endif %} - Admin - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← {% if is_en %}Dashboard{% else %}Tổng quan{% endif %}</a>
+    <h1 class="page-title">{% if is_en %}System settings{% else %}Cấu hình hệ thống{% endif %}</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="admin-settings-panel" style="max-width:36rem;margin-top:1.25rem">
+  <label class="ops-field" style="display:block;margin-bottom:.75rem">
+    <span class="ops-field-label">{% if is_en %}Deployment mode{% else %}Chế độ triển khai{% endif %}</span>
+    <select id="deployment-mode" class="form-control ops-select" style="margin-top:.35rem">
+      <option value="development" {% if deployment_mode == 'development' %}selected{% endif %}>Development</option>
+      <option value="production" {% if deployment_mode == 'production' %}selected{% endif %}>Production</option>
+    </select>
+  </label>
+
+  <div class="ops-field-hint" id="mode-hint" style="margin-bottom:1rem">
+    {% if deployment_mode == 'production' %}
+      {% if is_en %}Workflow hints are hidden on module pages and the dashboard module cards.{% else %}Đang ẩn hướng dẫn luồng trên trang module và thẻ chức năng ở tổng quan.{% endif %}
+    {% else %}
+      {% if is_en %}Workflow hints (“Flow: …”) are visible to help staff learn each process.{% else %}Hướng dẫn luồng (“Luồng: …”) đang hiện để hỗ trợ thao tác nghiệp vụ.{% endif %}
+    {% endif %}
+  </div>
+
+  {% if updated_at %}
+  <p class="page-desc" style="font-size:.85rem;margin-bottom:1rem">
+    {% if is_en %}Last updated:{% else %}Cập nhật lần cuối:{% endif %} {{ updated_at }}
+  </p>
+  {% endif %}
+
+  <button type="button" class="btn btn-primary btn-sm" id="btn-save-settings">
+    {% if is_en %}Save{% else %}Lưu{% endif %}
+  </button>
+  <span id="settings-msg" class="ops-field-hint" style="margin-left:.75rem" aria-live="polite"></span>
+</div>
+
+<script>
+(function(){
+  var isEn = {{ is_en|tojson }};
+  var sel = document.getElementById('deployment-mode');
+  var hint = document.getElementById('mode-hint');
+  var msg = document.getElementById('settings-msg');
+  var hints = {
+    development: isEn
+      ? 'Workflow hints (“Flow: …”) are visible to help staff learn each process.'
+      : 'Hướng dẫn luồng (“Luồng: …”) đang hiện để hỗ trợ thao tác nghiệp vụ.',
+    production: isEn
+      ? 'Workflow hints are hidden on module pages and the dashboard module cards.'
+      : 'Đang ẩn hướng dẫn luồng trên trang module và thẻ chức năng ở tổng quan.'
+  };
+  if (sel) {
+    sel.addEventListener('change', function(){
+      if (hint) hint.textContent = hints[sel.value] || '';
+    });
+  }
+  var btn = document.getElementById('btn-save-settings');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    btn.disabled = true;
+    if (msg) msg.textContent = isEn ? 'Saving…' : 'Đang lưu…';
+    fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+      body: JSON.stringify({deployment_mode: sel ? sel.value : 'development'})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) {
+          if (msg) msg.textContent = res.d.error || (isEn ? 'Save failed' : 'Lưu thất bại');
+          return;
+        }
+        if (msg) msg.textContent = isEn ? 'Saved. Reload pages to apply.' : 'Đã lưu. Tải lại các trang để áp dụng.';
+        setTimeout(function(){ location.reload(); }, 600);
+      })
+      .catch(function(e){
+        if (msg) msg.textContent = e.message || (isEn ? 'Error' : 'Lỗi');
+      })
+      .finally(function(){ btn.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

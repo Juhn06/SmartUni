@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Search - ReadArticles{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <div class="search-hero">
+        <h1 class="search-hero-title">Search Articles</h1>
+        <p class="search-hero-desc">Semantic search across all articles. Find relevant passages by meaning, not just keywords.</p>
+        <div class="search-bar-wrap">
+            <form id="search-form" class="search-bar-inner" onsubmit="doSearch(); return false;">
+                <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="search-input" class="search-bar-input" placeholder="e.g. machine learning optimization techniques" autocomplete="off" value="{{ initial_query or '' }}">
+                <button type="submit" class="btn btn-primary search-bar-btn" id="search-btn">Search</button>
+            </form>
+        </div>
+        <div class="search-suggestions" id="search-suggestions">
+            <span class="search-suggestions-label">Try:</span>
+            <button type="button" class="search-suggestion-chip" data-q="main findings and conclusions">main findings and conclusions</button>
+            <button type="button" class="search-suggestion-chip" data-q="methodology and approach">methodology and approach</button>
+            <button type="button" class="search-suggestion-chip" data-q="experimental results">experimental results</button>
+            <button type="button" class="search-suggestion-chip" data-q="limitations and future work">limitations and future work</button>
+        </div>
+    </div>
+
+    <div id="search-results-wrap" class="search-results-wrap">
+        <div id="search-results" class="search-results"></div>
+        <div id="search-pagination" class="search-pagination"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var searchState = {
+    page: {{ initial_page or 1 }},
+    perPage: {{ initial_per_page or 10 }},
+    total: 0,
+    query: {{ (initial_query or '')|tojson }}
+};
+
+function buildSearchUrl(page, perPage) {
+    var q = searchState.query || (document.getElementById('search-input').value || '').trim();
+    if (!q) return '/search';
+    var params = new URLSearchParams();
+    params.set('q', q);
+    if (page > 1) params.set('page', String(page));
+    if (perPage !== 10) params.set('per_page', String(perPage));
+    return '/search?' + params.toString();
+}
+
+function updateSearchUrl() {
+    var url = buildSearchUrl(searchState.page, searchState.perPage);
+    if (window.location.search !== url.slice(url.indexOf('?'))) {
+        window.history.replaceState({}, '', url);
+    }
+}
+
+function renderPagination() {
+    var wrap = document.getElementById('search-pagination');
+    if (!wrap || searchState.total <= 0) {
+        wrap.innerHTML = '';
+        return;
+    }
+    var totalPages = Math.ceil(searchState.total / searchState.perPage) || 1;
+    var page = Math.min(searchState.page, totalPages);
+    var startIdx = (page - 1) * searchState.perPage + 1;
+    var endIdx = Math.min(page * searchState.perPage, searchState.total);
+
+    var html = '<div class="search-pagination-bar">';
+    html += '<div class="search-pagination-per-page"><label>Show</label>';
+    html += '<select id="search-per-page" class="search-per-page-select" onchange="changeSearchPerPage(this.value)">';
+    [10, 25, 50].forEach(function(n) {
+        html += '<option value="' + n + '"' + (searchState.perPage === n ? ' selected' : '') + '>' + n + '</option>';
+    });
+    html += '</select><span>per page</span></div>';
+    html += '<div class="search-pagination-info">' + startIdx + '-' + endIdx + ' of ' + searchState.total + '</div>';
+    html += '<nav class="search-pagination-nav">';
+    html += '<a href="' + (page <= 1 ? '#' : buildSearchUrl(page - 1, searchState.perPage)) + '" class="search-pagination-btn' + (page <= 1 ? ' disabled' : '') + '"' + (page <= 1 ? ' aria-disabled="true" onclick="return false"' : '') + '>Previous</a>';
+    var startP = Math.max(1, page - 2);
+    var endP = Math.min(totalPages, page + 2);
+    if (startP > 1) {
+        html += '<a href="' + buildSearchUrl(1, searchState.perPage) + '" class="search-pagination-btn">1</a>';
+        if (startP > 2) html += '<span class="search-pagination-ellipsis">&hellip;</span>';
+    }
+    for (var p = startP; p <= endP; p++) {
+        html += '<a href="' + buildSearchUrl(p, searchState.perPage) + '" class="search-pagination-btn' + (p === page ? ' active' : '') + '">' + p + '</a>';
+    }
+    if (endP < totalPages) {
+        if (endP < totalPages - 1) html += '<span class="search-pagination-ellipsis">&hellip;</span>';
+        html += '<a href="' + buildSearchUrl(totalPages, searchState.perPage) + '" class="search-pagination-btn">' + totalPages + '</a>';
+    }
+    html += '<a href="' + (page >= totalPages ? '#' : buildSearchUrl(page + 1, searchState.perPage)) + '" class="search-pagination-btn' + (page >= totalPages ? ' disabled' : '') + '"' + (page >= totalPages ? ' aria-disabled="true" onclick="return false"' : '') + '>Next</a>';
+    html += '</nav></div>';
+    wrap.innerHTML = html;
+}
+
+function changeSearchPerPage(val) {
+    val = parseInt(val, 10);
+    if ([10, 25, 50].indexOf(val) < 0) return;
+    window.location = buildSearchUrl(1, val);
+}
+
+function goSearchPage(p) {
+    if (p < 1) return false;
+    searchState.page = p;
+    doSearch(false);  /* preserve page when paginating (don't reset to 1) */
+    return false;
+}
+
+function doSearch(optResetPage) {
+    var q = (document.getElementById('search-input').value || '').trim();
+    var resultsEl = document.getElementById('search-results');
+    var wrapEl = document.getElementById('search-results-wrap');
+    var suggestionsEl = document.getElementById('search-suggestions');
+    if (!q) {
+        resultsEl.innerHTML = '';
+        document.getElementById('search-pagination').innerHTML = '';
+        wrapEl.classList.remove('has-results', 'has-loading');
+        suggestionsEl.style.display = '';
+        searchState.total = 0;
+        updateSearchUrl();
+        return false;
+    }
+    if (optResetPage !== false) searchState.page = 1;
+    searchState.query = q;
+    wrapEl.classList.add('has-loading');
+    wrapEl.classList.remove('has-results');
+    suggestionsEl.style.display = 'none';
+    resultsEl.innerHTML = '<div class="search-loading"><div class="search-spinner"></div><span>Searching across articles…</span></div>';
+    document.getElementById('search-pagination').innerHTML = '';
+
+    var url = '/api/admin/search?q=' + encodeURIComponent(q) + '&page=' + searchState.page + '&per_page=' + searchState.perPage;
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            wrapEl.classList.remove('has-loading');
+            if (data.error) {
+                resultsEl.innerHTML = '<div class="search-empty search-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>' + (data.error || 'Search failed') + '</p></div>';
+                document.getElementById('search-pagination').innerHTML = '';
+                return;
+            }
+            var results = data.results || data.items || [];
+            searchState.total = data.total || results.length;
+            searchState.page = data.page || searchState.page;
+            searchState.perPage = data.per_page || searchState.perPage;
+
+            if (results.length === 0 && searchState.total === 0) {
+                resultsEl.innerHTML = '<div class="search-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No results for <strong>"' + (q.length > 60 ? q.substring(0, 60) + '…' : q) + '"</strong></p><p class="search-empty-hint">Try different words or rephrase your query.</p></div>';
+                document.getElementById('search-pagination').innerHTML = '';
+                updateSearchUrl();
+                return;
+            }
+            wrapEl.classList.add('has-results');
+            var html = '<div class="search-result-meta">';
+            html += '<span class="search-result-count">' + searchState.total + ' result' + (searchState.total !== 1 ? 's' : '') + '</span>';
+            if (searchState.total > 0) {
+                var from = (searchState.page - 1) * searchState.perPage + 1;
+                var to = Math.min(searchState.page * searchState.perPage, searchState.total);
+                html += ' <span class="search-result-range">(showing ' + from + '-' + to + ')</span>';
+            }
+            html += '</div><div class="search-result-list">';
+            results.forEach(function(r) {
+                var title = r.title || 'Untitled';
+                var articleId = r.article_id;
+                var content = (r.content || r.l1 || '').substring(0, 450);
+                if (content.length >= 450) content += '…';
+                var section = r.section ? '<span class="search-result-badge">' + r.section.replace(/</g, '&lt;') + '</span>' : '';
+                var score = r.relevance_score != null ? '<span class="search-result-score" title="Relevance">' + Math.round(parseFloat(r.relevance_score) * 100) + '%</span>' : '';
+                var link = articleId ? '/articles/' + articleId + (q ? '?q=' + encodeURIComponent(q) : '') : '#';
+                html += '<a href="' + link + '" class="search-result-card">' +
+                    '<div class="search-result-card-header">' +
+                    '<h4 class="search-result-title">' + title.replace(/</g, '&lt;') + '</h4>' + section + score +
+                    '</div>' +
+                    '<p class="search-result-snippet">' + content.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>' +
+                    '<span class="search-result-cta">Read article →</span>' +
+                    '</a>';
+            });
+            html += '</div>';
+            resultsEl.innerHTML = html;
+            renderPagination();
+            updateSearchUrl();
+            wrapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        })
+        .catch(function(e) {
+            wrapEl.classList.remove('has-loading');
+            resultsEl.innerHTML = '<div class="search-empty search-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Failed: ' + (e.message || 'Unknown error') + '</p></div>';
+            document.getElementById('search-pagination').innerHTML = '';
+        });
+    return false;
+}
+
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        doSearch();
+    }
+});
+document.querySelectorAll('.search-suggestion-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+        document.getElementById('search-input').value = chip.getAttribute('data-q');
+        doSearch();
+    });
+});
+
+(function() {
+    var inp = document.getElementById('search-input');
+    if (inp && inp.value && inp.value.trim()) {
+        doSearch(false);
+    } else {
+        inp && inp.focus();
+    }
+})();
+</script>
+{% endblock %}

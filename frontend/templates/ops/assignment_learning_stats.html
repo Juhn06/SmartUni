@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Learning time — class{% else %}Thời gian học — lớp–môn{% endif %} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_assignment_lessons', assignment_id=stats.meta.assignment_id) }}" class="back-link">← {% if is_en %}Lessons{% else %}Bài giảng{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if is_en %}Class learning time{% else %}Tổng thời gian học lớp–môn{% endif %}</h1>
+    <p class="page-desc">{{ stats.meta.class_name }} · {{ stats.meta.course_code }} — {{ stats.meta.course_name }}</p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.students }}</span><span class="ops-stat-lbl">{% if is_en %}Students{% else %}HV{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.total_hm }}</span><span class="ops-stat-lbl">{% if is_en %}Total{% else %}Tổng{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.lessons }}</span><span class="ops-stat-lbl">{% if is_en %}Lessons tracked{% else %}Bài có dữ liệu{% endif %}</span></div>
+</div>
+
+<div class="ops-two-col" style="margin-top:1.25rem">
+  <section class="ops-panel">
+    <h2 class="ops-section-title">{% if is_en %}By student{% else %}Theo HV{% endif %}</h2>
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead><tr><th>HV</th><th>{% if is_en %}Total{% else %}Tổng{% endif %}</th><th>{% if is_en %}Opens{% else %}Lượt{% endif %}</th><th>{% if is_en %}Lessons{% else %}Bài{% endif %}</th></tr></thead>
+        <tbody>
+        {% for s in stats.students %}
+          <tr>
+            <td>{{ s.student_name }}{% if s.student_email %}<br><small>{{ s.student_email }}</small>{% endif %}</td>
+            <td><strong>{{ s.total_hm }}</strong></td>
+            <td>{{ s.open_count }}</td>
+            <td>{{ s.lessons }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="ops-empty">—</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="ops-panel">
+    <h2 class="ops-section-title">{% if is_en %}By lesson{% else %}Theo buổi{% endif %}</h2>
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead><tr><th>#</th><th>{% if is_en %}Lesson{% else %}Bài{% endif %}</th><th>{% if is_en %}Time{% else %}Thời gian{% endif %}</th><th>HV</th></tr></thead>
+        <tbody>
+        {% for L in stats.lessons %}
+          <tr>
+            <td>{{ L.lesson_no }}</td>
+            <td><a href="{{ url_for('ops_lesson_learning_stats', lesson_id=L.lesson_id) }}">{{ L.title }}</a></td>
+            <td>{{ L.totals.total_hm }}</td>
+            <td>{{ L.totals.students }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="ops-empty">—</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

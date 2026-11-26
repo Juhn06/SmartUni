@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Điểm danh — {{ data.session.session_label }} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+{% set s = data.session %}
+<a href="{% if s.lesson_id %}{{ url_for('ops_class_lesson_detail', lesson_id=s.lesson_id) }}{% else %}{{ url_for('ops_attendance') }}{% endif %}" class="back-link">← {% if is_en %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if is_en %}Attendance{% else %}Điểm danh{% endif %}</h1>
+    <p class="page-desc">
+      {{ s.class_name }} · {{ s.course_code }} — {{ s.course_name }}
+      · {{ s.session_label }}
+      {% if s.session_date %} · {{ s.session_date }}{% endif %}
+      · {% if is_en %}QR records one check-in and is not proof of presence{% else %}QR chỉ ghi nhận một lần điểm danh, không phải bằng chứng có mặt suốt buổi{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.students }}</span><span class="ops-stat-lbl">HV</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.present_r1 }}</span><span class="ops-stat-lbl">{% if is_en %}Round 1 present{% else %}Lần 1 có mặt{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.present_r2 }}</span><span class="ops-stat-lbl">{% if is_en %}Round 2 present{% else %}Lần 2 có mặt{% endif %}</span></div>
+</div>
+
+<div class="att-controls ops-panel" style="margin-top:1rem">
+  <div class="att-round-block">
+    <h2 class="ops-section-title">{% if is_en %}Round 1 (before break){% else %}Lần 1 (trước giải lao){% endif %}</h2>
+    <div class="att-round-actions">
+      {% if s.round1_open %}
+      <span class="badge badge-ok">{% if is_en %}Open{% else %}Đang mở{% endif %}</span>
+      <button type="button" class="btn btn-secondary btn-sm" data-round="1" data-open="0" id="btn-close-r1">{% if is_en %}Close round 1{% else %}Đóng lần 1{% endif %}</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-qr-r1">{% if is_en %}Show QR{% else %}Hiện QR lần 1{% endif %}</button>
+      {% else %}
+      <span class="badge">{% if is_en %}Closed{% else %}Đóng{% endif %}</span>
+      <button type="button" class="btn btn-primary btn-sm" data-round="1" data-open="1" id="btn-open-r1">{% if is_en %}Open round 1{% else %}Mở lần 1{% endif %}</button>
+      {% endif %}
+    </div>
+  </div>
+  <div class="att-round-block">
+    <h2 class="ops-section-title">{% if is_en %}Round 2 (after break){% else %}Lần 2 (sau giải lao){% endif %}</h2>
+    <div class="att-round-actions">
+      {% if s.round2_open %}
+      <span class="badge badge-ok">{% if is_en %}Open{% else %}Đang mở{% endif %}</span>
+      <button type="button" class="btn btn-secondary btn-sm" data-round="2" data-open="0">{% if is_en %}Close round 2{% else %}Đóng lần 2{% endif %}</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-qr-r2">{% if is_en %}Show QR{% else %}Hiện QR lần 2{% endif %}</button>
+      {% else %}
+      <span class="badge">{% if is_en %}Closed{% else %}Đóng{% endif %}</span>
+      <button type="button" class="btn btn-primary btn-sm" data-round="2" data-open="1">{% if is_en %}Open round 2{% else %}Mở lần 2{% endif %}</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<p class="page-desc" style="margin-top:0.75rem">
+  {% if is_en %}
+  Manual: tick boxes then Save. QR: project the rotating code — only enrolled, logged-in students scanning the live screen code can check in.
+  {% else %}
+  Thủ công: tick danh sách rồi Lưu. QR: chiếu mã xoay vòng trên máy chiếu — chỉ HV thuộc lớp, đã đăng nhập, quét mã đang hiện mới điểm danh được.
+  {% endif %}
+</p>
+
+<div class="ops-table-wrap" style="margin-top:0.75rem">
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-all-r1">{% if is_en %}Check all R1{% else %}Tick tất cả L1{% endif %}</button>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-all-r2">{% if is_en %}Check all R2{% else %}Tick tất cả L2{% endif %}</button>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-save">{% if is_en %}Save marks{% else %}Lưu điểm danh{% endif %}</button>
+  </div>
+  <table class="ops-table" id="roster-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% if is_en %}Student{% else %}Học viên{% endif %}</th>
+        <th>{% if is_en %}Code{% else %}MSSV{% endif %}</th>
+        <th>{% if is_en %}Round 1{% else %}Lần 1{% endif %}</th>
+        <th>{% if is_en %}Round 2{% else %}Lần 2{% endif %}</th>
+        <th>{% if is_en %}Source{% else %}Nguồn{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for st in data.roster %}
+      <tr data-sid="{{ st.student_id }}" data-marked="{{ 1 if st.has_mark else 0 }}">
+        <td>{{ loop.index }}</td>
+        <td>{{ st.full_name }}{% if st.email %}<br><small>{{ st.email }}</small>{% endif %}</td>
+        <td>{{ st.student_code or '—' }}</td>
+        <td><input type="checkbox" class="mark-r1" data-orig="{{ 1 if st.round1 else 0 }}" {% if st.round1 %}checked{% endif %} /></td>
+        <td><input type="checkbox" class="mark-r2" data-orig="{{ 1 if st.round2 else 0 }}" {% if st.round2 %}checked{% endif %} /></td>
+        <td><small>{% if st.source_r1 %}L1:{{ st.source_r1 }}{% endif %}{% if st.source_r2 %} L2:{{ st.source_r2 }}{% endif %}</small></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="ops-empty">{% if is_en %}No students in class.{% else %}Lớp chưa có học viên.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<dialog id="qr-dlg" class="ops-dialog att-qr-dlg">
+  <div class="att-qr-panel">
+    <h2 id="qr-title" style="margin:0 0 0.5rem">{% if is_en %}Scan to check in{% else %}Quét để điểm danh{% endif %}</h2>
+    <p class="page-desc" id="qr-meta" style="margin:0 0 0.75rem"></p>
+    <div id="qr-box" class="att-qr-box"></div>
+    <p class="page-desc" style="margin-top:0.75rem">{% if is_en %}Code refreshes every ~20s. Students must be logged in and on the class roster.{% else %}Mã tự làm mới ~20 giây. HV phải đăng nhập và có trong danh sách lớp.{% endif %}</p>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+      <button type="button" class="btn btn-secondary" id="qr-close">{% if is_en %}Close{% else %}Đóng{% endif %}</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+.att-controls { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media (max-width:800px){ .att-controls { grid-template-columns:1fr; } }
+.att-round-actions { display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; }
+.att-qr-dlg { border:none; border-radius:12px; padding:0; max-width:min(32rem,94vw); }
+.att-qr-panel { padding:1.25rem 1.5rem; background:#fff; }
+.att-qr-box { display:flex; justify-content:center; padding:1rem; background:#0f2740; border-radius:12px; min-height:280px; align-items:center; }
+.att-qr-box canvas, .att-qr-box img { background:#fff; padding:12px; border-radius:8px; }
+</style>
+<script>
+(function(){
+  var sessionId = {{ s.id }};
+  var dlg = document.getElementById('qr-dlg');
+  var qrTimer = null;
+  var qrRound = 1;
+  var qrBox = document.getElementById('qr-box');
+
+  function post(url, body){
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  }
+  function put(url, body){
+    return fetch(url, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  }
+
+  document.querySelectorAll('[data-round]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      post('/api/ops/attendance/sessions/' + sessionId + '/rounds', {
+        round: parseInt(btn.dataset.round,10),
+        open: btn.dataset.open === '1'
+      }).then(function(x){
+        if (!x.ok) alert(x.d.error || 'Error'); else location.reload();
+      });
+    });
+  });
+
+  document.getElementById('btn-all-r1').addEventListener('click', function(){
+    document.querySelectorAll('.mark-r1').forEach(function(c){ c.checked = true; });
+  });
+  document.getElementById('btn-all-r2').addEventListener('click', function(){
+    document.querySelectorAll('.mark-r2').forEach(function(c){ c.checked = true; });
+  });
+  document.getElementById('btn-save').addEventListener('click', function(){
+    var marks = [];
+    var changed = false;
+    document.querySelectorAll('#roster-table tbody tr[data-sid]').forEach(function(tr){
+      var r1 = tr.querySelector('.mark-r1');
+      var r2 = tr.querySelector('.mark-r2');
+      if (tr.dataset.marked === '1' && ((r1.dataset.orig === '1') !== r1.checked || (r2.dataset.orig === '1') !== r2.checked)) changed = true;
+      marks.push({
+        student_id: parseInt(tr.dataset.sid,10),
+        round1: r1.checked,
+        round2: r2.checked
+      });
+    });
+    var reason = '';
+    if (changed) {
+      reason = window.prompt('{% if is_en %}Reason for changing an existing attendance mark{% else %}Lý do sửa điểm danh đã có{% endif %}');
+      if (!reason || !String(reason).trim()) return;
+    }
+    put('/api/ops/attendance/sessions/' + sessionId + '/marks', {marks: marks, reason: reason}).then(function(x){
+      if (!x.ok) alert(x.d.error || 'Error');
+      else { alert('{% if is_en %}Saved{% else %}Đã lưu{% endif %}'); location.reload(); }
+    });
+  });
+
+  function renderQr(url){
+    qrBox.innerHTML = '';
+    if (typeof QRCode === 'undefined') {
+      qrBox.innerHTML = '<p style="color:#fff;text-align:center">QR lib missing. Open:<br><code style="color:#9fefb0">'+url+'</code></p>';
+      return;
+    }
+    new QRCode(qrBox, { text: url, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
+  }
+  function rotateOnce(){
+    var base = window.location.origin;
+    post('/api/ops/attendance/sessions/' + sessionId + '/qr/rotate', {
+      round: qrRound,
+      public_base: base
+    }).then(function(x){
+      if (!x.ok) { alert(x.d.error || 'QR error'); stopQr(); return; }
+      document.getElementById('qr-meta').textContent =
+        '{% if is_en %}Round{% else %}Lần{% endif %} ' + qrRound +
+        ' · {% if is_en %}expires{% else %}hết hạn{% endif %} ' + (x.d.expires_at || '') +
+        ' · ' + (x.d.session.class_name || '');
+      renderQr(x.d.scan_url || (base + x.d.scan_path));
+    });
+  }
+  function startQr(round){
+    qrRound = round;
+    document.getElementById('qr-title').textContent =
+      '{% if is_en %}Scan — Round{% else %}Quét điểm danh — Lần{% endif %} ' + round;
+    dlg.showModal();
+    rotateOnce();
+    clearInterval(qrTimer);
+    qrTimer = setInterval(rotateOnce, 20000);
+  }
+  function stopQr(){
+    clearInterval(qrTimer); qrTimer = null;
+    dlg.close();
+  }
+  var b1 = document.getElementById('btn-qr-r1');
+  var b2 = document.getElementById('btn-qr-r2');
+  if (b1) b1.addEventListener('click', function(){ startQr(1); });
+  if (b2) b2.addEventListener('click', function(){ startQr(2); });
+  document.getElementById('qr-close').addEventListener('click', stopQr);
+})();
+</script>
+{% endblock %}

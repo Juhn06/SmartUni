@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ sub.quiz_title }} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+{% set focus_chapter = (focus_chapter or '')|string %}
+<a href="{{ url_for('ops_student_practice') }}" class="back-link">← {% if is_en %}My assignments{% else %}Bài tập của tôi{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ sub.quiz_title }}</h1>
+    <p class="page-desc">
+      {{ sub.status }}
+      {% if sub.score is not none %} · {% if is_en %}Score{% else %}Điểm{% endif %}: <strong>{{ sub.score }}/{{ sub.max_score }}</strong>{% endif %}
+      · {{ sub.questions|length }} {% if is_en %}questions{% else %}câu{% endif %}
+    </p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+{% if sub.instructions %}<p class="page-desc">{{ sub.instructions }}</p>{% endif %}
+
+{% set readonly = sub.status in ('submitted', 'graded') or sub.quiz_status == 'closed' %}
+{% set groups = sub.questions_by_chapter if sub.questions_by_chapter else none %}
+
+{% if groups and groups|length > 1 %}
+<nav class="ops-chapter-nav" aria-label="{% if is_en %}Chapters{% else %}Chương{% endif %}">
+  <strong class="ops-chapter-nav-label">{% if is_en %}Jump to chapter{% else %}Tới chương{% endif %}:</strong>
+  {% for ch in groups %}
+  <a class="btn btn-sm {% if focus_chapter and focus_chapter == ch.key %}btn-primary{% else %}btn-secondary{% endif %}"
+     href="#chapter-{{ ch.key }}">{{ ch.label_en if is_en else ch.label }} ({{ ch.questions|length }})</a>
+  {% endfor %}
+</nav>
+{% endif %}
+
+<form id="mc-form">
+{% if groups %}
+{% for ch in groups %}
+<section class="ops-chapter-block {% if focus_chapter and focus_chapter == ch.key %}is-focus{% endif %}" id="chapter-{{ ch.key }}">
+  <h2 class="ops-section-title">
+    {{ ch.label_en if is_en else ch.label }}
+    <span class="page-desc" style="font-weight:normal;font-size:0.9rem"> · {{ ch.questions|length }} {% if is_en %}Q{% else %}câu{% endif %}</span>
+  </h2>
+  {% for q in ch.questions %}
+  <section class="ops-mc-q" style="margin:1.25rem 0;padding-bottom:1rem;border-bottom:1px solid var(--border-color,#ddd)">
+    <h3 style="font-size:1rem;margin:0 0 0.5rem">
+      Q{{ q.q_no or loop.index }}
+      {% if readonly and q.is_correct == 1 %}<span class="badge badge-ok">✓</span>
+      {% elif readonly and q.is_correct == 0 %}<span class="badge">✗</span>{% endif %}
+    </h3>
+    <p style="margin:0 0 0.6rem">{{ q.question }}</p>
+    {% for i in [1,2,3,4] %}
+    {% set txt = q['choice' ~ i] %}
+    <label style="display:flex;gap:0.5rem;align-items:flex-start;margin:0.35rem 0;font-size:0.92rem;cursor:{% if readonly %}default{% else %}pointer{% endif %}">
+      <input type="radio" name="q{{ q.id }}" class="mc-choice" data-qid="{{ q.id }}" value="{{ i }}"
+        {% if q.chosen == i %}checked{% endif %} {% if readonly %}disabled{% endif %} />
+      <span>
+        <strong>{{ ['A','B','C','D'][i-1] }}.</strong> {{ txt }}
+        {% if readonly and q.answer == i %} <em>({% if is_en %}correct{% else %}đáp án đúng{% endif %})</em>{% endif %}
+      </span>
+    </label>
+    {% endfor %}
+    {% if readonly and q.explain_text %}
+    <p class="page-desc" style="margin-top:0.4rem"><em>{{ q.explain_text }}</em></p>
+    {% endif %}
+  </section>
+  {% endfor %}
+</section>
+{% endfor %}
+{% else %}
+{% for q in sub.questions %}
+<section style="margin:1.25rem 0;padding-bottom:1rem;border-bottom:1px solid var(--border-color,#ddd)">
+  <h3 style="font-size:1rem;margin:0 0 0.5rem">
+    Q{{ q.q_no or loop.index }}
+    {% if readonly and q.is_correct == 1 %}<span class="badge badge-ok">✓</span>
+    {% elif readonly and q.is_correct == 0 %}<span class="badge">✗</span>{% endif %}
+  </h3>
+  <p style="margin:0 0 0.6rem">{{ q.question }}</p>
+  {% for i in [1,2,3,4] %}
+  {% set txt = q['choice' ~ i] %}
+  <label style="display:flex;gap:0.5rem;align-items:flex-start;margin:0.35rem 0;font-size:0.92rem;cursor:{% if readonly %}default{% else %}pointer{% endif %}">
+    <input type="radio" name="q{{ q.id }}" class="mc-choice" data-qid="{{ q.id }}" value="{{ i }}"
+      {% if q.chosen == i %}checked{% endif %} {% if readonly %}disabled{% endif %} />
+    <span>
+      <strong>{{ ['A','B','C','D'][i-1] }}.</strong> {{ txt }}
+      {% if readonly and q.answer == i %} <em>({% if is_en %}correct{% else %}đáp án đúng{% endif %})</em>{% endif %}
+    </span>
+  </label>
+  {% endfor %}
+  {% if readonly and q.explain_text %}
+  <p class="page-desc" style="margin-top:0.4rem"><em>{{ q.explain_text }}</em></p>
+  {% endif %}
+</section>
+{% endfor %}
+{% endif %}
+
+{% if not readonly %}
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:1rem 0 2rem">
+  <button type="button" class="btn btn-secondary" id="btn-save">{% if is_en %}Save draft{% else %}Lưu nháp{% endif %}</button>
+  <button type="button" class="btn btn-primary" id="btn-submit">{% if is_en %}Submit &amp; grade{% else %}Nộp bài &amp; chấm{% endif %}</button>
+</div>
+{% else %}
+<p class="page-desc">{% if is_en %}Attempt locked. Score shown above.{% else %}Bài đã khóa. Điểm hiển thị phía trên.{% endif %}</p>
+{% endif %}
+</form>
+
+<style>
+.ops-chapter-nav { display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; margin:0.75rem 0 1.25rem; }
+.ops-chapter-nav-label { margin-right:0.25rem; font-size:0.9rem; }
+.ops-chapter-block { margin:1.5rem 0; padding:0.75rem 0 0; scroll-margin-top:4rem; }
+.ops-chapter-block.is-focus { outline:2px solid var(--accent, #0d9488); outline-offset:6px; border-radius:6px; padding:0.75rem; }
+</style>
+
+<script>
+(function(){
+  var subId = {{ sub.id }};
+  var focus = {{ focus_chapter|tojson }};
+  function collect(){
+    var answers = {};
+    document.querySelectorAll('.mc-choice:checked').forEach(function(el){
+      answers[el.dataset.qid] = parseInt(el.value, 10);
+    });
+    return answers;
+  }
+  function post(submit){
+    return fetch('/api/ops/mc/submissions/' + subId + '/answers', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({answers: collect(), submit: !!submit})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  }
+  var btnSave = document.getElementById('btn-save');
+  var btnSubmit = document.getElementById('btn-submit');
+  if (btnSave) btnSave.addEventListener('click', function(){
+    post(false).then(function(x){
+      if (!x.ok) alert(x.d.error || 'Error');
+      else alert('{% if is_en %}Draft saved{% else %}Đã lưu nháp{% endif %}');
+    });
+  });
+  if (btnSubmit) btnSubmit.addEventListener('click', function(){
+    if (!confirm('{% if is_en %}Submit now? Auto-graded; cannot edit after.{% else %}Nộp bài ngay? Hệ thống chấm tự động; không sửa sau khi nộp.{% endif %}')) return;
+    post(true).then(function(x){
+      if (!x.ok) alert(x.d.error || 'Error');
+      else location.reload();
+    });
+  });
+  if (focus) {
+    var el = document.getElementById('chapter-' + focus);
+    if (el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth', block:'start'}); }, 80);
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ storage.get('product', 'Storage') }} - DeployWeb{% endblock %}
+
+{% block content %}
+<div class="storage-detail">
+    <div class="storage-detail-image-wrap">
+        {% if storage.get('picture') %}
+        <img src="{{ storage.get('picture') }}" alt="{{ storage.get('product', '') }}" class="storage-detail-image" onerror="this.onerror=null;this.src='{{ url_for('static', filename='img/placeholder.svg') }}'">
+        {% else %}
+        <div class="storage-detail-placeholder"><span>No image</span></div>
+        {% endif %}
+    </div>
+    <div class="storage-detail-body">
+        <h1 class="page-title">{{ storage.get('product', '') }}</h1>
+        <dl class="storage-detail-meta">
+            {% if storage.get('brand') %}
+            <dt>Brand</dt>
+            <dd>{{ storage.get('brand') }}</dd>
+            {% endif %}
+            {% if storage.get('model') %}
+            <dt>Model</dt>
+            <dd>{{ storage.get('model') }}</dd>
+            {% endif %}
+            {% if storage.get('price') %}
+            <dt>Price</dt>
+            <dd class="storage-detail-price">{{ storage.get('price') }}</dd>
+            {% endif %}
+            {% if storage.get('rating') %}
+            <dt>Rating</dt>
+            <dd>★ {{ storage.get('rating') }}</dd>
+            {% endif %}
+            {% if storage.get('RAM') %}
+            <dt>RAM</dt>
+            <dd>{{ storage.get('RAM') }}</dd>
+            {% endif %}
+            {% if storage.get('details') %}
+            <dt>Details</dt>
+            <dd class="storage-detail-details">{{ storage.get('details') }}</dd>
+            {% endif %}
+        </dl>
+        <div class="storage-detail-actions">
+            <a href="{{ url_for('storages_edit', storage_id=storage.get('id')) }}" class="btn btn-primary">Edit</a>
+            <a href="{{ url_for('storages_delete', storage_id=storage.get('id')) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this storage? This cannot be undone.');">Delete</a>
+            <a href="{{ url_for('storages_index') }}" class="btn btn-secondary">Back to list</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

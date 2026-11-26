@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ dossier.person.full_name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="javascript:history.back()" class="back-link">← {% if ui_lang == 'en' %}Back{% else %}Quay lại{% endif %}</a>
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ dossier.person.full_name }}</h1>
+    <p class="page-desc">{{ dossier.person.profile_code }} · {{ dossier.person.email or '—' }} · {{ dossier.person.phone or '—' }}</p>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+<p class="page-desc">
+  {% if dossier.journey %}Theo tên khách hàng, từ dữ liệu ban đầu đến khi nhập học xong: Dữ liệu khách hàng, Quản lý hồ sơ ứng tuyển, Quản lý nhập học, Sự kiện tuyển sinh, Chương trình ưu đãi, Báo cáo.
+  {% elif ui_lang == 'en' %}One personal file across care, admission, examination and study. Tabs follow the signed-in role.
+  {% else %}Một hồ sơ cá nhân xuyên suốt chăm sóc, tuyển sinh, dự thi và theo học. Các phần hiện theo quyền của tài khoản đang đăng nhập.{% endif %}
+</p>
+{% for section in dossier.sections %}
+<section style="margin-top:1.25rem">
+  <h2 class="page-title" style="font-size:1.15rem">{{ section.title }}</h2>
+  {% if section.note %}<p class="page-desc">{{ section.note }}</p>{% endif %}
+  {% if section.rows %}
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      {% if section.columns %}
+      <thead>
+        <tr>{% for col in section.columns %}<th>{{ col }}</th>{% endfor %}</tr>
+      </thead>
+      {% endif %}
+      <tbody>
+        {% for row in section.rows %}
+        <tr>
+          {% for cell in row %}<td>{{ cell if cell not in (None, '') else '—' }}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif not section.note %}
+  <p class="page-desc">—</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

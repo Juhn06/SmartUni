@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+{% block title %}{% if ui_lang == 'en' %}Event registrants{% else %}DS đăng ký sự kiện{% endif %} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_marcom_events') }}" class="back-link">← {% if is_en %}Marcom events{% else %}Sự kiện Marcom{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ event.title }}</h1>
+    <p class="page-desc">
+      {{ event.event_type }} · {{ event.event_date or '—' }} · {{ event.location or '—' }}
+      · <strong>{{ event.phase_label or event.status }}</strong>
+      {% if event.admission_owner %} · TS: {{ event.admission_owner }}{% endif %}
+    </p>
+    {% if show_workflow_hints %}
+    <p class="ops-workflow-banner">
+      {% if is_en %}
+      Guests are not applicants. Set role to Candidate before handing to Admissions. Check-in is not class attendance.
+      {% else %}
+      Khách không mặc định là ứng viên. Chỉ vai trò Ứng viên mới bàn giao tuyển sinh. Check-in không ghi điểm danh lớp.
+      {% endif %}
+    </p>
+    {% endif %}
+  </div>
+  <div class="page-title-actions ops-toolbar-actions">
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-print-reg">{% if is_en %}Print{% else %}In danh sách{% endif %}</button>
+    <div class="ops-dd" data-menu="export">
+      <button type="button" class="btn btn-secondary btn-sm ops-dd-toggle" aria-haspopup="true" aria-expanded="false">
+        {% if is_en %}Export Excel{% else %}Xuất Excel{% endif %}
+        <svg class="ops-dd-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="ops-dd-panel" role="menu" hidden>
+        <a class="ops-dd-item" role="menuitem" href="/api/ops/export/event-registrants?event_id={{ event.id }}">{% if is_en %}Registrants (.xlsx){% else %}DS đăng ký tham dự (.xlsx){% endif %}</a>
+        <a class="ops-dd-item" role="menuitem" href="/api/ops/export/event-followup?event_id={{ event.id }}">{% if is_en %}Post-event interest (.xlsx){% else %}File sau SK — liên hệ + mức quan tâm (.xlsx){% endif %}</a>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-add-reg">{% if is_en %}Add registrant{% else %}Thêm người quan tâm{% endif %}</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-summary-grid" style="margin-bottom:1rem">
+  <div class="ops-stat"><span class="ops-stat-val">{{ event.registrant_count or registrants|length }}</span><span class="ops-stat-lbl">{% if is_en %}Registered{% else %}Đăng ký{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ event.attended_count or 0 }}</span><span class="ops-stat-lbl">{% if is_en %}Attended{% else %}Tham dự{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ event.status }}</span><span class="ops-stat-lbl">{% if is_en %}Status{% else %}Trạng thái{% endif %}</span></div>
+</div>
+
+{% if event.comms_plan or event.co_org_notes or event.phase_before_notes or event.phase_during_notes or event.phase_after_notes %}
+<section class="ops-dash-section" style="margin-bottom:1rem">
+  <h2 class="ops-section-title">{% if is_en %}Event stages (Marcom + Admissions){% else %}Giai đoạn sự kiện (Marcom + Tuyển sinh){% endif %}</h2>
+  <div class="ops-prog-grid">
+    {% if event.comms_plan %}
+    <div class="ops-prog-card"><strong>{% if is_en %}Comms plan{% else %}Kế hoạch truyền thông{% endif %}</strong><p>{{ event.comms_plan }}</p></div>
+    {% endif %}
+    {% if event.co_org_notes %}
+    <div class="ops-prog-card"><strong>{% if is_en %}Co-organize{% else %}Đồng tổ chức{% endif %}</strong><p>{{ event.co_org_notes }}</p></div>
+    {% endif %}
+    {% if event.phase_before_notes %}
+    <div class="ops-prog-card"><strong>{% if is_en %}Before{% else %}Trước SK{% endif %}</strong><p>{{ event.phase_before_notes }}</p></div>
+    {% endif %}
+    {% if event.phase_during_notes %}
+    <div class="ops-prog-card"><strong>{% if is_en %}During{% else %}Trong SK{% endif %}</strong><p>{{ event.phase_during_notes }}</p></div>
+    {% endif %}
+    {% if event.phase_after_notes %}
+    <div class="ops-prog-card"><strong>{% if is_en %}After{% else %}Sau SK{% endif %}</strong><p>{{ event.phase_after_notes }}</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<div class="ops-table-wrap">
+  <table class="ops-table" id="reg-table">
+    <thead>
+      <tr>
+        <th>{% if is_en %}Role{% else %}Vai trò{% endif %}</th>
+        <th>{% if is_en %}Name{% else %}Họ tên{% endif %}</th>
+        <th>Email</th>
+        <th>{% if is_en %}Phone{% else %}Điện thoại{% endif %}</th>
+        <th>{% if is_en %}Program{% else %}CT quan tâm{% endif %}</th>
+        <th>{% if is_en %}Interest{% else %}Mức QT{% endif %}</th>
+        <th>{% if is_en %}Attendance{% else %}Tham dự{% endif %}</th>
+        <th>{% if is_en %}Follow-up{% else %}Follow-up{% endif %}</th>
+        <th>{% if is_en %}Contact note{% else %}Ghi chú LH{% endif %}</th>
+        <th>{% if is_en %}Lead / App{% else %}Lead / Hồ sơ{% endif %}</th>
+        <th class="ops-th-actions">{% if is_en %}Actions{% else %}Thao tác{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in registrants %}
+      <tr data-id="{{ r.id }}">
+        <td>{{ r.participant_role or 'guest' }}</td>
+        <td>{{ r.full_name }}</td>
+        <td>{{ r.email or '—' }}</td>
+        <td>{{ r.phone or '—' }}</td>
+        <td>{{ r.program_interest or '—' }}</td>
+        <td><span class="ops-status">{{ r.interest_level }}</span></td>
+        <td>{{ r.attendance_status }}</td>
+        <td>{{ r.followup_status }}</td>
+        <td>{{ r.contact_note or '—' }}</td>
+        <td>
+          {% if r.person_id %}
+          <a href="{{ url_for('ops_person_dossier_page', person_id=r.person_id) }}" class="ops-status">{{ r.full_name }}</a>
+          {% elif r.lead_id %}
+          <span class="ops-status">Lead #{{ r.lead_id }}</span>
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="ops-row-actions">
+          <div class="ops-row-actions-inner">
+            <button type="button" class="ops-icon-btn btn-edit-reg" data-id="{{ r.id }}" title="{% if is_en %}Update / care{% else %}Cập nhật / chăm sóc{% endif %}">{{ svg('edit') }}</button>
+            <button type="button" class="ops-icon-btn btn-checkin" data-id="{{ r.id }}" title="Check-in">{{ svg('check') }}</button>
+            {% if r.participant_role == 'candidate' and not r.lead_id %}
+            <button type="button" class="ops-icon-btn btn-to-lead" data-id="{{ r.id }}" title="{% if is_en %}Create lead (care CRM){% else %}Tạo lead (chăm sóc CRM){% endif %}">{{ svg('workflow') }}</button>
+            {% endif %}
+            {% if r.participant_role == 'candidate' and not r.application_id %}
+            <button type="button" class="ops-icon-btn btn-hand-ts" data-id="{{ r.id }}" title="{% if is_en %}Hand to Admissions{% else %}Bàn giao tuyển sinh{% endif %}">{{ svg('users') }}</button>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="11" class="ops-empty">{% if is_en %}No registrants yet.{% else %}Chưa có người đăng ký.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="ops-modal-backdrop" id="reg-modal" hidden>
+  <div class="ops-modal" role="dialog" aria-modal="true">
+    <h2 id="reg-modal-title">{% if is_en %}Registrant{% else %}Người quan tâm{% endif %}</h2>
+    <form id="reg-form" class="ops-form">
+      <label class="ops-field">{% if is_en %}Full name{% else %}Họ tên{% endif %}<input name="full_name" class="form-control" required></label>
+      <label class="ops-field">Email<input name="email" type="email" class="form-control"></label>
+      <label class="ops-field">{% if is_en %}Phone{% else %}Điện thoại{% endif %}<input name="phone" class="form-control"></label>
+      <label class="ops-field">{% if is_en %}Company{% else %}Công ty{% endif %}<input name="company" class="form-control"></label>
+      <label class="ops-field">{% if is_en %}Occupation{% else %}Nghề nghiệp{% endif %}<input name="occupation" class="form-control"></label>
+      <label class="ops-field">{% if is_en %}Program interest{% else %}CT quan tâm{% endif %}<input name="program_interest" class="form-control" placeholder="MBA / MMS / MSCM"></label>
+      <label class="ops-field">{% if is_en %}Role{% else %}Vai trò{% endif %}
+        <select name="participant_role" class="form-control">
+          <option value="guest">Khách</option>
+          <option value="candidate">Ứng viên</option>
+          <option value="learner">Học viên</option>
+          <option value="alumni">Cựu học viên</option>
+          <option value="speaker">Diễn giả</option>
+          <option value="partner">Đối tác</option>
+        </select>
+      </label>
+      <label class="ops-field">{% if is_en %}Interest level{% else %}Mức quan tâm{% endif %}
+        <select name="interest_level" class="form-control">
+          <option value="low">low</option>
+          <option value="medium" selected>medium</option>
+          <option value="high">high</option>
+          <option value="hot">hot</option>
+        </select>
+      </label>
+      <label class="ops-field">{% if is_en %}Attendance{% else %}Tham dự{% endif %}
+        <select name="attendance_status" class="form-control">
+          <option value="invited">invited</option>
+          <option value="registered" selected>registered</option>
+          <option value="attended">attended</option>
+          <option value="no_show">no_show</option>
+        </select>
+      </label>
+      <label class="ops-field">Follow-up
+        <select name="followup_status" class="form-control">
+          <option value="pending" selected>pending</option>
+          <option value="contacted">contacted</option>
+          <option value="reminded">reminded</option>
+          <option value="handed_ts">handed_ts</option>
+          <option value="closed">closed</option>
+        </select>
+      </label>
+      <label class="ops-field ops-field-full">{% if is_en %}Contact note{% else %}Ghi chú liên hệ / mức quan tâm{% endif %}<textarea name="contact_note" class="form-control" rows="2"></textarea></label>
+    </form>
+    <div class="ops-modal-actions">
+      <button type="button" class="btn btn-secondary btn-sm" id="reg-cancel">{% if is_en %}Cancel{% else %}Hủy{% endif %}</button>
+      <button type="button" class="btn btn-primary btn-sm" id="reg-save">{% if is_en %}Save{% else %}Lưu{% endif %}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var EVENT_ID = {{ event.id|tojson }};
+  var ROWS = {{ registrants|tojson }};
+  var isEn = {{ is_en|tojson }};
+  var modal = document.getElementById('reg-modal');
+  var form = document.getElementById('reg-form');
+  var editId = null;
+
+  function openModal(row){
+    editId = row ? row.id : null;
+    document.getElementById('reg-modal-title').textContent = row
+      ? (isEn ? 'Update registrant' : 'Cập nhật người quan tâm')
+      : (isEn ? 'Add registrant' : 'Thêm người quan tâm');
+    var defaults = {
+      interest_level: 'medium',
+      attendance_status: 'registered',
+      followup_status: 'pending',
+      participant_role: 'guest'
+    };
+    ['full_name','email','phone','company','occupation','program_interest','participant_role','interest_level','attendance_status','followup_status','contact_note'].forEach(function(k){
+      var el = form.elements[k];
+      if (!el) return;
+      if (row && row[k] != null && row[k] !== '') el.value = row[k];
+      else el.value = defaults[k] || '';
+    });
+    modal.hidden = false;
+  }
+  function closeModal(){ modal.hidden = true; editId = null; }
+  function bodyFromForm(){
+    var o = {};
+    Array.prototype.forEach.call(form.elements, function(el){
+      if (!el.name) return;
+      o[el.name] = el.value;
+    });
+    return o;
+  }
+
+  document.getElementById('btn-add-reg').addEventListener('click', function(){ openModal(null); });
+  var btnPrint = document.getElementById('btn-print-reg');
+  if (btnPrint) btnPrint.addEventListener('click', printRegs);
+  document.getElementById('reg-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
+  document.getElementById('reg-save').addEventListener('click', function(){
+    var body = bodyFromForm();
+    if (!body.full_name) { alert(isEn ? 'Name required' : 'Cần họ tên'); return; }
+    var url = '/api/ops/marcom/events/' + EVENT_ID + '/registrants';
+    var method = 'POST';
+    if (editId) {
+      url += '/' + editId;
+      method = 'PATCH';
+    }
+    fetch(url, {
+      method: method,
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || 'Error');
+        else location.reload();
+      });
+  });
+
+  document.querySelectorAll('.btn-edit-reg').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var row = ROWS.find(function(x){ return String(x.id) === String(btn.dataset.id); });
+      openModal(row || null);
+    });
+  });
+  document.querySelectorAll('.btn-checkin').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/api/ops/marcom/events/registrants/' + btn.dataset.id + '/check-in', {
+        method:'POST', headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'}, body:'{}'
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) alert(res.d.error||'Error');
+          else location.reload();
+        });
+    });
+  });
+  document.querySelectorAll('.btn-to-lead').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (!confirm(isEn ? 'Create Marcom lead from this registrant (CRM care)?' : 'Tạo lead từ người này để chăm sóc CRM?')) return;
+      fetch('/api/ops/marcom/events/registrants/' + btn.dataset.id + '/to-lead', {
+        method:'POST', headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'}, body:'{}'
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) alert(res.d.error||'Error');
+          else { alert((isEn?'Lead #':'Lead #') + res.d.lead_id); location.reload(); }
+        });
+    });
+  });
+  document.querySelectorAll('.btn-hand-ts').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (!confirm(isEn
+        ? 'Create TS application from this person (lead if needed → submitted dossier)?'
+        : 'Tạo hồ sơ Tuyển sinh từ người này (tự tạo lead nếu chưa có → hồ sơ submitted)?')) return;
+      fetch('/api/ops/marcom/events/registrants/' + btn.dataset.id + '/hand-to-ts', {
+        method:'POST', headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'}, body:'{}'
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) alert(res.d.error||'Error');
+          else {
+            alert((isEn ? 'Application #' : 'Hồ sơ #') + (res.d.application_id || '—')
+              + (res.d.lead_id ? (' · Lead #' + res.d.lead_id) : ''));
+            location.reload();
+          }
+        });
+    });
+  });
+
+  function printRegs(){
+    document.body.classList.add('ops-printing');
+    window.print();
+    setTimeout(function(){ document.body.classList.remove('ops-printing'); }, 1500);
+  }
+  // dropdown — fixed panel so it is not clipped by title/toolbar overflow
+  (function(){
+    var dds = Array.prototype.slice.call(document.querySelectorAll('.ops-dd'));
+    function clearPos(panel){
+      if (!panel) return;
+      panel.classList.remove('ops-dd-panel--fixed');
+      panel.style.removeProperty('--ops-dd-top');
+      panel.style.removeProperty('--ops-dd-left');
+    }
+    function place(dd, panel, toggle){
+      clearPos(panel);
+      panel.hidden = false;
+      dd.classList.add('is-open');
+      var tr = toggle.getBoundingClientRect();
+      var pad = 8;
+      var width = Math.min(Math.max(panel.offsetWidth || 220, 220), window.innerWidth - pad * 2);
+      var left = Math.max(pad, Math.min(tr.right - width, window.innerWidth - pad - width));
+      var top = tr.bottom + 4;
+      panel.classList.add('ops-dd-panel--fixed');
+      panel.style.setProperty('--ops-dd-top', Math.round(top) + 'px');
+      panel.style.setProperty('--ops-dd-left', Math.round(left) + 'px');
+    }
+    function closeAll(){
+      dds.forEach(function(dd){
+        dd.classList.remove('is-open');
+        var t = dd.querySelector('.ops-dd-toggle');
+        var p = dd.querySelector('.ops-dd-panel');
+        if (t) t.setAttribute('aria-expanded', 'false');
+        if (p) { p.hidden = true; clearPos(p); }
+      });
+    }
+    dds.forEach(function(dd){
+      var toggle = dd.querySelector('.ops-dd-toggle');
+      var panel = dd.querySelector('.ops-dd-panel');
+      if (!toggle || !panel) return;
+      toggle.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var willOpen = panel.hidden;
+        closeAll();
+        if (willOpen) {
+          toggle.setAttribute('aria-expanded', 'true');
+          place(dd, panel, toggle);
+        }
+      });
+      panel.addEventListener('click', function(e){ e.stopPropagation(); });
+    });
+    document.addEventListener('click', closeAll);
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeAll(); });
+  })();
+})();
+</script>
+{% endblock %}

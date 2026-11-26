@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Thống kê đề xuất - Admin - SmartUni{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Thống kê đề xuất & góp ý</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<form method="get" class="admin-sug-filters" id="sug-filter-form" role="search">
+  <input type="date" name="from" class="form-control admin-sug-date" value="{{ filters.from or '' }}" title="Từ ngày" aria-label="Từ ngày">
+  <span class="admin-sug-sep">→</span>
+  <input type="date" name="to" class="form-control admin-sug-date" value="{{ filters.to or '' }}" title="Đến ngày" aria-label="Đến ngày">
+  <select name="status" class="form-control ops-select admin-sug-status" aria-label="Trạng thái">
+    <option value="">Tất cả</option>
+    <option value="open" {% if filters.status=='open' %}selected{% endif %}>Chờ xử lý</option>
+    <option value="done" {% if filters.status=='done' %}selected{% endif %}>Đã xử lý</option>
+  </select>
+  <input type="text" name="q" class="form-control admin-sug-q" value="{{ filters.q or '' }}" placeholder="Tìm tên / tiêu đề…" aria-label="Tìm tên / tiêu đề">
+  <input type="hidden" name="per_page" value="{{ pagination.per_page if pagination else 20 }}">
+  <button type="submit" class="btn btn-secondary btn-sm">Lọc</button>
+  <button type="button" class="btn btn-secondary btn-sm" id="btn-print-sug" onclick="window.print()">In</button>
+  <a class="btn btn-primary btn-sm" id="btn-export-sug" href="#">Xuất Excel</a>
+</form>
+
+<div class="admin-sug-bulk-bar">
+  <label class="admin-sug-select-all">
+    <input type="checkbox" id="sug-select-all" aria-label="Chọn tất cả trên trang">
+    Chọn tất cả (trang này)
+  </label>
+  <span class="admin-sug-selected-count" id="sug-selected-count">0 đã chọn</span>
+  <button type="button" class="btn btn-primary btn-sm" id="sug-bulk-done" disabled>Đặt đã xử lý</button>
+  <button type="button" class="btn btn-secondary btn-sm" id="sug-bulk-open" disabled>Mở lại</button>
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+<div class="ops-table-wrap">
+  <table class="ops-table" id="sug-table">
+    <thead>
+      <tr>
+        <th class="admin-sug-check-col">
+          <input type="checkbox" id="sug-select-all-th" title="Chọn tất cả" aria-label="Chọn tất cả">
+        </th>
+        <th>Thời gian</th>
+        <th>Người đề xuất</th>
+        <th>Chức năng</th>
+        <th>Đường dẫn</th>
+        <th>Tiêu đề</th>
+        <th>Rà soát AI</th>
+        <th>Trạng thái</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr data-id="{{ it.id }}">
+        <td data-label="Chọn" class="admin-sug-check-col">
+          <input type="checkbox" class="sug-row-check" value="{{ it.id }}" aria-label="Chọn đề xuất #{{ it.id }}">
+        </td>
+        <td data-label="Thời gian">{{ it.created_at }}</td>
+        <td data-label="Người">{{ it.user_name }}{% if it.user_email %}<br><small>{{ it.user_email }}</small>{% endif %}</td>
+        <td data-label="Chức năng"><code>{{ it.function_code }}</code></td>
+        <td data-label="Path"><code>{{ it.relative_path }}</code></td>
+        <td data-label="Tiêu đề">
+          <strong>{{ it.title }}</strong>
+          <div class="ff-item-body" style="max-height:4.5rem;overflow:auto;margin-top:.25rem">{{ it.body }}</div>
+        </td>
+        <td data-label="QA">
+          {% if it.qa_label %}
+            <span class="ops-status" title="{{ it.qa_suggestions }}">{{ it.qa_label }}</span>
+            {% if it.qa_flags %}<div class="ops-field-hint">{{ it.qa_flags }}</div>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td data-label="TT">
+          <span class="ops-status ff-status-{{ it.status }}">{% if it.status=='done' %}Đã xử lý{% else %}Chờ xử lý{% endif %}</span>
+          {% if it.processed_at %}<br><small>{{ it.processed_at }} · {{ it.processed_by }}</small>{% endif %}
+        </td>
+        <td data-label="Thao tác">
+          {% if it.status != 'done' %}
+          <button type="button" class="btn btn-primary btn-sm sug-mark" data-id="{{ it.id }}" data-status="done">Đã xử lý</button>
+          {% else %}
+          <button type="button" class="btn btn-secondary btn-sm sug-mark" data-id="{{ it.id }}" data-status="open">Mở lại</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="ops-empty">Không có đề xuất trong bộ lọc hiện tại.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+<script>
+(function(){
+  var form = document.getElementById('sug-filter-form');
+  var exp = document.getElementById('btn-export-sug');
+  if (exp && form) {
+    exp.addEventListener('click', function(e){
+      e.preventDefault();
+      var fd = new FormData(form);
+      fd.delete('per_page');
+      var qs = new URLSearchParams(fd).toString();
+      window.location.href = '/api/ops/suggestions/export' + (qs ? ('?' + qs) : '');
+    });
+  }
+
+  function selectedIds(){
+    return Array.prototype.map.call(
+      document.querySelectorAll('.sug-row-check:checked'),
+      function(cb){ return cb.value; }
+    );
+  }
+  function syncSelectUI(){
+    var ids = selectedIds();
+    var countEl = document.getElementById('sug-selected-count');
+    if (countEl) countEl.textContent = ids.length + ' đã chọn';
+    var doneBtn = document.getElementById('sug-bulk-done');
+    var openBtn = document.getElementById('sug-bulk-open');
+    if (doneBtn) doneBtn.disabled = !ids.length;
+    if (openBtn) openBtn.disabled = !ids.length;
+    var boxes = document.querySelectorAll('.sug-row-check');
+    var all = boxes.length && Array.prototype.every.call(boxes, function(cb){ return cb.checked; });
+    var some = Array.prototype.some.call(boxes, function(cb){ return cb.checked; });
+    ['sug-select-all','sug-select-all-th'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.checked = !!all;
+      el.indeterminate = !all && some;
+    });
+  }
+  function setAllChecked(on){
+    document.querySelectorAll('.sug-row-check').forEach(function(cb){ cb.checked = !!on; });
+    syncSelectUI();
+  }
+  ['sug-select-all','sug-select-all-th'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', function(){ setAllChecked(el.checked); });
+  });
+  document.querySelectorAll('.sug-row-check').forEach(function(cb){
+    cb.addEventListener('change', syncSelectUI);
+  });
+  syncSelectUI();
+
+  function bulkStatus(status){
+    var ids = selectedIds();
+    if (!ids.length) { alert('Chọn ít nhất một đề xuất'); return; }
+    var msg = status === 'done'
+      ? ('Đặt ' + ids.length + ' đề xuất thành Đã xử lý?')
+      : ('Mở lại ' + ids.length + ' đề xuất?');
+    if (!confirm(msg)) return;
+    fetch('/api/ops/suggestions/bulk-status', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({ids: ids, status: status})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || 'Lỗi');
+        else location.reload();
+      }).catch(function(e){ alert(e.message); });
+  }
+  var bulkDone = document.getElementById('sug-bulk-done');
+  var bulkOpen = document.getElementById('sug-bulk-open');
+  if (bulkDone) bulkDone.addEventListener('click', function(){ bulkStatus('done'); });
+  if (bulkOpen) bulkOpen.addEventListener('click', function(){ bulkStatus('open'); });
+
+  document.querySelectorAll('.sug-mark').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.dataset.id;
+      var status = btn.dataset.status;
+      if (!confirm(status === 'done' ? 'Đánh dấu đã xử lý?' : 'Mở lại yêu cầu?')) return;
+      fetch('/api/ops/suggestions/' + id, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+        body: JSON.stringify({status: status})
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) alert(res.d.error || 'Lỗi');
+          else location.reload();
+        }).catch(function(e){ alert(e.message); });
+    });
+  });
+})();
+</script>
+{% endblock %}

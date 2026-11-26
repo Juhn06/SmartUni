@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Bài giảng — {{ data.meta.class_name }} / {{ data.meta.course_code }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_class_lessons_hub') }}" class="back-link">← Bài giảng lớp–môn</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ data.meta.class_name }} · {{ data.meta.course_code }}</h1>
+    <p class="page-desc">{{ data.meta.program_code }} — {{ data.meta.course_name }}
+      · GV: {{ data.meta.lecturer or '—' }}
+      {% if data.meta.expert %} · CG: {{ data.meta.expert }}{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_assignment_learning_stats', assignment_id=data.meta.assignment_id) }}">Thời gian học</a>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_lesson_comments_inbox') }}?class_id={{ data.meta.class_id }}">Thảo luận HV</a>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-import">Import từ syllabus</button>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-show-add">Thêm bài học</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.total }}</span><span class="ops-stat-lbl">Bài học</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.published }}</span><span class="ops-stat-lbl">Đã publish</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.draft }}</span><span class="ops-stat-lbl">Nháp</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.with_files }}</span><span class="ops-stat-lbl">Có file</span></div>
+</div>
+
+<section class="ops-panel" id="add-panel" hidden>
+  <h2 class="ops-section-title">Thêm bài học mới</h2>
+  <form id="add-form" class="ops-form">
+    <label class="ops-field">
+      <span class="ops-field-label">Tiêu đề</span>
+      <input type="text" name="title" class="form-control" required placeholder="Tiêu đề buổi học…" />
+    </label>
+    <div class="ops-two-col-fields">
+      <label class="ops-field">
+        <span class="ops-field-label">Loại</span>
+        <select name="lesson_type" class="form-control">
+          <option value="theory">Lý thuyết</option>
+          <option value="practice">Thực hành / CG</option>
+          <option value="other">Khác</option>
+        </select>
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">Ngày học</span>
+        <input type="date" name="lesson_date" class="form-control" />
+      </label>
+    </div>
+    <label class="ops-field">
+      <span class="ops-field-label">Nội dung / outline</span>
+      <textarea name="content_outline" class="form-control" rows="4" placeholder="Nội dung buổi học…"></textarea>
+    </label>
+    <label class="ops-field">
+      <span class="ops-field-label">Tóm tắt preview (HV thấy)</span>
+      <textarea name="preview_summary" class="form-control" rows="3" placeholder="Tóm tắt ngắn cho học viên…"></textarea>
+    </label>
+    <label class="ops-field">
+      <span class="ops-field-label">Trạng thái</span>
+      <select name="status" class="form-control">
+        <option value="draft">Nháp</option>
+        <option value="published">Publish ngay</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">Tạo bài học</button>
+  </form>
+</section>
+
+<div class="ops-table-wrap" style="margin-top:1rem">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Tiêu đề</th><th>Loại</th><th>Ngày</th><th>File</th><th>Thảo luận</th><th>TT</th><th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for L in data.lessons %}
+      <tr>
+        <td data-label="#">{{ L.lesson_no }}</td>
+        <td data-label="Tiêu đề">{{ L.title }}</td>
+        <td data-label="Loại">{{ status_labels.get(L.lesson_type, L.lesson_type) }}</td>
+        <td data-label="Ngày">{{ L.lesson_date or '—' }}</td>
+        <td data-label="File">{{ L.material_count }} ({{ L.released_files }} release)</td>
+        <td data-label="Thảo luận">{{ L.comment_count }}</td>
+        <td data-label="TT"><span class="ops-status">{{ status_labels.get(L.status, L.status) }}</span></td>
+        <td class="ops-row-actions" data-label="Thao tác">
+          <a class="btn btn-primary btn-sm" href="{{ url_for('ops_class_lesson_detail', lesson_id=L.id) }}">Chi tiết / Upload</a>
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_attendance_from_lesson', lesson_id=L.id) }}">Điểm danh</a>
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_lesson_learning_stats', lesson_id=L.id) }}">TG học</a>
+          {% if L.status != 'published' %}
+          <button class="btn btn-secondary btn-sm lesson-publish" data-id="{{ L.id }}">Publish</button>
+          {% endif %}
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_lesson_preview', lesson_id=L.id) }}">Preview HV</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="ops-empty">Chưa có bài học. Bấm «Import từ syllabus» để lấy danh sách buổi của học phần.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+var assignmentId = {{ data.meta.assignment_id }};
+document.getElementById('btn-show-add').addEventListener('click', function(){
+  var p = document.getElementById('add-panel');
+  p.hidden = !p.hidden;
+});
+document.getElementById('btn-import').addEventListener('click', function(){
+  if (!confirm('Import danh sách buổi từ syllabus học phần vào lớp này?\n(Bỏ qua buổi đã có; không xóa bài hiện tại)')) return;
+  fetch('/api/ops/teaching-assignments/' + assignmentId + '/lessons/import', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({publish: false, replace: false})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error);
+    else { alert('Đã import ' + (d.created||0) + ' bài (bỏ qua ' + (d.skipped||0) + ')'); location.reload(); }
+  }).catch(function(e){ alert(e.message); });
+});
+document.getElementById('add-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target);
+  var body = {};
+  fd.forEach(function(v,k){ body[k]=v; });
+  fetch('/api/ops/teaching-assignments/' + assignmentId + '/lessons', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else location.reload();
+  }).catch(function(e){ alert(e.message); });
+});
+document.querySelectorAll('.lesson-publish').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    fetch('/api/ops/class-lessons/' + btn.dataset.id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status:'published'})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    });
+  });
+});
+</script>
+{% endblock %}

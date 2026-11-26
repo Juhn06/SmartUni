@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Add User - DeployWeb{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Add User</h1>
+
+<form class="form" method="POST" action="{{ url_for('add') }}">
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{ name or '' }}" required autofocus>
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ email or '' }}" required>
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Add User</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

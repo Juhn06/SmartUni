@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Bộ phận - Admin{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Bộ phận</h1>
+  </div>
+  <div class="page-title-actions">
+    <button type="button" class="btn btn-secondary btn-sm" id="admin-print-list">In</button>
+    <button type="button" class="btn btn-secondary btn-sm" id="admin-excel-list">Xuất Excel</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="admin-page-toolbar">
+  <input type="search" id="admin-dept-filter" class="form-control admin-page-search" placeholder="Tìm mã / tên bộ phận…" aria-label="Tìm bộ phận">
+  <span class="admin-page-toolbar-meta" id="admin-dept-count"></span>
+</div>
+
+<div class="pagination-bar" id="admin-dept-pager">
+  <button type="button" class="btn btn-primary btn-sm pagination-add" id="admin-add-dept">+ Thêm mới</button>
+  <div id="admin-dept-pager-nav"></div>
+</div>
+<div class="admin-panel">
+  <div class="ops-table-wrap">
+    <table class="ops-table" id="admin-dept-table">
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Tên</th>
+          <th>Thứ tự</th>
+          <th>Thành viên</th>
+          <th>Rà soát AI</th>
+          <th class="ops-th-actions">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for d in departments %}
+        <tr data-q="{{ (d.code ~ ' ' ~ d.name)|lower }}">
+          <td data-label="Mã"><code>{{ d.code }}</code></td>
+          <td data-label="Tên">{{ d.name }}</td>
+          <td data-label="Thứ tự">{{ d.sort_order }}</td>
+          <td data-label="TV"><span class="admin-count-pill">{{ d.member_count }}</span></td>
+          <td data-label="QA">
+            {% if d.qa_label %}
+              <span class="ops-status" title="{{ d.qa_flags }} {{ d.qa_suggestions }}">{{ d.qa_label }}</span>
+              {% if d.qa_flags %}<div class="ops-field-hint">{{ d.qa_flags }}</div>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td data-label="Thao tác">
+            <a class="btn btn-primary btn-sm" href="{{ url_for('admin_permissions', dept_id=d.id) }}">Phân quyền</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="ops-empty">Chưa có bộ phận.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="pagination-bar">
+  <button type="button" class="btn btn-primary btn-sm pagination-add" id="admin-add-dept-bottom">+ Thêm mới</button>
+  <div id="admin-dept-pager-nav-bottom"></div>
+</div>
+<div class="ops-modal-backdrop" id="admin-dept-modal" hidden>
+  <div class="ops-modal" role="dialog" aria-modal="true">
+    <h2>Thêm bộ phận</h2>
+    <div class="admin-modal-form">
+      <div class="form-group"><label>Mã</label><input class="form-control" id="nd-code" placeholder="marcom"></div>
+      <div class="form-group"><label>Tên</label><input class="form-control" id="nd-name" placeholder="Marcom"></div>
+      <div class="form-group"><label>Thứ tự</label><input class="form-control" id="nd-sort" type="number" value="100"></div>
+    </div>
+    <div class="ops-modal-actions">
+      <button type="button" class="btn btn-secondary" id="nd-cancel">Hủy</button>
+      <button type="button" class="btn btn-primary" id="nd-save">Lưu</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var PER_PAGE = 20, PAGE = 1, SIZES = [10, 20, 50, 100, 200];
+  function applyFilter(){
+    var inp = document.getElementById('admin-dept-filter');
+    var q = ((inp && inp.value) || '').toLowerCase().trim();
+    var all = Array.prototype.slice.call(document.querySelectorAll('#admin-dept-table tbody tr[data-q]'));
+    var matched = all.filter(function(tr){
+      return !q || (tr.getAttribute('data-q') || '').indexOf(q) >= 0;
+    });
+    var total = matched.length;
+    var pages = Math.max(1, Math.ceil(total / PER_PAGE) || 1);
+    if (PAGE > pages) PAGE = pages;
+    var start = (PAGE - 1) * PER_PAGE;
+    var end = start + PER_PAGE;
+    all.forEach(function(tr){ tr.hidden = true; });
+    matched.forEach(function(tr, i){ tr.hidden = !(i >= start && i < end); });
+    var meta = document.getElementById('admin-dept-count');
+    if (meta) meta.textContent = (total ? (start + 1) : 0) + '–' + Math.min(end, total) + ' / ' + total;
+    ['admin-dept-pager-nav', 'admin-dept-pager-nav-bottom'].forEach(function(navId){
+    var pager = document.getElementById(navId);
+    if (!pager) return;
+    var html = '<div class="pagination-per-page"><label>Hiển thị</label><select class="pagination-select admin-dept-per-page">';
+    SIZES.forEach(function(n){ html += '<option value="'+n+'"'+(n===PER_PAGE?' selected':'')+'>'+n+'</option>'; });
+    html += '</select><span class="pagination-per-page-label">dòng / trang</span></div>';
+    html += '<nav class="pagination-nav"><button type="button" class="pagination-btn" data-p="'+(PAGE-1)+'"'+(PAGE<=1?' disabled':'')+'>Trước</button>';
+    html += '<span class="pagination-info">'+PAGE+' / '+pages+'</span>';
+    html += '<button type="button" class="pagination-btn" data-p="'+(PAGE+1)+'"'+(PAGE>=pages?' disabled':'')+'>Sau</button></nav>';
+    pager.innerHTML = html;
+    var sel = pager.querySelector('.admin-dept-per-page');
+    if (sel) sel.addEventListener('change', function(){ PER_PAGE = parseInt(sel.value,10)||20; PAGE = 1; applyFilter(); });
+    pager.querySelectorAll('button[data-p]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var p = parseInt(btn.getAttribute('data-p'),10);
+        if (p >= 1 && p <= pages) { PAGE = p; applyFilter(); }
+      });
+    });
+    });
+  }
+  var inp = document.getElementById('admin-dept-filter');
+  if (inp) inp.addEventListener('input', function(){ PAGE = 1; applyFilter(); });
+  applyFilter();
+  var printBtn = document.getElementById('admin-print-list');
+  if (printBtn) printBtn.addEventListener('click', function(){ window.print(); });
+  var excelBtn = document.getElementById('admin-excel-list');
+  if (excelBtn) excelBtn.addEventListener('click', function(){
+    var table = document.getElementById('admin-dept-table');
+    if (!table) return;
+    var rows = [];
+    table.querySelectorAll('tr').forEach(function(tr){
+      if (tr.hidden) return;
+      var cells = [];
+      tr.querySelectorAll('th,td').forEach(function(td){
+        cells.push('"' + String(td.innerText || '').replace(/"/g,'""').trim() + '"');
+      });
+      if (cells.length) rows.push(cells.join(','));
+    });
+    var blob = new Blob(['\ufeff' + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'departments.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  var modal = document.getElementById('admin-dept-modal');
+  if (modal) {
+    document.querySelectorAll('#admin-add-dept, #admin-add-dept-bottom').forEach(function(addBtn){
+      addBtn.addEventListener('click', function(){ modal.hidden = false; });
+    });
+  }
+  var cancel = document.getElementById('nd-cancel');
+  if (cancel) cancel.addEventListener('click', function(){ modal.hidden = true; });
+  if (modal) modal.addEventListener('click', function(e){ if (e.target === modal) modal.hidden = true; });
+  var save = document.getElementById('nd-save');
+  if (save) save.addEventListener('click', function(){
+    var code = (document.getElementById('nd-code').value || '').trim();
+    var name = (document.getElementById('nd-name').value || '').trim();
+    var sort_order = parseInt(document.getElementById('nd-sort').value, 10) || 100;
+    if (!code || !name) { alert('Cần mã và tên bộ phận.'); return; }
+    fetch('/api/departments', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({code: code, name: name, sort_order: sort_order})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) { alert(res.d.error || 'Không tạo được.'); return; }
+        location.reload();
+      }).catch(function(e){ alert(e.message); });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+{% block title %}Phân quyền - Admin{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Phân quyền</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div id="perm-toast" class="admin-perm-toast" hidden role="status"></div>
+
+<div class="ops-perm-layout">
+  <aside class="ops-perm-panel ops-perm-panel--depts">
+    <h3>1. Bộ phận</h3>
+    <input type="search" id="dept-filter" class="form-control admin-perm-search" placeholder="Tìm bộ phận…" aria-label="Tìm bộ phận">
+    <ul class="ops-dept-list" id="dept-list">
+      {% for d in departments %}
+      <li data-name="{{ d.name|lower }}">
+        <a href="{{ url_for('admin_permissions', dept_id=d.id) }}" class="{% if dept_id==d.id %}active{% endif %}">
+          <span class="ops-dept-name">{{ d.name }}</span>
+          <span class="ops-dept-count">{{ d.member_count }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <section class="ops-perm-panel ops-perm-panel--funcs">
+    <h3>2. Quyền chức năng
+      {% if selected_dept %}— {{ selected_dept.name }}{% endif %}
+    </h3>
+    {% if selected_dept %}
+    <form id="perm-form" class="admin-perm-form">
+      <p class="page-desc">Tick chức năng cho bộ phận. User thuộc bộ phận nhận các quyền này. Phân quyền bổ sung theo user: <a href="{{ url_for('admin_users') }}">Quản lý người dùng</a>.</p>
+      <div class="admin-perm-toolbar">
+        <input type="search" id="perm-search" class="form-control admin-perm-search" placeholder="Lọc chức năng…" aria-label="Lọc chức năng">
+        <button type="button" class="btn btn-secondary btn-sm" id="perm-all">Chọn tất cả</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="perm-none">Bỏ chọn</button>
+        <span class="admin-perm-count" id="perm-count"></span>
+      </div>
+      <div class="admin-perm-groups" id="perm-groups">
+      {% set ns = namespace(prev='') %}
+      {% for p in catalog %}
+        {% if p.group != ns.prev %}
+          {% if ns.prev %}
+          </div>
+          {% endif %}
+          {% set ns.prev = p.group %}
+          <div class="admin-perm-group" data-group="{{ p.group }}">
+            <div class="admin-perm-group-head">
+              <span class="admin-perm-group-title">{{ p.group }}</span>
+              <button type="button" class="btn btn-secondary btn-sm admin-perm-group-toggle" data-mode="all">Chọn nhóm</button>
+              <button type="button" class="btn btn-secondary btn-sm admin-perm-group-toggle" data-mode="none">Bỏ</button>
+            </div>
+        {% endif %}
+        <label class="ops-perm-check" data-label="{{ (p.label ~ ' ' ~ p.code)|lower }}">
+          <input type="checkbox" name="perm" value="{{ p.code }}" {% if p.granted %}checked{% endif %}>
+          <span><strong>{{ p.label }}</strong> <code>{{ p.code }}</code></span>
+        </label>
+      {% endfor %}
+      {% if catalog %}
+          </div>
+      {% endif %}
+      </div>
+      <div class="admin-perm-savebar">
+        <button type="submit" class="btn btn-primary" id="perm-save-btn">Lưu phân quyền bộ phận</button>
+      </div>
+    </form>
+    {% else %}
+    <p class="page-desc">Chọn một bộ phận bên trái để gán quyền chức năng. Hoặc mở <a href="{{ url_for('admin_users') }}">Quản lý người dùng</a>.</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-perm-panel ops-perm-panel--scopes">
+    <div class="admin-scope-head">
+      <div>
+        <h3>3. Phạm vi dữ liệu (program scope)</h3>
+        <p class="page-desc">Chọn chương trình user được xem/xử lý. <strong>*</strong> = toàn bộ CT. Có thể chọn nhiều CT (MBA + MMS…).</p>
+      </div>
+      <div class="admin-scope-filters">
+        {% if selected_dept %}
+        <label class="admin-scope-filter-toggle">
+          <input type="checkbox" id="scope-dept-only" checked>
+          Chỉ thành viên <strong>{{ selected_dept.name }}</strong>
+        </label>
+        {% endif %}
+        <input type="search" id="scope-user-search" class="form-control admin-perm-search" placeholder="Tìm user / login…" aria-label="Tìm user">
+      </div>
+    </div>
+
+    <div class="admin-scope-legend">
+      <span class="admin-scope-chip admin-scope-chip--all">* Tất cả</span>
+      {% for p in programs %}
+      <span class="admin-scope-chip">{{ p.code }}{% if p.name %} — {{ p.name }}{% endif %}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-scope-list" id="scope-user-list">
+      {% for u in users %}
+        {% if '@' not in u.email %}
+        {% set dept_ids = u.departments|map(attribute='id')|list %}
+        {% set scopes = u.program_scopes or [] %}
+        <article class="admin-scope-card"
+                 data-user="{{ u.id }}"
+                 data-name="{{ (u.name ~ ' ' ~ u.email)|lower }}"
+                 data-dept-ids="{{ dept_ids|join(',') }}"
+                 {% if selected_dept and selected_dept.id not in dept_ids %}hidden{% endif %}>
+          <div class="admin-scope-card-meta">
+            <div class="admin-scope-card-name">{{ u.name.split('—')[0].strip() }}</div>
+            <code class="admin-scope-card-login">{{ u.email }}</code>
+            <div class="admin-scope-card-depts">
+              {% for d in u.departments or [] %}
+              <span class="admin-scope-dept-tag{% if selected_dept and d.id == selected_dept.id %} is-active{% endif %}">{{ d.name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="admin-scope-card-picks" role="group" aria-label="Phạm vi chương trình">
+            <label class="admin-scope-pick admin-scope-pick--all">
+              <input type="checkbox" class="scope-opt" value="*" {% if '*' in scopes %}checked{% endif %}>
+              <span>* Tất cả CT</span>
+            </label>
+            {% for p in programs %}
+            <label class="admin-scope-pick">
+              <input type="checkbox" class="scope-opt" value="{{ p.code }}" {% if p.code in scopes and '*' not in scopes %}checked{% endif %} {% if '*' in scopes %}disabled{% endif %}>
+              <span>{{ p.code }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="admin-scope-card-actions">
+            <div class="admin-scope-current" aria-live="polite">
+              {% if '*' in scopes %}* (tất cả)
+              {% elif scopes %}{{ scopes|join(', ') }}
+              {% else %}<em>Chưa gán</em>{% endif %}
+            </div>
+            <button type="button" class="btn btn-primary btn-sm save-scope" data-id="{{ u.id }}" disabled>Lưu</button>
+          </div>
+        </article>
+        {% endif %}
+      {% endfor %}
+      <p class="ops-empty admin-scope-empty" id="scope-empty" hidden>Không có user khớp bộ lọc.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var selectedDeptId = {{ (selected_dept.id if selected_dept else none)|tojson }};
+  var toastEl = document.getElementById('perm-toast');
+  var toastTimer = null;
+  function toast(msg, ok){
+    if (!toastEl) { alert(msg); return; }
+    toastEl.textContent = msg;
+    toastEl.classList.toggle('is-error', !ok);
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.hidden = true; }, 2800);
+  }
+
+  /* —— Dept filter —— */
+  var deptFilter = document.getElementById('dept-filter');
+  if (deptFilter) {
+    deptFilter.addEventListener('input', function(){
+      var q = (deptFilter.value || '').toLowerCase().trim();
+      document.querySelectorAll('#dept-list li').forEach(function(li){
+        var name = li.getAttribute('data-name') || '';
+        li.hidden = !!(q && name.indexOf(q) < 0);
+      });
+    });
+  }
+
+  /* —— Permission form —— */
+  var permForm = document.getElementById('perm-form');
+  if (permForm) {
+    function updatePermCount(){
+      var n = permForm.querySelectorAll('input[name=perm]:checked').length;
+      var el = document.getElementById('perm-count');
+      if (el) el.textContent = n + ' quyền đã chọn';
+    }
+    updatePermCount();
+    permForm.addEventListener('change', updatePermCount);
+
+    var permSearch = document.getElementById('perm-search');
+    if (permSearch) {
+      permSearch.addEventListener('input', function(){
+        var q = (permSearch.value || '').toLowerCase().trim();
+        document.querySelectorAll('.ops-perm-check').forEach(function(lab){
+          var hay = lab.getAttribute('data-label') || '';
+          lab.hidden = !!(q && hay.indexOf(q) < 0);
+        });
+        document.querySelectorAll('.admin-perm-group').forEach(function(g){
+          var any = Array.prototype.some.call(g.querySelectorAll('.ops-perm-check'), function(lab){ return !lab.hidden; });
+          g.hidden = !any;
+        });
+      });
+    }
+    var permAll = document.getElementById('perm-all');
+    var permNone = document.getElementById('perm-none');
+    if (permAll) permAll.addEventListener('click', function(){
+      permForm.querySelectorAll('.ops-perm-check:not([hidden]) input[name=perm]').forEach(function(cb){ cb.checked = true; });
+      updatePermCount();
+    });
+    if (permNone) permNone.addEventListener('click', function(){
+      permForm.querySelectorAll('.ops-perm-check:not([hidden]) input[name=perm]').forEach(function(cb){ cb.checked = false; });
+      updatePermCount();
+    });
+    document.querySelectorAll('.admin-perm-group-toggle').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var group = btn.closest('.admin-perm-group');
+        if (!group) return;
+        var on = btn.getAttribute('data-mode') === 'all';
+        group.querySelectorAll('.ops-perm-check:not([hidden]) input[name=perm]').forEach(function(cb){ cb.checked = on; });
+        updatePermCount();
+      });
+    });
+
+    permForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      var perms = Array.from(permForm.querySelectorAll('input[name=perm]:checked')).map(function(el){ return el.value; });
+      var saveBtn = document.getElementById('perm-save-btn');
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Đang lưu…'; }
+      fetch('/api/admin/departments/{{ selected_dept.id if selected_dept else 0 }}/permissions', {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+        body: JSON.stringify({permissions: perms})
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) toast(res.d.error || 'Lỗi lưu phân quyền', false);
+          else toast('Đã lưu phân quyền bộ phận (' + perms.length + ' quyền).', true);
+        })
+        .catch(function(err){ toast(err.message || 'Lỗi mạng', false); })
+        .finally(function(){
+          if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Lưu phân quyền bộ phận'; }
+        });
+    });
+  }
+
+  /* —— Program scopes —— */
+  function readScopes(card){
+    var all = card.querySelector('.scope-opt[value="*"]');
+    if (all && all.checked) return ['*'];
+    return Array.prototype.filter.call(card.querySelectorAll('.scope-opt:not([value="*"])'), function(cb){
+      return cb.checked;
+    }).map(function(cb){ return cb.value; });
+  }
+  function formatScopes(scopes){
+    if (!scopes || !scopes.length) return '<em>Chưa gán</em>';
+    if (scopes.indexOf('*') >= 0) return '* (tất cả)';
+    return scopes.join(', ');
+  }
+  function syncAllExclusive(card){
+    var all = card.querySelector('.scope-opt[value="*"]');
+    var others = card.querySelectorAll('.scope-opt:not([value="*"])');
+    if (!all) return;
+    if (all.checked) {
+      others.forEach(function(cb){ cb.checked = false; cb.disabled = true; });
+    } else {
+      others.forEach(function(cb){ cb.disabled = false; });
+    }
+  }
+  function markDirty(card, dirty){
+    var btn = card.querySelector('.save-scope');
+    if (!btn) return;
+    btn.disabled = !dirty;
+    card.classList.toggle('is-dirty', !!dirty);
+  }
+  function applyUserFilter(){
+    var q = ((document.getElementById('scope-user-search') || {}).value || '').toLowerCase().trim();
+    var deptOnly = document.getElementById('scope-dept-only');
+    var onlyDept = !!(deptOnly && deptOnly.checked && selectedDeptId != null);
+    var visible = 0;
+    document.querySelectorAll('.admin-scope-card').forEach(function(card){
+      var name = card.getAttribute('data-name') || '';
+      var deptIds = (card.getAttribute('data-dept-ids') || '').split(',').filter(Boolean).map(Number);
+      var matchQ = !q || name.indexOf(q) >= 0;
+      var matchDept = !onlyDept || deptIds.indexOf(Number(selectedDeptId)) >= 0;
+      var show = matchQ && matchDept;
+      card.hidden = !show;
+      if (show) visible += 1;
+    });
+    var empty = document.getElementById('scope-empty');
+    if (empty) empty.hidden = visible > 0;
+  }
+
+  document.querySelectorAll('.admin-scope-card').forEach(function(card){
+    card.dataset.saved = JSON.stringify(readScopes(card));
+    syncAllExclusive(card);
+    card.querySelectorAll('.scope-opt').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        if (cb.value === '*') {
+          if (cb.checked) {
+            card.querySelectorAll('.scope-opt:not([value="*"])').forEach(function(o){ o.checked = false; });
+          }
+        } else if (cb.checked) {
+          var all = card.querySelector('.scope-opt[value="*"]');
+          if (all) all.checked = false;
+        }
+        syncAllExclusive(card);
+        var cur = readScopes(card);
+        var saved = [];
+        try { saved = JSON.parse(card.dataset.saved || '[]'); } catch (e) {}
+        var dirty = JSON.stringify(cur.slice().sort()) !== JSON.stringify(saved.slice().sort());
+        markDirty(card, dirty);
+        var curEl = card.querySelector('.admin-scope-current');
+        if (curEl) curEl.innerHTML = formatScopes(cur);
+      });
+    });
+  });
+
+  var scopeSearch = document.getElementById('scope-user-search');
+  if (scopeSearch) scopeSearch.addEventListener('input', applyUserFilter);
+  var scopeDeptOnly = document.getElementById('scope-dept-only');
+  if (scopeDeptOnly) scopeDeptOnly.addEventListener('change', applyUserFilter);
+  applyUserFilter();
+
+  document.querySelectorAll('.save-scope').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var card = btn.closest('.admin-scope-card');
+      if (!card) return;
+      var scopes = readScopes(card);
+      btn.disabled = true;
+      btn.textContent = '…';
+      fetch('/api/admin/users/' + btn.dataset.id + '/scopes', {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+        body: JSON.stringify({scopes: scopes})
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) {
+            toast(res.d.error || 'Lỗi cập nhật scope', false);
+            markDirty(card, true);
+          } else {
+            card.dataset.saved = JSON.stringify(scopes);
+            markDirty(card, false);
+            var curEl = card.querySelector('.admin-scope-current');
+            if (curEl) curEl.innerHTML = formatScopes(scopes);
+            toast('Đã cập nhật phạm vi: ' + (scopes.length ? scopes.join(', ') : '(trống)'), true);
+          }
+        })
+        .catch(function(err){ toast(err.message || 'Lỗi mạng', false); markDirty(card, true); })
+        .finally(function(){ btn.textContent = 'Lưu'; });
+    });
+  });
+})();
+</script>
+{% endblock %}

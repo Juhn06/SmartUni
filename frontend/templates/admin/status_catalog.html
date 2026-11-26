@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+
+{% block title %}{{ t('admin_status_types') }} - Admin - SmartUni{% endblock %}
+
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← {% if is_en %}Dashboard{% else %}Tổng quan{% endif %}</a>
+    <h1 class="page-title">{{ t('admin_status_types') }}</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="admin-status-layout">
+  <aside class="admin-status-side" aria-label="{% if is_en %}Status types{% else %}Loại trạng thái{% endif %}">
+    <div class="admin-status-side-title">{% if is_en %}Types{% else %}Loại{% endif %}</div>
+    <nav class="admin-status-side-nav" role="tablist" aria-orientation="vertical">
+      {% for c in categories %}
+      <button type="button"
+              class="admin-status-side-btn{% if loop.first %} is-active{% endif %}"
+              data-category="{{ c.code }}"
+              role="tab"
+              aria-selected="{{ 'true' if loop.first else 'false' }}">
+        <span class="admin-status-side-label">{{ c.label }}</span>
+        <span class="admin-status-side-count" data-count-for="{{ c.code }}">0</span>
+      </button>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <section class="admin-status-main" aria-live="polite">
+    <div class="admin-page-toolbar admin-status-toolbar">
+      <div class="admin-status-toolbar-title">
+        <h2 id="admin-status-cat-title">—</h2>
+        <span class="admin-page-toolbar-meta" id="admin-status-count"></span>
+      </div>
+      <input type="search"
+             id="admin-status-filter"
+             class="form-control admin-page-search"
+             placeholder="{% if is_en %}Search code / label…{% else %}Tìm mã / nhãn…{% endif %}"
+             aria-label="{% if is_en %}Search{% else %}Tìm kiếm{% endif %}">
+      <button type="button" class="btn btn-secondary btn-sm" id="admin-print-status">In</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="admin-excel-status">Xuất Excel</button>
+      <button type="button" class="btn btn-primary btn-sm" id="admin-status-toggle-add">
+        {% if is_en %}Add new{% else %}Thêm mới{% endif %}
+      </button>
+    </div>
+
+    <div class="admin-status-add-card" id="admin-status-add-card" hidden>
+      <div class="admin-status-add-head">
+        <strong>{% if is_en %}New status value{% else %}Thêm giá trị trạng thái{% endif %}</strong>
+        <button type="button" class="btn btn-secondary btn-sm" id="admin-status-add-cancel">{% if is_en %}Cancel{% else %}Hủy{% endif %}</button>
+      </div>
+      <div class="admin-status-add-grid">
+        <label class="ops-field">
+          <span class="ops-field-label">{% if is_en %}Code{% else %}Mã{% endif %} <em>*</em></span>
+          <input type="text" id="new-status-code" class="form-control" placeholder="pending" autocomplete="off">
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">{% if is_en %}Label (VI){% else %}Nhãn (VI){% endif %} <em>*</em></span>
+          <input type="text" id="new-status-label-vi" class="form-control" placeholder="{% if is_en %}Vietnamese{% else %}Tiếng Việt{% endif %}" autocomplete="off">
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">{% if is_en %}Label (EN){% else %}Nhãn (EN){% endif %}</span>
+          <input type="text" id="new-status-label-en" class="form-control" placeholder="English" autocomplete="off">
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">{% if is_en %}Sort{% else %}Thứ tự{% endif %}</span>
+          <input type="number" id="new-status-sort" class="form-control" value="100" min="0" step="10">
+        </label>
+      </div>
+      <div class="admin-status-add-actions">
+        <button type="button" class="btn btn-primary btn-sm" id="admin-status-add-submit">{% if is_en %}Save new{% else %}Lưu mới{% endif %}</button>
+      </div>
+    </div>
+
+    <div class="ops-table-wrap admin-status-table-wrap">
+      <table class="ops-table admin-status-table" id="admin-status-table">
+        <thead>
+          <tr>
+            <th class="admin-status-col-ord">{% if is_en %}Order{% else %}TT{% endif %}</th>
+            <th class="admin-status-col-code">{% if is_en %}Code{% else %}Mã{% endif %}</th>
+            <th>{% if is_en %}Label (VI){% else %}Nhãn VI{% endif %}</th>
+            <th>{% if is_en %}Label (EN){% else %}Nhãn EN{% endif %}</th>
+            <th class="admin-status-col-active">{% if is_en %}Active{% else %}Hiện{% endif %}</th>
+            <th>{% if is_en %}AI review{% else %}Rà soát AI{% endif %}</th>
+            <th class="ops-th-actions">{% if is_en %}Actions{% else %}Thao tác{% endif %}</th>
+          </tr>
+        </thead>
+        <tbody id="admin-status-tbody"></tbody>
+      </table>
+      <p class="admin-status-empty" id="admin-status-empty" hidden></p>
+    </div>
+  </section>
+</div>
+
+<div id="admin-status-toast" class="admin-perm-toast" hidden role="status"></div>
+
+<script>
+var STATUS_ITEMS = {{ items|tojson }};
+var CATEGORIES = {{ categories|tojson }};
+var IS_EN = {{ is_en|tojson }};
+var ACTIVE_CATEGORY = (CATEGORIES[0] && CATEGORIES[0].code) || 'application_status';
+var FILTER_Q = '';
+var ICON_SAVE = {{ svg('check')|tojson }};
+var ICON_DEL = {{ svg('delete')|tojson }};
+
+function toast(msg, isErr){
+  var el = document.getElementById('admin-status-toast');
+  if (!el) { alert(msg); return; }
+  el.textContent = msg;
+  el.classList.toggle('is-error', !!isErr);
+  el.hidden = false;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ el.hidden = true; }, 2800);
+}
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s){
+  return esc(s).replace(/"/g,'&quot;');
+}
+
+function catLabel(code){
+  for (var i = 0; i < CATEGORIES.length; i++) {
+    if (CATEGORIES[i].code === code) return CATEGORIES[i].label;
+  }
+  return code;
+}
+
+function itemsInCat(cat){
+  return (STATUS_ITEMS || []).filter(function(it){ return it.category === cat; })
+    .sort(function(a, b){
+      var sa = Number(a.sort_order) || 0, sb = Number(b.sort_order) || 0;
+      if (sa !== sb) return sa - sb;
+      return Number(a.id) - Number(b.id);
+    });
+}
+
+function refreshCounts(){
+  CATEGORIES.forEach(function(c){
+    var n = itemsInCat(c.code).length;
+    var badge = document.querySelector('[data-count-for="' + c.code + '"]');
+    if (badge) badge.textContent = String(n);
+  });
+}
+
+function setActiveCategory(cat){
+  ACTIVE_CATEGORY = cat;
+  document.querySelectorAll('.admin-status-side-btn').forEach(function(btn){
+    var on = btn.dataset.category === cat;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  var title = document.getElementById('admin-status-cat-title');
+  if (title) title.textContent = catLabel(cat);
+  closeAddCard();
+  renderList();
+}
+
+function openAddCard(){
+  var card = document.getElementById('admin-status-add-card');
+  if (!card) return;
+  card.hidden = false;
+  var rows = itemsInCat(ACTIVE_CATEGORY);
+  var nextSort = 10;
+  if (rows.length) {
+    nextSort = (Number(rows[rows.length - 1].sort_order) || 0) + 10;
+  }
+  document.getElementById('new-status-sort').value = String(nextSort);
+  document.getElementById('new-status-code').focus();
+}
+
+function closeAddCard(){
+  var card = document.getElementById('admin-status-add-card');
+  if (card) card.hidden = true;
+  ['new-status-code','new-status-label-vi','new-status-label-en'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function renderList(){
+  var tbody = document.getElementById('admin-status-tbody');
+  var empty = document.getElementById('admin-status-empty');
+  var countEl = document.getElementById('admin-status-count');
+  var rows = itemsInCat(ACTIVE_CATEGORY);
+  var q = (FILTER_Q || '').trim().toLowerCase();
+  if (q) {
+    rows = rows.filter(function(it){
+      var blob = [it.code, it.label_vi, it.label_en].join(' ').toLowerCase();
+      return blob.indexOf(q) >= 0;
+    });
+  }
+  if (countEl) {
+    var total = itemsInCat(ACTIVE_CATEGORY).length;
+    countEl.textContent = q
+      ? (IS_EN ? (rows.length + ' / ' + total + ' shown') : (rows.length + ' / ' + total + ' hiển thị'))
+      : (IS_EN ? (total + ' values') : (total + ' giá trị'));
+  }
+  refreshCounts();
+  if (!rows.length) {
+    tbody.innerHTML = '';
+    empty.hidden = false;
+    empty.textContent = q
+      ? (IS_EN ? 'No matching statuses.' : 'Không có trạng thái khớp tìm kiếm.')
+      : (IS_EN ? 'No statuses in this type yet. Click “+ Add”.' : 'Chưa có trạng thái. Bấm “+ Thêm”.');
+    return;
+  }
+  empty.hidden = true;
+  tbody.innerHTML = rows.map(function(it, idx){
+    var active = Number(it.is_active) === 1;
+    var sys = it.is_system
+      ? ('<span class="admin-status-badge admin-status-badge--sys">' + (IS_EN ? 'system' : 'hệ thống') + '</span>')
+      : '';
+    var canMove = !q;
+    var disableUp = !canMove || idx === 0;
+    var disableDown = !canMove || idx === rows.length - 1;
+    return '<tr class="admin-status-row' + (active ? '' : ' is-inactive') + '" data-id="' + it.id + '">' +
+      '<td class="admin-status-col-ord" data-label="TT">' +
+        '<div class="admin-status-ord">' +
+          '<button type="button" class="ops-icon-btn admin-status-move" data-dir="-1" title="' + (IS_EN ? 'Move up' : 'Lên') + '" aria-label="' + (IS_EN ? 'Move up' : 'Lên') + '"' + (disableUp ? ' disabled' : '') + '>' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>' +
+          '</button>' +
+          '<span class="admin-status-sort-val">' + (it.sort_order || 0) + '</span>' +
+          '<button type="button" class="ops-icon-btn admin-status-move" data-dir="1" title="' + (IS_EN ? 'Move down' : 'Xuống') + '" aria-label="' + (IS_EN ? 'Move down' : 'Xuống') + '"' + (disableDown ? ' disabled' : '') + '>' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</td>' +
+      '<td data-label="' + (IS_EN ? 'Code' : 'Mã') + '"><code class="admin-status-code">' + esc(it.code) + '</code> ' + sys + '</td>' +
+      '<td data-label="VI"><input type="text" class="form-control status-label-vi" value="' + escAttr(it.label_vi || '') + '"></td>' +
+      '<td data-label="EN"><input type="text" class="form-control status-label-en" value="' + escAttr(it.label_en || '') + '"></td>' +
+      '<td class="admin-status-col-active" data-label="' + (IS_EN ? 'Active' : 'Hiện') + '">' +
+        '<label class="admin-status-switch">' +
+          '<input type="checkbox" class="status-active"' + (active ? ' checked' : '') + '>' +
+          '<span>' + (IS_EN ? 'On' : 'Bật') + '</span>' +
+        '</label>' +
+      '</td>' +
+      '<td data-label="' + (IS_EN ? 'AI review' : 'Rà soát AI') + '">' +
+        '<span class="ops-status" title="' + esc(it.qa_suggestions || '') + '">' + esc(it.qa_label || '—') + '</span>' +
+        (it.qa_flags ? ('<div class="ops-field-hint">' + esc(it.qa_flags) + '</div>') : '') +
+      '</td>' +
+      '<td class="ops-row-actions" data-label="' + (IS_EN ? 'Actions' : 'Thao tác') + '">' +
+        '<div class="ops-row-actions-inner">' +
+          '<button type="button" class="ops-icon-btn admin-status-save" title="' + (IS_EN ? 'Save' : 'Lưu') + '" aria-label="' + (IS_EN ? 'Save' : 'Lưu') + '">' +
+            ICON_SAVE +
+          '</button>' +
+          (it.is_system ? '' :
+            ('<button type="button" class="ops-icon-btn ops-icon-btn--danger admin-status-del" title="' + (IS_EN ? 'Delete' : 'Xóa') + '" aria-label="' + (IS_EN ? 'Delete' : 'Xóa') + '">' +
+              ICON_DEL +
+            '</button>')) +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function rowBody(tr){
+  return {
+    label_vi: (tr.querySelector('.status-label-vi').value || '').trim(),
+    label_en: (tr.querySelector('.status-label-en').value || '').trim(),
+    sort_order: parseInt((tr.querySelector('.admin-status-sort-val') || {}).textContent || '0', 10) || 0,
+    is_active: tr.querySelector('.status-active').checked ? 1 : 0
+  };
+}
+
+function saveStatusItem(id, tr, silent){
+  var body = rowBody(tr);
+  if (!body.label_vi) {
+    toast(IS_EN ? 'Vietnamese label is required.' : 'Cần nhãn tiếng Việt.', true);
+    return Promise.resolve(false);
+  }
+  return fetch('/api/admin/status-catalog/' + id, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) {
+        toast(res.d.error || 'Failed', true);
+        return false;
+      }
+      STATUS_ITEMS = STATUS_ITEMS.map(function(it){
+        return Number(it.id) === Number(id) ? Object.assign({}, it, res.d) : it;
+      });
+      if (!silent) toast(IS_EN ? 'Saved.' : 'Đã lưu.');
+      tr.classList.toggle('is-inactive', Number(res.d.is_active) !== 1);
+      return true;
+    }).catch(function(e){ toast(e.message, true); return false; });
+}
+
+function addStatusItem(){
+  var code = (document.getElementById('new-status-code').value || '').trim();
+  var labelVi = (document.getElementById('new-status-label-vi').value || '').trim();
+  var labelEn = (document.getElementById('new-status-label-en').value || '').trim() || labelVi;
+  var sortOrder = parseInt(document.getElementById('new-status-sort').value || '100', 10) || 100;
+  if (!code || !labelVi) {
+    toast(IS_EN ? 'Code and Vietnamese label are required.' : 'Cần mã và nhãn tiếng Việt.', true);
+    return;
+  }
+  fetch('/api/admin/status-catalog', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      category: ACTIVE_CATEGORY,
+      code: code,
+      label_vi: labelVi,
+      label_en: labelEn,
+      sort_order: sortOrder
+    })
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) { toast(res.d.error || 'Failed', true); return; }
+      STATUS_ITEMS.push(res.d);
+      closeAddCard();
+      renderList();
+      toast(IS_EN ? 'Added.' : 'Đã thêm.');
+    }).catch(function(e){ toast(e.message, true); });
+}
+
+function deleteStatusItem(id){
+  if (!confirm(IS_EN
+    ? 'Delete this status? This cannot be undone. System statuses cannot be deleted.'
+    : 'Xóa trạng thái này? Thao tác không hoàn tác. Trạng thái hệ thống không xóa được.')) return;
+  fetch('/api/admin/status-catalog/' + id, { method: 'DELETE' })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) { toast(res.d.error || 'Failed', true); return; }
+      STATUS_ITEMS = STATUS_ITEMS.filter(function(it){ return Number(it.id) !== Number(id); });
+      renderList();
+      toast(IS_EN ? 'Deleted.' : 'Đã xóa.');
+    }).catch(function(e){ toast(e.message, true); });
+}
+
+function moveRow(id, dir){
+  if (FILTER_Q) {
+    toast(IS_EN ? 'Clear search before reordering.' : 'Xóa tìm kiếm trước khi sắp xếp.', true);
+    return;
+  }
+  var rows = itemsInCat(ACTIVE_CATEGORY);
+  var idx = -1;
+  for (var i = 0; i < rows.length; i++) {
+    if (Number(rows[i].id) === Number(id)) { idx = i; break; }
+  }
+  var j = idx + dir;
+  if (idx < 0 || j < 0 || j >= rows.length) return;
+  var a = rows[idx], b = rows[j];
+  var sa = Number(a.sort_order) || 0, sb = Number(b.sort_order) || 0;
+  if (sa === sb) {
+    sa = (idx + 1) * 10;
+    sb = (j + 1) * 10;
+  }
+  var p1 = fetch('/api/admin/status-catalog/' + a.id, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      label_vi: a.label_vi, label_en: a.label_en,
+      sort_order: sb, is_active: Number(a.is_active) ? 1 : 0
+    })
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  var p2 = fetch('/api/admin/status-catalog/' + b.id, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      label_vi: b.label_vi, label_en: b.label_en,
+      sort_order: sa, is_active: Number(b.is_active) ? 1 : 0
+    })
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  Promise.all([p1, p2]).then(function(res){
+    if (!res[0].ok || res[0].d.error || !res[1].ok || res[1].d.error) {
+      toast((res[0].d && res[0].d.error) || (res[1].d && res[1].d.error) || 'Failed', true);
+      return;
+    }
+    STATUS_ITEMS = STATUS_ITEMS.map(function(it){
+      if (Number(it.id) === Number(a.id)) return Object.assign({}, it, res[0].d);
+      if (Number(it.id) === Number(b.id)) return Object.assign({}, it, res[1].d);
+      return it;
+    });
+    renderList();
+  }).catch(function(e){ toast(e.message, true); });
+}
+
+document.querySelectorAll('.admin-status-side-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ setActiveCategory(btn.dataset.category); });
+});
+document.getElementById('admin-status-toggle-add').addEventListener('click', function(){
+  var card = document.getElementById('admin-status-add-card');
+  if (card.hidden) openAddCard(); else closeAddCard();
+});
+document.getElementById('admin-status-add-cancel').addEventListener('click', closeAddCard);
+document.getElementById('admin-status-add-submit').addEventListener('click', addStatusItem);
+document.getElementById('admin-status-filter').addEventListener('input', function(e){
+  FILTER_Q = e.target.value || '';
+  renderList();
+});
+
+document.getElementById('admin-status-tbody').addEventListener('click', function(e){
+  var tr = e.target.closest('tr.admin-status-row');
+  if (!tr) return;
+  var id = tr.getAttribute('data-id');
+  if (e.target.closest('.admin-status-save')) {
+    saveStatusItem(id, tr, false);
+    return;
+  }
+  if (e.target.closest('.admin-status-del')) {
+    deleteStatusItem(id);
+    return;
+  }
+  var move = e.target.closest('.admin-status-move');
+  if (move && !move.disabled) {
+    moveRow(id, parseInt(move.getAttribute('data-dir'), 10) || 0);
+  }
+});
+
+document.getElementById('admin-status-tbody').addEventListener('change', function(e){
+  if (!e.target.classList.contains('status-active')) return;
+  var tr = e.target.closest('tr.admin-status-row');
+  if (!tr) return;
+  saveStatusItem(tr.getAttribute('data-id'), tr, true).then(function(ok){
+    if (ok) toast(IS_EN ? 'Visibility updated.' : 'Đã cập nhật hiển thị.');
+  });
+});
+
+['new-status-code','new-status-label-vi','new-status-label-en','new-status-sort'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); addStatusItem(); }
+  });
+});
+
+var printSt = document.getElementById('admin-print-status');
+if (printSt) printSt.addEventListener('click', function(){ window.print(); });
+var excelSt = document.getElementById('admin-excel-status');
+if (excelSt) excelSt.addEventListener('click', function(){
+  var table = document.querySelector('.ops-table, .admin-status-table, table');
+  if (!table) return;
+  var rows = [];
+  table.querySelectorAll('tr').forEach(function(tr){
+    if (tr.hidden) return;
+    var cells = [];
+    tr.querySelectorAll('th,td').forEach(function(td){
+      cells.push('"' + String(td.innerText || '').replace(/"/g,'""').trim() + '"');
+    });
+    if (cells.length) rows.push(cells.join(','));
+  });
+  var blob = new Blob(['\ufeff' + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'status_catalog.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+setActiveCategory(ACTIVE_CATEGORY);
+</script>
+{% endblock %}

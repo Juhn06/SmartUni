@@ -1,0 +1,13 @@
+# Python cache / local DBs / heavy data (use volumes instead)
+__pycache__/
+*.py[cod]
+*.db
+*.db-journal
+chroma_db/
+uploads/
+data/
+.env
+.venv/
+venv/
+*.md
+_*.py

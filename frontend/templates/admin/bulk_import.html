@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Import - ReadArticles{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('admin_index') }}" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Admin
+</a>
+<h1 class="page-title">Bulk Import Articles</h1>
+<p class="page-desc">Add articles from a folder. PDFs will be processed like single uploads: extracted, summarized, and indexed. Already processed files are skipped.</p>
+
+<div class="bulk-scan-wrap">
+<form id="bulk-import-form" class="form form-wide" onsubmit="scanFolder(); return false;">
+    <div class="form-group">
+        <label for="bulk-folder">Folder path</label>
+        <div class="folder-input-zone" id="folder-zone">
+            <svg class="folder-input-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="2 12 8 12 10 9 14 9 16 12 22 12"/></svg>
+            <input type="text" id="bulk-folder" class="folder-input-field" placeholder="e.g. batch_2024 or C:\mounted\papers or /mnt/network/papers" autocomplete="off">
+            <p class="folder-input-hint"><strong>Default:</strong> Relative to Data Folder (<code>backend/data</code>), e.g. <code>my_papers</code> or <code>papers/jan</code>. <strong>Mounted:</strong> Absolute path for folders mounted elsewhere, e.g. <code>C:\mounted\papers</code> or <code>/mnt/network/papers</code>.</p>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="btn-scan" onclick="scanFolder()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Scan Folder
+        </button>
+        <a href="{{ url_for('admin_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+</div>
+
+<div id="bulk-result-wrap" class="bulk-result-wrap" style="display:none">
+    <div class="batch-bar bulk-batch-bar bulk-bar-unified">
+        <label class="batch-select-all">
+            <input type="checkbox" id="bulk-check-all" class="bulk-check-all" title="Select all processable files"> Select All
+        </label>
+        <span class="bulk-stats-inline">
+            <span class="bulk-stat bulk-stat-new" id="bulk-stat-new">0 new</span>
+            <span class="bulk-stat bulk-stat-done" id="bulk-stat-done">0 done</span>
+            <span class="bulk-stat bulk-stat-error" id="bulk-stat-error">0 errors</span>
+        </span>
+        <span class="batch-count" id="bulk-selected-count"></span>
+        <div class="batch-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-process" disabled onclick="processSelectedFiles(false)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                Process Selected
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-rerun-errors" disabled onclick="processSelectedFiles(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Rerun Errors
+            </button>
+        </div>
+    </div>
+
+    <div class="bulk-file-toolbar">
+        <div class="list-search-row bulk-search-row">
+            <form method="get" class="bulk-search-form" onsubmit="applyBulkFilter(); return false;">
+                <input type="search" id="bulk-file-search" placeholder="Search files by name…" aria-label="Search files">
+                <button type="submit" class="btn btn-primary btn-search">Search</button>
+                <button type="button" class="btn btn-secondary btn-search" id="bulk-search-clear" onclick="clearBulkSearch()" style="display:none">Clear</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="bulk-file-list" class="bulk-file-list"></div>
+    <div id="bulk-pagination" class="bulk-pagination"></div>
+
+    <div id="bulk-errors-section" class="bulk-errors-section" style="display:none">
+        <h3 class="bulk-errors-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Files with Errors
+        </h3>
+        <div id="bulk-errors-list" class="bulk-errors-list"></div>
+    </div>
+</div>
+
+<script>
+var bulkState = { folder: '', files: [], counts: {}, searchQuery: '', page: 1, perPage: 12, selectedFilenames: {} };
+var bulkCheckAllBound = false;
+
+function scanFolder() {
+    var folder = (document.getElementById('bulk-folder').value || '').trim();
+    if (!folder) {
+        alert('Please enter a folder name.');
+        document.getElementById('bulk-folder').focus();
+        return;
+    }
+    bulkState.folder = folder;
+    var btnScan = document.getElementById('btn-scan');
+    btnScan.disabled = true;
+    btnScan.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Scanning…';
+    fetch('/api/admin/bulk-import/scan?folder=' + encodeURIComponent(folder))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btnScan.disabled = false;
+            btnScan.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Scan Folder';
+            if (data.error) {
+                alert(data.error || 'Scan failed');
+                return;
+            }
+            bulkState.files = data.files || [];
+            bulkState.counts = data.counts || { new: 0, done: 0, error: 0 };
+            bulkState.searchQuery = '';
+            bulkState.page = 1;
+            bulkState.selectedFilenames = {};
+            renderBulkResult();
+            updateProcessButtons();
+        })
+        .catch(function(e) {
+            btnScan.disabled = false;
+            btnScan.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Scan Folder';
+            alert('Failed: ' + (e.message || 'Unknown error'));
+        });
+}
+
+function getFilteredFiles() {
+    var q = (bulkState.searchQuery || '').trim().toLowerCase();
+    if (!q) return bulkState.files;
+    return bulkState.files.filter(function(f) {
+        return (f.filename || '').toLowerCase().indexOf(q) >= 0;
+    });
+}
+
+function getProcessableFiles() {
+    return bulkState.files.filter(function(f) { return f.status === 'new' || f.status === 'error'; });
+}
+
+function getSelectedFilenames() {
+    return Object.keys(bulkState.selectedFilenames || {});
+}
+
+function applyBulkFilter() {
+    bulkState.searchQuery = (document.getElementById('bulk-file-search').value || '').trim();
+    bulkState.page = 1;
+    renderBulkResult();
+    var clearBtn = document.getElementById('bulk-search-clear');
+    if (clearBtn) clearBtn.style.display = bulkState.searchQuery ? 'inline-block' : 'none';
+}
+
+function clearBulkSearch() {
+    document.getElementById('bulk-file-search').value = '';
+    bulkState.searchQuery = '';
+    bulkState.page = 1;
+    renderBulkResult();
+    var clearBtn = document.getElementById('bulk-search-clear');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function goBulkPage(p) {
+    bulkState.page = p;
+    renderBulkResult();
+}
+
+function updateProcessButtons() {
+    var processable = getProcessableFiles();
+    var selected = getSelectedFilenames();
+    var btnProcess = document.getElementById('btn-process');
+    var btnRerun = document.getElementById('btn-rerun-errors');
+    var processableSet = {};
+    processable.forEach(function(f) { processableSet[f.filename] = true; });
+    var selectedProcessable = selected.filter(function(fn) { return processableSet[fn]; });
+    var hasErrors = (bulkState.counts.error || 0) > 0;
+    var selectedErrors = selected.filter(function(fn) { return bulkState.files.some(function(f) { return f.filename === fn && f.status === 'error'; }); });
+
+    if (btnProcess) btnProcess.disabled = selectedProcessable.length === 0;
+    if (btnRerun) btnRerun.disabled = !hasErrors || selectedErrors.length === 0;
+
+    var checkAll = document.getElementById('bulk-check-all');
+    var countEl = document.getElementById('bulk-selected-count');
+    var processableOnPage = [];
+    try {
+        var filtered = getFilteredFiles();
+        var start = ((bulkState.page || 1) - 1) * (bulkState.perPage || 12);
+        processableOnPage = filtered.slice(start, start + (bulkState.perPage || 12)).filter(function(f) { return f.status === 'new' || f.status === 'error'; });
+    } catch (e) {}
+    var processableOnPageSet = {};
+    processableOnPage.forEach(function(f) { processableOnPageSet[f.filename] = true; });
+    var selectedProcessableOnPage = selectedProcessable.filter(function(fn) { return processableOnPageSet[fn]; });
+    if (checkAll) {
+        if (processableOnPage.length > 0) {
+            checkAll.checked = selectedProcessableOnPage.length === processableOnPage.length;
+            checkAll.indeterminate = selectedProcessableOnPage.length > 0 && selectedProcessableOnPage.length < processableOnPage.length;
+        } else {
+            checkAll.checked = false;
+            checkAll.indeterminate = false;
+        }
+    }
+    if (countEl) countEl.textContent = selected.length > 0 ? selected.length + ' selected' : '';
+
+    document.querySelectorAll('.bulk-file-check').forEach(function(cb) {
+        var card = cb.closest('.bulk-file-card');
+        if (card) card.classList.toggle('bulk-file-card-selected', cb.checked);
+    });
+}
+
+function toggleBulkSelectAll(checked) {
+    var filtered = getFilteredFiles();
+    var start = (bulkState.page - 1) * bulkState.perPage;
+    var pageFiles = filtered.slice(start, start + bulkState.perPage);
+    var processableOnPage = pageFiles.filter(function(f) { return f.status === 'new' || f.status === 'error'; });
+    processableOnPage.forEach(function(f) {
+        if (checked) bulkState.selectedFilenames[f.filename] = true; else delete bulkState.selectedFilenames[f.filename];
+    });
+    document.querySelectorAll('.bulk-file-check').forEach(function(cb) {
+        var inProcessable = processableOnPage.some(function(f) { return f.filename === cb.value; });
+        if (inProcessable) cb.checked = checked;
+    });
+    updateProcessButtons();
+}
+
+function renderBulkResult() {
+    var wrap = document.getElementById('bulk-result-wrap');
+    var listEl = document.getElementById('bulk-file-list');
+    var errSec = document.getElementById('bulk-errors-section');
+    var errList = document.getElementById('bulk-errors-list');
+
+    wrap.style.display = 'block';
+
+    var c = bulkState.counts;
+    document.getElementById('bulk-stat-new').textContent = (c.new || 0) + ' new';
+    document.getElementById('bulk-stat-done').textContent = (c.done || 0) + ' done';
+    document.getElementById('bulk-stat-error').textContent = (c.error || 0) + ' errors';
+
+    var filtered = getFilteredFiles();
+    var totalFiltered = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(totalFiltered / bulkState.perPage));
+    bulkState.page = Math.min(bulkState.page, totalPages) || 1;
+    var start = (bulkState.page - 1) * bulkState.perPage;
+    var pageFiles = filtered.slice(start, start + bulkState.perPage);
+
+    var processable = getProcessableFiles();
+    var processableOnPage = pageFiles.filter(function(f) { return f.status === 'new' || f.status === 'error'; });
+    var html = '<div class="bulk-file-grid">';
+    pageFiles.forEach(function(f) {
+        var statusCls = f.status === 'done' ? 'done' : f.status === 'error' ? 'error' : 'new';
+        var statusLabel = f.status === 'done' ? 'Done' : f.status === 'error' ? 'Error' : 'New';
+        var canSelect = f.status === 'new' || f.status === 'error';
+        var articleLink = f.article_id
+            ? '<a href="/articles/' + f.article_id + '" class="btn btn-primary btn-sm bulk-file-view-btn" target="_blank" rel="noopener" title="View article">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</a>'
+            : '<span class="bulk-file-no-view">—</span>';
+        var isChecked = (bulkState.selectedFilenames || {})[f.filename];
+        var checkHtml = canSelect
+            ? '<input type="checkbox" class="bulk-file-check" value="' + (f.filename || '').replace(/"/g, '&quot;') + '" data-status="' + f.status + '"' + (isChecked ? ' checked' : '') + '>'
+            : '';
+        html += '<div class="bulk-file-card bulk-file-card-' + statusCls + '">' +
+            '<div class="bulk-file-card-header">' +
+            (canSelect ? '<label class="bulk-file-check-wrap">' + checkHtml + '<span class="bulk-file-name">' + (f.filename || '').replace(/</g, '&lt;') + '</span></label>' : '<span class="bulk-file-name">' + (f.filename || '').replace(/</g, '&lt;') + '</span>') +
+            '</div>' +
+            '<div class="bulk-file-card-meta">' +
+            '<span class="bulk-status bulk-status-' + statusCls + '">' + statusLabel + '</span>' +
+            '<span class="bulk-file-article">' + articleLink + '</span>' +
+            '</div></div>';
+    });
+    html += '</div>';
+    listEl.innerHTML = html;
+
+    var paginationEl = document.getElementById('bulk-pagination');
+    if (totalPages > 1) {
+        var pg = '<div class="bulk-pagination-inner">';
+        pg += '<span class="bulk-pagination-info">' + (start + 1) + '–' + Math.min(start + bulkState.perPage, totalFiltered) + ' of ' + totalFiltered + '</span>';
+        pg += '<span class="bulk-pagination-btns">';
+        pg += '<button type="button" class="btn btn-secondary btn-sm bulk-pg-btn" onclick="goBulkPage(' + (bulkState.page - 1) + ')"' + (bulkState.page <= 1 ? ' disabled' : '') + '>Previous</button>';
+        var maxShow = 5;
+        var from = Math.max(1, bulkState.page - 2);
+        var to = Math.min(totalPages, from + maxShow - 1);
+        if (to - from < maxShow - 1) from = Math.max(1, to - maxShow + 1);
+        for (var i = from; i <= to; i++) {
+            pg += '<button type="button" class="btn ' + (i === bulkState.page ? 'btn-primary' : 'btn-secondary') + ' btn-sm bulk-pg-btn bulk-pg-num" onclick="goBulkPage(' + i + ')">' + i + '</button>';
+        }
+        pg += '<button type="button" class="btn btn-secondary btn-sm bulk-pg-btn" onclick="goBulkPage(' + (bulkState.page + 1) + ')"' + (bulkState.page >= totalPages ? ' disabled' : '') + '>Next</button>';
+        pg += '</span></div>';
+        paginationEl.innerHTML = pg;
+        paginationEl.style.display = 'block';
+    } else {
+        paginationEl.innerHTML = '';
+        paginationEl.style.display = 'none';
+    }
+
+    var searchInput = document.getElementById('bulk-file-search');
+    if (searchInput) searchInput.value = bulkState.searchQuery || '';
+    var clearBtn = document.getElementById('bulk-search-clear');
+    if (clearBtn) clearBtn.style.display = bulkState.searchQuery ? 'inline-block' : 'none';
+
+    if (!bulkCheckAllBound) {
+        document.getElementById('bulk-check-all').addEventListener('change', function() { toggleBulkSelectAll(this.checked); });
+        bulkCheckAllBound = true;
+    }
+    listEl.querySelectorAll('.bulk-file-check').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            if (this.checked) bulkState.selectedFilenames[this.value] = true; else delete bulkState.selectedFilenames[this.value];
+            updateProcessButtons();
+        });
+    });
+    updateProcessButtons();
+
+    var errors = bulkState.files.filter(function(f) { return f.status === 'error'; });
+    if (errors.length > 0) {
+        errSec.style.display = 'block';
+        errList.innerHTML = errors.map(function(f) {
+            return '<div class="bulk-error-item"><strong>' + (f.filename || '').replace(/</g, '&lt;') + '</strong>: ' + (f.error || 'Unknown error').replace(/</g, '&lt;') + '</div>';
+        }).join('');
+    } else {
+        errSec.style.display = 'none';
+        errList.innerHTML = '';
+    }
+}
+
+function processSelectedFiles(optRetryErrors) {
+    var folder = bulkState.folder || (document.getElementById('bulk-folder').value || '').trim();
+    if (!folder) {
+        alert('Please enter and scan a folder first.');
+        return;
+    }
+    var selected = getSelectedFilenames();
+    if (selected.length === 0) {
+        alert('Select at least one file to process.');
+        return;
+    }
+    if (optRetryErrors) {
+        var errorSet = {};
+        bulkState.files.filter(function(f) { return f.status === 'error'; }).forEach(function(f) { errorSet[f.filename] = true; });
+        selected = selected.filter(function(fn) { return errorSet[fn]; });
+        if (selected.length === 0) {
+            alert('No error files selected. Check the error files you want to retry.');
+            return;
+        }
+    }
+
+    showProcessing({
+        title: 'Processing ' + selected.length + ' file' + (selected.length !== 1 ? 's' : '') + '\u2026',
+        sub: 'Extracting text, generating summaries, and building the search index. This may take several minutes.',
+        steps: ['Extracting text from PDFs', 'Generating summaries', 'Building search index', 'Finishing up'],
+        stepIntervals: [5000, 15000, 40000]
+    });
+
+    var payload = { folder: folder, filenames: selected };
+    if (optRetryErrors) payload.retry_errors = true;
+
+    fetch('/api/admin/bulk-import/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            hideProcessing();
+            if (data.error) {
+                alert(data.error || 'Process failed');
+            } else {
+                var msg = (data.succeeded || 0) + ' succeeded';
+                if ((data.errors || []).length > 0) msg += ', ' + data.errors.length + ' failed';
+                alert(msg);
+            }
+            scanFolder();
+        })
+        .catch(function(e) {
+            hideProcessing();
+            alert('Failed: ' + (e.message || 'Unknown error'));
+            scanFolder();
+        });
+}
+
+document.getElementById('folder-zone').addEventListener('click', function() {
+    document.getElementById('bulk-folder').focus();
+});
+document.getElementById('bulk-folder').addEventListener('focus', function() {
+    document.getElementById('folder-zone').classList.add('folder-zone-focused');
+});
+document.getElementById('bulk-folder').addEventListener('blur', function() {
+    document.getElementById('folder-zone').classList.remove('folder-zone-focused');
+});
+document.getElementById('bulk-folder').addEventListener('input', function() {
+    document.getElementById('folder-zone').classList.toggle('folder-zone-has-value', this.value.trim().length > 0);
+});
+</script>
+{% endblock %}

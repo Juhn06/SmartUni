@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Article - ReadArticles{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('articles_index') }}" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Articles
+</a>
+<h1 class="page-title">Upload PDF Article</h1>
+<p class="page-desc">Upload a journal article PDF. It will be parsed, summarized (three-pass style), and added to the RAG index for Q&A.</p>
+
+<form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="form form-wide">
+    <div class="form-group">
+        <label for="title">Title (optional, defaults to filename)</label>
+        <input type="text" id="title" name="title" value="{{ title or '' }}" placeholder="Article title">
+    </div>
+    <div class="form-group">
+        <label for="source_url">Source URL (optional)</label>
+        <input type="text" id="source_url" name="source_url" value="{{ source_url or '' }}" placeholder="https://... or doi.org/10.1234/...">
+    </div>
+    <div class="form-group">
+        <label>PDF file *</label>
+        <div class="drop-zone drop-zone-lg" id="drop-zone">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="drop-zone-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+            <p class="drop-zone-text">Drag &amp; drop your PDF here, or click to browse</p>
+            <p class="drop-zone-hint" id="drop-zone-hint">No file selected</p>
+            <input type="file" id="file" name="file" accept=".pdf" required class="drop-zone-input">
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="upload-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload
+        </button>
+        <a href="{{ url_for('articles_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    var zone = document.getElementById('drop-zone');
+    var input = document.getElementById('file');
+    var hint = document.getElementById('drop-zone-hint');
+
+    zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zone.classList.add('drop-zone-active');
+    });
+    zone.addEventListener('dragleave', function() {
+        zone.classList.remove('drop-zone-active');
+    });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('drop-zone-active');
+        if (e.dataTransfer.files.length > 0) {
+            input.files = e.dataTransfer.files;
+            updateHint();
+        }
+    });
+
+    input.addEventListener('change', updateHint);
+
+    function updateHint() {
+        if (input.files && input.files.length > 0) {
+            hint.textContent = input.files[0].name;
+            zone.classList.add('drop-zone-has-file');
+        } else {
+            hint.textContent = 'No file selected';
+            zone.classList.remove('drop-zone-has-file');
+        }
+    }
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (!input.files || input.files.length === 0) return;
+        showProcessing({
+            title: 'Processing article\u2026',
+            sub: 'Extracting text, generating three-pass summary, and building the search index.',
+            steps: ['Uploading PDF', 'Extracting text from PDF', 'Generating three-pass summary', 'Indexing for RAG search'],
+            stepIntervals: [3000, 10000, 25000]
+        });
+    });
+})();
+</script>
+{% endblock %}

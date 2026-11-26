@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Storages - DeployWeb{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Storages</h1>
+
+<div class="storages-grid">
+    {% for s in storages %}
+    <article class="storage-card">
+        <a href="{{ url_for('storages_detail', storage_id=s.get('id')) }}" class="storage-card-image-wrap">
+            {% if s.get('picture') %}
+            <img src="{{ s.get('picture') }}" alt="{{ s.get('product', '') }}" class="storage-card-image" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='{{ url_for('static', filename='img/placeholder.svg') }}'">
+            {% else %}
+            <div class="storage-card-placeholder"><span>No image</span></div>
+            {% endif %}
+        </a>
+        <div class="storage-card-body">
+            <h3 class="storage-card-title">{{ s.get('product', '') }}</h3>
+            <p class="storage-card-meta">{{ s.get('brand', '') }} {% if s.get('model') %}· {{ s.get('model') }}{% endif %}</p>
+            {% if s.get('rating') %}
+            <p class="storage-card-rating">★ {{ s.get('rating') }}</p>
+            {% endif %}
+            {% if s.get('price') %}
+            <p class="storage-card-price">{{ s.get('price') }}</p>
+            {% endif %}
+            {% if s.get('RAM') %}
+            <p class="storage-card-ram">{{ s.get('RAM') }}</p>
+            {% endif %}
+            <div class="storage-card-actions">
+                <a href="{{ url_for('storages_detail', storage_id=s.get('id')) }}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{{ url_for('storages_edit', storage_id=s.get('id')) }}" class="btn btn-secondary btn-sm">Edit</a>
+                <a href="{{ url_for('storages_delete', storage_id=s.get('id')) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this storage? This cannot be undone.');">Delete</a>
+            </div>
+        </div>
+    </article>
+    {% else %}
+    <div class="storages-empty">
+        <p>No storages yet. <a href="{{ url_for('storages_add') }}">Add one</a>.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

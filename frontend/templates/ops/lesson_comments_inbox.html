@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Lesson comments{% else %}Thảo luận bài giảng{% endif %} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_class_lessons_hub') }}" class="back-link">← {% if is_en %}Lessons{% else %}Bài giảng{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if is_en %}Student comments inbox{% else %}Hộp thư thảo luận HV{% endif %}</h1>
+    <p class="page-desc">{% if is_en %}Filter by course, chapter (lesson #), or class.{% else %}Lọc theo môn, chương (số buổi), hoặc lớp.{% endif %}</p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+<form class="ops-panel" method="get" style="margin-top:0.75rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:0.75rem;align-items:end">
+  <label>{% if is_en %}Course{% else %}Môn{% endif %}
+    <select name="course_id" class="form-control">
+      <option value="">{% if is_en %}All{% else %}Tất cả{% endif %}</option>
+      {% for c in filters.courses %}
+      <option value="{{ c.id }}" {% if request.args.get('course_id') == c.id|string %}selected{% endif %}>{{ c.code }} — {{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{% if is_en %}Class{% else %}Lớp{% endif %}
+    <select name="class_id" class="form-control">
+      <option value="">{% if is_en %}All{% else %}Tất cả{% endif %}</option>
+      {% for c in filters.classes %}
+      <option value="{{ c.id }}" {% if request.args.get('class_id') == c.id|string %}selected{% endif %}>{{ c.name }} ({{ c.program_code }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{% if is_en %}Chapter / lesson #{% else %}Chương / buổi #{% endif %}
+    <select name="lesson_no" class="form-control">
+      <option value="">{% if is_en %}All{% else %}Tất cả{% endif %}</option>
+      {% for ch in filters.chapters %}
+      <option value="{{ ch.lesson_no }}" {% if request.args.get('lesson_no') == ch.lesson_no|string %}selected{% endif %}>{{ ch.lesson_no }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{% if is_en %}Type{% else %}Dạng{% endif %}
+    <select name="comment_type" class="form-control">
+      <option value="">{% if is_en %}All{% else %}Tất cả{% endif %}</option>
+      {% for t in filters.comment_types %}
+      <option value="{{ t.id }}" {% if request.args.get('comment_type') == t.id %}selected{% endif %}>{{ t.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{% if is_en %}Search{% else %}Tìm{% endif %}
+    <input class="form-control" name="q" value="{{ request.args.get('q','') }}" placeholder="{% if is_en %}Author, content…{% else %}Người gửi, nội dung…{% endif %}" />
+  </label>
+  <button type="submit" class="btn btn-primary btn-sm">{% if is_en %}Filter{% else %}Lọc{% endif %}</button>
+</form>
+
+<div class="ops-table-wrap" style="margin-top:1rem">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if is_en %}When{% else %}Thời gian{% endif %}</th>
+        <th>{% if is_en %}Type{% else %}Dạng{% endif %}</th>
+        <th>{% if is_en %}Author{% else %}Người gửi{% endif %}</th>
+        <th>{% if is_en %}Class / course{% else %}Lớp / môn{% endif %}</th>
+        <th>{% if is_en %}Lesson{% else %}Buổi{% endif %}</th>
+        <th>{% if is_en %}Content{% else %}Nội dung{% endif %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in items %}
+      <tr>
+        <td>{{ c.created_at }}</td>
+        <td><span class="badge {% if c.comment_type=='question' %}badge-ok{% endif %}">{{ c.comment_type_label }}</span></td>
+        <td>{{ c.author_name }}{% if c.author_email %}<br><small>{{ c.author_email }}</small>{% endif %}</td>
+        <td>{{ c.class_name }}<br><small>{{ c.course_code }} — {{ c.course_name }}</small></td>
+        <td>#{{ c.lesson_no }} {{ c.lesson_title }}</td>
+        <td style="max-width:22rem">{{ c.body[:220] }}{% if c.body|length > 220 %}…{% endif %}</td>
+        <td><a class="btn btn-secondary btn-sm" href="{{ url_for('ops_class_lesson_detail', lesson_id=c.lesson_id) }}">{% if is_en %}Open{% else %}Mở{% endif %}</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="ops-empty">{% if is_en %}No comments match filters.{% else %}Không có thảo luận khớp bộ lọc.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

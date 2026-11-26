@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Bài {{ lesson.lesson_no }} — {{ lesson.title }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_assignment_lessons', assignment_id=lesson.assignment_id) }}" class="back-link">← Danh sách bài giảng</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">Buổi {{ lesson.lesson_no }}: {{ lesson.title }}</h1>
+    <p class="page-desc">
+      {% if lesson.meta %}{{ lesson.meta.class_name }} · {{ lesson.meta.course_code }} — {{ lesson.meta.course_name }}{% endif %}
+      · <span class="ops-status">{{ status_labels.get(lesson.status, lesson.status) }}</span>
+    </p>
+  </div>
+  <div class="page-title-actions">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_lesson_learning_stats', lesson_id=lesson.id) }}">Thời gian học</a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('ops_attendance_from_lesson', lesson_id=lesson.id) }}">Điểm danh</a>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_lesson_preview', lesson_id=lesson.id) }}">Xem như HV</a>
+    {% if lesson.status != 'published' %}
+    <button type="button" class="btn btn-primary btn-sm" id="btn-publish">Publish tới HV</button>
+    {% endif %}
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-two-col">
+  <section class="ops-panel">
+    <h2 class="ops-section-title">Nội dung bài học</h2>
+    <form id="lesson-form" class="ops-form">
+      <label class="ops-field">
+        <span class="ops-field-label">Tiêu đề</span>
+        <input name="title" class="form-control" value="{{ lesson.title }}" placeholder="Tiêu đề buổi học…" />
+      </label>
+      <div class="ops-two-col-fields">
+        <label class="ops-field">
+          <span class="ops-field-label">Loại</span>
+          <select name="lesson_type" class="form-control">
+            <option value="theory" {% if lesson.lesson_type=='theory' %}selected{% endif %}>Lý thuyết</option>
+            <option value="practice" {% if lesson.lesson_type=='practice' %}selected{% endif %}>Thực hành / CG</option>
+            <option value="other" {% if lesson.lesson_type=='other' %}selected{% endif %}>Khác</option>
+          </select>
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">Ngày học</span>
+          <input type="date" name="lesson_date" class="form-control" value="{{ lesson.lesson_date or '' }}" />
+        </label>
+      </div>
+      <label class="ops-field">
+        <span class="ops-field-label">Outline / nội dung</span>
+        <textarea name="content_outline" class="form-control" rows="5" placeholder="Nội dung buổi học…">{{ lesson.content_outline or '' }}</textarea>
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">Mục tiêu</span>
+        <textarea name="objectives" class="form-control" rows="3" placeholder="Mục tiêu học tập…">{{ lesson.objectives or '' }}</textarea>
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">Tóm tắt preview (HV)</span>
+        <textarea name="preview_summary" class="form-control" rows="3" placeholder="Tóm tắt học viên thấy trước khi mở bài…">{{ lesson.preview_summary or '' }}</textarea>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+    </form>
+  </section>
+
+  <section class="ops-panel">
+    <h2 class="ops-section-title">Upload file đính kèm</h2>
+    <form id="upload-form" class="ops-form" enctype="multipart/form-data">
+      <label>Tiêu đề file <input type="text" name="title" class="form-control" placeholder="Slide buổi…" /></label>
+      <label>Loại
+        <select name="material_type" class="form-control">
+          <option value="slide">Slide</option>
+          <option value="reading">Đọc thêm</option>
+          <option value="exercise">Bài tập</option>
+          <option value="other">Khác</option>
+        </select>
+      </label>
+      <label>Mô tả <textarea name="description" class="form-control" rows="2"></textarea></label>
+      <label>File
+        <span class="ops-file" data-ops-file>
+          <input type="file" name="file" required />
+          <span class="ops-file-btn">Chọn file…</span>
+          <span class="ops-file-name">Chưa chọn file</span>
+        </span>
+      </label>
+      <label>Release tới HV?
+        <select name="release_status" class="form-control">
+          <option value="draft">Nháp</option>
+          <option value="released">Release ngay</option>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+    </form>
+  </section>
+</div>
+
+<section class="ops-panel" style="margin-top:1.25rem">
+  <h2 class="ops-section-title">File đính kèm</h2>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead><tr><th>Tiêu đề</th><th>Loại</th><th>File</th><th>Release</th><th></th></tr></thead>
+      <tbody>
+        {% for m in lesson.materials %}
+        <tr>
+          <td data-label="Tiêu đề">{{ m.title }}</td>
+          <td data-label="Loại">{{ status_labels.get(m.material_type, m.material_type) }}</td>
+          <td data-label="File">{% if m.has_file %}{{ m.original_filename }}{% else %}—{% endif %}</td>
+          <td data-label="Release"><span class="ops-status">{{ status_labels.get(m.release_status, m.release_status) }}</span></td>
+          <td data-label="Thao tác" class="ops-row-actions">
+            {% if m.has_file %}
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_material_preview', material_id=m.id) }}?lesson_id={{ lesson.id }}">Xem</a>
+            <a class="btn btn-secondary btn-sm" href="/api/ops/materials/{{ m.id }}/file">Tải</a>
+            {% endif %}
+            {% if m.release_status != 'released' %}
+            <button class="btn btn-primary btn-sm mat-rel" data-id="{{ m.id }}" data-status="released">Release</button>
+            {% else %}
+            <button class="btn btn-secondary btn-sm mat-rel" data-id="{{ m.id }}" data-status="draft">Thu hồi</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="ops-empty">Chưa có file.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="ops-panel" style="margin-top:1.25rem">
+  <h2 class="ops-section-title">Câu hỏi / Góp ý / Bàn luận ({{ lesson.comments|length }})</h2>
+  <div class="ops-comments">
+    {% for c in lesson.comments %}
+    <div class="ops-comment {% if c.comment_type == 'question' or c.is_question %}is-question{% elif c.comment_type == 'feedback' %}is-feedback{% endif %}">
+      <div class="ops-comment-meta">
+        <strong>{{ c.author_name }}</strong>
+        <span class="ops-guide-meta">{{ status_labels.get(c.author_role, c.author_role) }} · {{ c.comment_type_label or ('Câu hỏi' if c.is_question else 'Bàn luận') }} · {{ c.created_at }}</span>
+      </div>
+      <p>{{ c.body }}</p>
+    </div>
+    {% else %}
+    <p class="ops-empty">Chưa có thảo luận.</p>
+    {% endfor %}
+  </div>
+  <form id="staff-comment" class="ops-form" style="margin-top:1rem">
+    <label>Dạng phản hồi
+      <select name="comment_type" class="form-control">
+        <option value="discussion">Bàn luận</option>
+        <option value="feedback">Góp ý</option>
+        <option value="question">Câu hỏi</option>
+      </select>
+    </label>
+    <label>Trả lời / ghi chú cho HV
+      <textarea name="body" class="form-control" rows="2" required></textarea>
+    </label>
+    <button type="submit" class="btn btn-secondary btn-sm">Gửi phản hồi</button>
+  </form>
+</section>
+
+<script>
+var lessonId = {{ lesson.id }};
+document.getElementById('lesson-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target), body = {};
+  fd.forEach(function(v,k){ body[k]=v; });
+  fetch('/api/ops/class-lessons/' + lessonId, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else { alert('Đã lưu'); location.reload(); }
+  });
+});
+var pub = document.getElementById('btn-publish');
+if (pub) pub.addEventListener('click', function(){
+  fetch('/api/ops/class-lessons/' + lessonId, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status:'published'})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else location.reload();
+  });
+});
+document.getElementById('upload-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  fetch('/api/ops/class-lessons/' + lessonId + '/upload', { method:'POST', body: new FormData(e.target) })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) alert(res.d.error || 'Upload lỗi');
+      else location.reload();
+    });
+});
+document.querySelectorAll('.mat-rel').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    fetch('/api/ops/materials/' + btn.dataset.id + '/release', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({release_status: btn.dataset.status})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    });
+  });
+});
+document.getElementById('staff-comment').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target);
+  fetch('/api/ops/class-lessons/' + lessonId + '/comments', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      body: fd.get('body'),
+      comment_type: fd.get('comment_type') || 'discussion',
+      author_role: 'coordinator'
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else location.reload();
+  });
+});
+</script>
+{% endblock %}

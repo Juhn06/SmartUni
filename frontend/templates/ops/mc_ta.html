@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+{% block title %}Trắc nghiệm — {{ meta.course_code }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_assignments') }}" class="back-link">← {% if ui_lang == 'en' %}Assignments{% else %}Bài tập{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if ui_lang == 'en' %}Multiple-choice quiz{% else %}Bài trắc nghiệm{% endif %}</h1>
+    <p class="page-desc">{{ meta.class_name }} · {{ meta.program_code }} · {{ meta.course_code }} — {{ meta.course_name }}{% if meta.lecturer %} · {{ meta.lecturer }}{% endif %}</p>
+  </div>
+  <div class="page-title-actions">
+    <a class="btn btn-secondary btn-sm" href="/api/ops/mc/template.xlsx">{% if ui_lang == 'en' %}Download Excel template{% else %}Tải mẫu Excel{% endif %}</a>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-import">{% if ui_lang == 'en' %}Import template{% else %}Import mẫu{% endif %}</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<p class="page-desc" style="margin-top:0.5rem">
+  {% if ui_lang == 'en' %}
+  Import <strong>Template_MultipleChoice_50.xlsx</strong>: No, Chapter, Difficulty, question, cho1–cho4, Answer (1–4), Explain. Auto-graded on submit.
+  {% else %}
+  Import <strong>Template_MultipleChoice_50.xlsx</strong>: No, Chapter, Difficulty, question, cho1–cho4, Answer (1–4), Explain. Chấm tự động khi nộp.
+  {% endif %}
+</p>
+
+<div class="ops-table-wrap" style="margin-top:1rem">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if ui_lang == 'en' %}Title{% else %}Tiêu đề{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Status{% else %}Trạng thái{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Questions{% else %}Câu hỏi{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Submitted{% else %}Đã nộp{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Source{% else %}Nguồn{% endif %}</th>
+        <th class="ops-th-actions">{% if ui_lang == 'en' %}Actions{% else %}Thao tác{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for h in items %}
+      <tr>
+        <td>{{ h.title }}</td>
+        <td>
+          {% if h.status == 'published' %}<span class="badge badge-ok">{% if ui_lang == 'en' %}Published{% else %}Đã mở{% endif %}</span>
+          {% elif h.status == 'closed' %}<span class="badge">{% if ui_lang == 'en' %}Closed{% else %}Đã đóng{% endif %}</span>
+          {% else %}<span class="badge">{% if ui_lang == 'en' %}Draft{% else %}Nháp{% endif %}</span>{% endif %}
+        </td>
+        <td>{{ h.question_count }}</td>
+        <td>{{ h.submitted_count }}/{{ h.submission_count }}</td>
+        <td>{{ h.source_filename or '—' }}</td>
+        <td class="ops-row-actions">
+          <div class="ops-row-actions-inner">
+            <a class="ops-icon-btn ops-icon-btn--primary" href="{{ url_for('ops_mc_quiz', quiz_id=h.id) }}" title="{% if ui_lang == 'en' %}Open{% else %}Mở{% endif %}">{{ svg('view') }}</a>
+            {% if h.status == 'draft' %}
+            <button type="button" class="ops-icon-btn btn-status" data-id="{{ h.id }}" data-status="published" title="{% if ui_lang == 'en' %}Publish{% else %}Mở cho HV{% endif %}">{{ svg('check') }}</button>
+            {% elif h.status == 'published' %}
+            <button type="button" class="ops-icon-btn btn-status" data-id="{{ h.id }}" data-status="closed" title="{% if ui_lang == 'en' %}Close{% else %}Đóng{% endif %}">{{ svg('update') }}</button>
+            {% else %}
+            <button type="button" class="ops-icon-btn btn-status" data-id="{{ h.id }}" data-status="published" title="{% if ui_lang == 'en' %}Reopen{% else %}Mở lại{% endif %}">{{ svg('check') }}</button>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="ops-empty">{% if ui_lang == 'en' %}No quiz yet. Import a template to start.{% else %}Chưa có bài TN. Import mẫu để bắt đầu.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<dialog id="dlg-import" class="ops-dialog">
+  <form method="dialog" id="form-import" style="padding:1rem;min-width:min(28rem,92vw)">
+    <h3 style="margin-top:0">{% if ui_lang == 'en' %}Import MC template{% else %}Import mẫu trắc nghiệm{% endif %}</h3>
+    <label class="form-label">{% if ui_lang == 'en' %}Title{% else %}Tiêu đề{% endif %}</label>
+    <input class="form-control" id="imp-title" />
+    <label class="form-label" style="margin-top:0.75rem">File (.xlsx)</label>
+    <input type="file" class="form-control" id="imp-file" accept=".xlsx,.xlsm" required />
+    <label style="display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem">
+      <input type="checkbox" id="imp-publish" />
+      {% if ui_lang == 'en' %}Publish immediately{% else %}Mở ngay cho học viên{% endif %}
+    </label>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+      <button type="button" class="btn btn-secondary btn-sm" id="imp-cancel">{% if ui_lang == 'en' %}Cancel{% else %}Hủy{% endif %}</button>
+      <button type="submit" class="btn btn-primary btn-sm">Import</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  var taId = {{ meta.teaching_assignment_id }};
+  var dlg = document.getElementById('dlg-import');
+  document.getElementById('btn-import').addEventListener('click', function(){ dlg.showModal(); });
+  document.getElementById('imp-cancel').addEventListener('click', function(){ dlg.close(); });
+  document.getElementById('form-import').addEventListener('submit', function(e){
+    e.preventDefault();
+    var f = document.getElementById('imp-file').files[0];
+    if (!f) { alert('{% if ui_lang == "en" %}Choose a file{% else %}Chọn file{% endif %}'); return; }
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('title', document.getElementById('imp-title').value || '');
+    if (document.getElementById('imp-publish').checked) fd.append('publish', '1');
+    fetch('/api/ops/mc/teaching-assignments/' + taId + '/quizzes/import', { method:'POST', body: fd })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(x){ if (!x.ok) alert(x.d.error || 'Import failed'); else location.reload(); });
+  });
+  document.querySelectorAll('.btn-status').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/api/ops/mc/quizzes/' + btn.dataset.id + '/status', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({status: btn.dataset.status})
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.error) alert(d.error); else location.reload();
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

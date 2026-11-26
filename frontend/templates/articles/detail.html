@@ -1,0 +1,622 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} - ReadArticles{% endblock %}
+
+{% block content %}
+<div class="article-detail-header">
+    <a href="{{ url_for('articles_index') }}" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Articles
+    </a>
+    <h1 class="page-title">{{ article.title }}</h1>
+    <div class="article-meta-bar">
+        {% if article.source_url %}
+        <span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <a href="{{ article.source_url }}" target="_blank" rel="noopener">View source</a>
+        </span>
+        {% endif %}
+        {% if article.created_at %}
+        <span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ article.created_at }}
+        </span>
+        {% endif %}
+        {% if article.file_path %}
+        <span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            {{ article.file_path.split('/')[-1].split('\\')[-1] }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="article-split">
+    <div class="article-split-left">
+        <div class="section-tabs">
+            {% if article.get('analysis') %}
+            <button class="section-tab active" data-tab="tab-analysis" onclick="switchTab(this)">
+                <svg class="section-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Analyze
+            </button>
+            {% endif %}
+            {% if article.summary %}
+            <button class="section-tab{% if not article.get('analysis') %} active{% endif %}" data-tab="tab-summary" onclick="switchTab(this)">
+                <svg class="section-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                Summary
+            </button>
+            {% endif %}
+            {% if article.get('full_text') %}
+            <button class="section-tab{% if not article.get('analysis') and not article.summary %} active{% endif %}" data-tab="tab-fulltext" onclick="switchTab(this)">
+                <svg class="section-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Full Text
+            </button>
+            {% endif %}
+            <button class="section-tab" data-tab="tab-notes" onclick="switchTab(this)">
+                <svg class="section-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                My Learning Notes
+                <span class="tab-badge" id="notes-count">0</span>
+            </button>
+            <button class="section-tab" data-tab="tab-history" onclick="switchTab(this)">
+                <svg class="section-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                History
+                {% if chats %}<span class="tab-badge">{{ chats|length }}</span>{% endif %}
+            </button>
+        </div>
+        <div class="section-tab-panels">
+            {% if article.get('analysis') %}
+            <div class="section-tab-panel active" id="tab-analysis">
+                {% set analysis_sections = article.analysis|parse_thesis_analysis %}
+                <p class="section-purpose-hint">Browse by section to locate exact information. Export to Excel for reference.</p>
+                <div class="section-toolbar">
+                    <span class="chat-tts-group" data-tts-sibling="article-analysis-content"></span>
+                    <button type="button" class="btn btn-secondary btn-sm summary-pptx-btn" onclick="downloadPptx('/api/articles/{{ article.id }}/analysis/pptx')" title="Export analysis to PowerPoint (download + preview)">PPTX</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="exportArticleAnalysisToExcel()" title="Download as CSV for Excel">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export to Excel
+                    </button>
+                </div>
+                <div class="analysis-table-wrap" id="article-analysis-content">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th class="col-num">#</th>
+                                <th class="col-section">Section</th>
+                                <th class="col-content">Content</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in analysis_sections %}
+                            <tr>
+                                <td class="col-num">{{ s.num }}</td>
+                                <td class="col-section">{{ s.name }}</td>
+                                <td class="col-content"><div class="summary-content markdown-content">{{ s.content }}</div></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3">
+                                    <div class="summary-content markdown-content">{{ article.analysis }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <script>
+                window.articleAnalysisExport = {% if analysis_sections %}{{ analysis_sections|tojson }}{% else %}[{"num":0,"name":"Analysis","content":{{ article.analysis|tojson }}}]{% endif %};
+                window.articleTitle = {{ article.title|tojson }};
+                </script>
+            </div>
+            {% endif %}
+            {% if article.summary %}
+            <div class="section-tab-panel{% if not article.get('analysis') %} active{% endif %}" id="tab-summary">
+                <div class="article-summary-wrap">
+                    <div class="section-toolbar">
+                        <span class="chat-tts-group" data-tts-sibling="article-summary-content"></span>
+                        <button type="button" class="btn btn-secondary btn-sm summary-pptx-btn" onclick="downloadPptx('/api/articles/{{ article.id }}/summary/pptx')" title="Export summary to PowerPoint (download + preview)">PPTX</button>
+                        <div class="chat-feedback-btns" data-feedback="{{ article.get('summary_feedback', '') }}">
+                            <button type="button" class="chat-feedback-btn like{% if article.get('summary_feedback') == 'like' %} active{% endif %}" onclick="setSummaryFeedback({{ article.id }}, 'like', this)" title="Good summary">&#128077;</button>
+                            <button type="button" class="chat-feedback-btn dislike{% if article.get('summary_feedback') == 'dislike' %} active{% endif %}" onclick="setSummaryFeedback({{ article.id }}, 'dislike', this)" title="Poor summary">&#128078;</button>
+                        </div>
+                    </div>
+                    <div class="summary-content markdown-content" id="article-summary-content">{{ article.summary }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if article.get('full_text') %}
+            <div class="section-tab-panel{% if not article.get('analysis') and not article.summary %} active{% endif %}" id="tab-fulltext">
+                <div class="fulltext-content">{{ article.full_text[:8000]|replace('\n', '<br>')|safe }}{% if article.full_text|length > 8000 %}<br><em style="color:var(--text-muted)">&hellip; truncated ({{ article.full_text|length|filesizeformat }} total)</em>{% endif %}</div>
+            </div>
+            {% endif %}
+
+            <div class="section-tab-panel" id="tab-notes">
+                <div class="article-notes-section">
+                    {% if user_id %}
+                    <p class="section-purpose-hint">Capture key learnings and Q&amp;A results from this article. Export to Excel or Word for reference.</p>
+                    <div class="notes-export-row">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="exportArticleNotes('excel')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export to Excel
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="exportArticleNotes('word')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                            Export to Word
+                        </button>
+                    </div>
+                    <form id="note-form" class="note-form">
+                        <textarea id="note-input" placeholder="Capture key learnings, questions, or takeaways from this article..." rows="3"></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
+                    </form>
+                    <div id="notes-list" class="notes-list"></div>
+                    {% else %}
+                    <p class="notes-login-hint">Log in to take and export notes.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="section-tab-panel" id="tab-history">
+                {% if chats %}
+                <section class="chat-history">
+                    <h2>Previous Questions ({{ chats|length }})</h2>
+                    {% for c in chats %}
+                    <div class="chat-history-item" data-question="{{ c.question }}" data-chat-id="{{ c.id }}">
+                        <div class="chat-history-header" onclick="this.parentElement.classList.toggle('expanded')">
+                            <span class="chat-history-q">{{ c.question[:120] }}{% if c.question|length > 120 %}&hellip;{% endif %}</span>
+                            <div class="chat-history-right">
+                                {% if c.model %}<span class="model-badge">{{ c.model }}</span>{% endif %}
+                                <span class="chat-history-date">{{ c.created_at }}</span>
+                                <span class="chat-history-toggle">&#9660;</span>
+                            </div>
+                        </div>
+                        <div class="chat-history-body">
+                            <div class="chat-history-answer markdown-content">{{ c.answer }}</div>
+                            <div class="chat-actions-row">
+                                <div class="chat-feedback-btns" data-feedback="{{ c.feedback or '' }}">
+                                    <button type="button" class="chat-feedback-btn like{% if c.feedback == 'like' %} active{% endif %}" onclick="setChatFeedback({{ article.id }}, {{ c.id }}, 'like', 'article', this)" title="Appropriate">&#128077;</button>
+                                    <button type="button" class="chat-feedback-btn dislike{% if c.feedback == 'dislike' %} active{% endif %}" onclick="setChatFeedback({{ article.id }}, {{ c.id }}, 'dislike', 'article', this)" title="Not appropriate">&#128078;</button>
+                                </div>
+                                {% if user_id %}
+                                <button class="btn btn-secondary btn-sm chat-add-to-notes" type="button" onclick="addChatToArticleNotes({{ article.id }}, this)" title="Add this Q&amp;A to Notes">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Add to Notes
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-secondary btn-sm chat-ask-again" type="button" onclick="askAgain(this)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                    Ask Again
+                                </button>
+                                <button class="btn btn-danger btn-sm chat-delete" type="button" onclick="deleteChat({{ article.id }}, {{ c.id }}, 'article', this)" title="Delete from history">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </section>
+                {% else %}
+                <p style="color:var(--text-muted);font-size:0.9rem">No questions asked yet. Use the chat on the right to ask about this article.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="article-split-right">
+        <section class="article-chat">
+            <h2>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Find exact information
+            </h2>
+            <p class="chat-desc">Ask to locate specific facts, quotes, or passages. Answers cite the exact sections and content from the paper.</p>
+            <div class="chat-suggestions chat-suggestions-article">
+                <span class="chat-suggestions-label">Find:</span>
+                <button type="button" class="chat-suggestion-chip" data-q="Where exactly does the paper mention the main contribution?">Main contribution</button>
+                <button type="button" class="chat-suggestion-chip" data-q="Quote the exact passage about the methodology">Methodology quote</button>
+                <button type="button" class="chat-suggestion-chip" data-q="Which section discusses the experimental results?">Results section</button>
+                <button type="button" class="chat-suggestion-chip" data-q="What are the exact numbers or statistics reported?">Key numbers</button>
+            </div>
+            <div class="model-selector">
+                <label for="model-select">Model:</label>
+                <select id="model-select">
+                    {% for m in chat_models|default(['qwen3:8b']) %}
+                    <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+                <label class="compare-toggle" title="Send to all models and compare results side by side">
+                    <input type="checkbox" id="compare-check"> Compare
+                </label>
+            </div>
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages"></div>
+                <form id="chat-form" class="chat-form">
+                    <input type="hidden" id="article-id" value="{{ article.id }}">
+                    <div class="chat-input-wrap">
+                        <textarea id="chat-input" name="question" placeholder="e.g. Where exactly does it mention X?, Quote the passage about Y, Which section discusses Z?" rows="2"></textarea>
+                        <button type="button" class="chat-voice-btn" onclick="startVoiceInput(document.getElementById('chat-input'))" title="Voice input (Speech-to-text)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+.article-notes-section { margin-top: 0.5rem; }
+.article-notes-section .notes-export-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.article-notes-section .note-form { margin-bottom: 1rem; }
+.article-notes-section .note-form textarea { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font); }
+.article-notes-section .notes-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.article-notes-section .note-item { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; }
+.article-notes-section .note-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.article-notes-section .note-item-date { font-size: 0.8rem; color: var(--text-muted); }
+.article-notes-section .note-item-content { white-space: pre-wrap; font-size: 0.9rem; }
+.article-notes-section .notes-login-hint { color: var(--text-muted); }
+</style>
+
+<script>
+function switchTab(btn) {
+    var tabs = btn.parentElement.querySelectorAll('.section-tab');
+    var panels = btn.parentElement.nextElementSibling.querySelectorAll('.section-tab-panel');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    panels.forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(btn.getAttribute('data-tab'));
+    if (panel) panel.classList.add('active');
+}
+
+function exportArticleAnalysisToExcel() {
+    var data = window.articleAnalysisExport;
+    var title = (window.articleTitle || 'Article') + ' - Analysis';
+    if (!data || !data.length) {
+        alert('No analysis data to export.');
+        return;
+    }
+    function csvEscape(s) {
+        if (s == null) return '';
+        s = String(s);
+        if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+    }
+    var rows = [['Section #', 'Section', 'Content']];
+    data.forEach(function(r) {
+        rows.push([String(r.num || ''), String(r.name || ''), (r.content || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')]);
+    });
+    var csv = rows.map(function(row) {
+        return row.map(csvEscape).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 180) || 'article_analysis') + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function askAgain(btn) {
+    var item = btn.closest('.chat-history-item');
+    var question = item.getAttribute('data-question');
+    var input = document.getElementById('chat-input');
+    input.value = question;
+    input.focus();
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function deleteChat(sourceId, chatId, type, btn) {
+    if (!confirm('Delete this chat from history?')) return;
+    var url = type === 'article' ? '/api/articles/' + sourceId + '/chats/' + chatId
+        : type === 'thesis' ? '/api/theses/' + sourceId + '/chats/' + chatId
+        : '/api/projects/' + sourceId + '/chats/' + chatId;
+    try {
+        var resp = await fetch(url, { method: 'DELETE' });
+        if (resp.ok) {
+            var item = btn.closest('.chat-history-item');
+            if (item) item.remove();
+        } else {
+            var data = await resp.json();
+            alert(data.error || 'Failed to delete.');
+        }
+    } catch (e) {
+        alert('Failed to delete: ' + e.message);
+    }
+}
+
+async function setChatFeedback(sourceId, chatId, feedback, type, btn) {
+    var url = type === 'article' ? '/api/articles/' + sourceId + '/chats/' + chatId + '/feedback'
+        : type === 'thesis' ? '/api/theses/' + sourceId + '/chats/' + chatId + '/feedback'
+        : '/api/projects/' + sourceId + '/chats/' + chatId + '/feedback';
+    try {
+        var resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback: feedback }) });
+        var data = await resp.json();
+        if (resp.ok && data.ok) {
+            var wrap = btn.closest('.chat-feedback-btns') || btn.closest('.chat-msg');
+            if (wrap) {
+                wrap.querySelectorAll('.chat-feedback-btn').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+            }
+        }
+    } catch (e) { /* ignore */ }
+}
+
+async var articleId = {{ article.id }};
+var articleUserId = {{ user_id|default('null')|tojson }};
+
+function addChatToArticleNotesContent(articleId, question, answer) {
+    if (!articleUserId) { alert('Log in to add notes.'); return; }
+    var content = (question || '').trim() ? 'Q: ' + (question || '').trim() + '\n\nA: ' + (answer || '').trim() : (answer || '').trim();
+    if (!content.replace(/\s/g, '')) { alert('Nothing to add.'); return; }
+    fetch('/api/articles/' + articleId + '/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content })
+    }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.ok) {
+            if (typeof loadArticleNotes === 'function') loadArticleNotes();
+            alert('Added to Notes.');
+        } else alert(data.error || 'Failed');
+    }).catch(function(e){ alert('Failed: ' + (e.message || 'Unknown error')); });
+}
+
+function addChatToArticleNotes(articleId, btn) {
+    var item = btn.closest('.chat-history-item');
+    var question = item.getAttribute('data-question') || '';
+    var answerEl = item.querySelector('.chat-history-answer');
+    var answer = answerEl ? (answerEl.textContent || '').trim() : '';
+    addChatToArticleNotesContent(articleId, question, answer);
+}
+
+function loadArticleNotes() {
+    if (!articleUserId) return;
+    fetch('/api/articles/' + articleId + '/notes').then(function(r){ return r.json(); }).then(function(data){
+        var list = document.getElementById('notes-list');
+        var countEl = document.getElementById('notes-count');
+        if (!list || !countEl) return;
+        var notes = Array.isArray(data) ? data : (data.notes || []);
+        if (!Array.isArray(notes)) notes = [];
+        countEl.textContent = notes.length;
+        list.innerHTML = '';
+        notes.forEach(function(n){
+            var div = document.createElement('div');
+            div.className = 'note-item';
+            div.dataset.noteId = n.id;
+            div.innerHTML = '<div class="note-item-header"><span class="note-item-date">' + (n.updated_at || n.created_at || '') + '</span>' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="deleteArticleNote(' + n.id + ', this)">Delete</button></div>' +
+                '<div class="note-item-content">' + (n.content || '').replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>';
+            list.appendChild(div);
+        });
+    });
+}
+
+function deleteArticleNote(noteId, btn) {
+    if (!confirm('Delete this note?')) return;
+    fetch('/api/articles/' + articleId + '/notes/' + noteId, { method: 'DELETE' }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.ok) {
+            var item = btn.closest('.note-item');
+            if (item) item.remove();
+            var list = document.getElementById('notes-list');
+            var countEl = document.getElementById('notes-count');
+            if (countEl) countEl.textContent = list ? list.querySelectorAll('.note-item').length : 0;
+        } else alert(data.error || 'Failed');
+    }).catch(function(){ alert('Failed to delete'); });
+}
+
+function exportArticleNotes(format) {
+    window.location.href = '/api/articles/' + articleId + '/notes/export?format=' + format;
+}
+
+var noteForm = document.getElementById('note-form');
+if (noteForm) noteForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var inp = document.getElementById('note-input');
+    var content = (inp.value || '').trim();
+    if (!content || !articleUserId) return;
+    fetch('/api/articles/' + articleId + '/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content })
+    }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.ok) { inp.value = ''; loadArticleNotes(); }
+        else alert(data.error || 'Failed');
+    }).catch(function(){ alert('Failed to add note'); });
+});
+
+if (articleUserId) loadArticleNotes();
+
+function setSummaryFeedback(articleId, feedback, btn) {
+    try {
+        var resp = await fetch('/api/articles/' + articleId + '/summary/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ feedback: feedback })
+        });
+        var data = await resp.json();
+        if (resp.ok && data.ok) {
+            var wrap = btn.closest('.chat-feedback-btns');
+            if (wrap) {
+                wrap.querySelectorAll('.chat-feedback-btn').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+            }
+        }
+    } catch (e) { /* ignore */ }
+}
+
+(function() {
+    var form = document.getElementById('chat-form');
+    var input = document.getElementById('chat-input');
+    var messages = document.getElementById('chat-messages');
+    var articleId = document.getElementById('article-id').value;
+    var sendBtn = form.querySelector('button[type="submit"]');
+    var modelSelect = document.getElementById('model-select');
+    var compareCheck = document.getElementById('compare-check');
+
+    var urlQ = new URLSearchParams(window.location.search).get('q');
+    if (urlQ && urlQ.trim()) {
+        input.value = 'Which parts of this article relate to: ' + urlQ.trim();
+        input.focus();
+    }
+
+    if (modelSelect && modelSelect.options.length < 2) {
+        compareCheck.parentElement.style.display = 'none';
+    }
+
+    function makeBotBubble(model) {
+        var div = document.createElement('div');
+        div.className = 'chat-msg bot';
+        div.innerHTML = '<span class="chat-typing">Thinking\u2026</span>';
+        if (model) {
+            var badge = document.createElement('span');
+            badge.className = 'model-badge';
+            badge.textContent = model;
+            div.prepend(badge);
+        }
+        return div;
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var q = (input.value || '').trim();
+        if (!q) return;
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending\u2026';
+
+        var userDiv = document.createElement('div');
+        userDiv.className = 'chat-msg user';
+        userDiv.textContent = q;
+        messages.appendChild(userDiv);
+        input.value = '';
+
+        var isCompare = compareCheck.checked;
+        var payload = {
+            question: q,
+            article_ids: [parseInt(articleId)]
+        };
+
+        if (isCompare) {
+            payload.compare = true;
+            var loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-msg bot';
+            loadingDiv.innerHTML = '<span class="chat-typing">Comparing models\u2026</span>';
+            messages.appendChild(loadingDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                var resp = await fetch('/api/articles/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                var data = await resp.json();
+                loadingDiv.remove();
+                if (data.compare) {
+                    var grid = document.createElement('div');
+                    grid.className = 'compare-grid';
+                    Object.keys(data.compare).forEach(function(model) {
+                        var ans = data.compare[model] || '';
+                        var col = document.createElement('div');
+                        col.className = 'compare-col';
+                        col.innerHTML = '<span class="model-badge">' + model + '</span>' +
+                            '<div class="compare-answer">' + ans.replace(/\n/g, '<br>') + '</div>';
+                        if (typeof addTtsButton === 'function') {
+                            var answerEl = col.querySelector('.compare-answer');
+                            addTtsButton(col, function() { return (answerEl ? answerEl.textContent : '').replace(/\s+/g, ' ').trim(); });
+                        }
+                        if (articleUserId) {
+                            var row = document.createElement('div');
+                            row.className = 'chat-actions-row';
+                            var addBtn = document.createElement('button');
+                            addBtn.type = 'button';
+                            addBtn.className = 'btn btn-secondary btn-sm chat-add-to-notes';
+                            addBtn.textContent = 'Add to Notes';
+                            addBtn.onclick = (function(q, a){ return function(){ addChatToArticleNotesContent(articleId, q, a); }; })(q, ans);
+                            row.appendChild(addBtn);
+                            col.appendChild(row);
+                        }
+                        grid.appendChild(col);
+                    });
+                    messages.appendChild(grid);
+                } else {
+                    var errDiv = document.createElement('div');
+                    errDiv.className = 'chat-msg bot error';
+                    errDiv.textContent = data.error || 'Something went wrong.';
+                    messages.appendChild(errDiv);
+                }
+            } catch (err) {
+                loadingDiv.remove();
+                var errDiv2 = document.createElement('div');
+                errDiv2.className = 'chat-msg bot error';
+                errDiv2.textContent = 'Failed to get response.';
+                messages.appendChild(errDiv2);
+            }
+        } else {
+            payload.model = modelSelect.value;
+            var botDiv = makeBotBubble(modelSelect.value);
+            messages.appendChild(botDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                var resp = await fetch('/api/articles/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                var data = await resp.json();
+                if (data.answer) {
+                    var badge = botDiv.querySelector('.model-badge');
+                    if (typeof renderMarkdownWithMath === 'function') {
+                        renderMarkdownWithMath(botDiv, data.answer);
+                    } else {
+                        botDiv.innerHTML = renderMarkdown(data.answer);
+                    }
+                    if (badge) botDiv.prepend(badge);
+                    var actionsRow = document.createElement('div');
+                    actionsRow.className = 'chat-response-actions';
+                    if (data.chat_id) {
+                        var fb = document.createElement('div');
+                        fb.className = 'chat-feedback-btns';
+                        fb.innerHTML = '<button type="button" class="chat-feedback-btn like" onclick="setChatFeedback(' + articleId + ', ' + data.chat_id + ', \'like\', \'article\', this)" title="Appropriate">&#128077;</button><button type="button" class="chat-feedback-btn dislike" onclick="setChatFeedback(' + articleId + ', ' + data.chat_id + ', \'dislike\', \'article\', this)" title="Not appropriate">&#128078;</button>';
+                        actionsRow.appendChild(fb);
+                    }
+                    if (articleUserId) {
+                        var addBtn = document.createElement('button');
+                        addBtn.type = 'button';
+                        addBtn.className = 'btn btn-secondary btn-sm chat-add-to-notes';
+                        addBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Add to Notes';
+                        addBtn.onclick = function() { addChatToArticleNotesContent(articleId, q, data.answer); };
+                        actionsRow.appendChild(addBtn);
+                    }
+                    if (typeof addTtsButton === 'function') {
+                        addTtsButton(actionsRow, function() { return (botDiv.textContent || '').replace(/\s+/g, ' ').trim(); });
+                    }
+                    botDiv.appendChild(actionsRow);
+                } else {
+                    botDiv.textContent = data.error || 'Something went wrong.';
+                    botDiv.classList.add('error');
+                }
+            } catch (err) {
+                botDiv.textContent = 'Failed to get response.';
+                botDiv.classList.add('error');
+            }
+        }
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+        messages.scrollTop = messages.scrollHeight;
+        input.focus();
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    document.querySelectorAll('.chat-suggestion-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            var q = chip.getAttribute('data-q');
+            if (q) { input.value = q; input.focus(); }
+        });
+    });
+})();
+</script>
+{% endblock %}

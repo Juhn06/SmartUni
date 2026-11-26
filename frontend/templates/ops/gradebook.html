@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Bảng điểm — {{ book.meta.name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_grades') }}" class="back-link">← Quản lý điểm</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ book.meta.name }} · Điểm tổng hợp</h1>
+    <p class="page-desc">{{ book.meta.program_code }} · {{ book.meta.version_code or '' }} · Khóa {{ book.meta.cohort_year or '—' }} · {% if book.meta.grade_mode == 'weighted' %}Đầu điểm theo tỷ trọng (mặc định 40/60 hoặc 50/50){% else %}GA 30% + FE 70%{% endif %}</p>
+  </div>
+  <div class="page-title-actions">
+    <a class="btn btn-secondary btn-sm" href="/api/ops/export/grade-synthesis?class_id={{ book.meta.id }}">Xuất Grade Synthesis</a>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-lock">Khóa toàn bộ điểm</button>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-unlock">Mở khóa</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+{% if book.meta.grade_mode == 'weighted' and book.courses %}
+<form id="scheme-form" class="ops-toolbar" style="margin-top:0.75rem;display:flex;gap:0.5rem;align-items:end;flex-wrap:wrap">
+  <label>Học phần
+    <select name="course_id" class="form-control">
+      {% for c in book.courses %}
+      <option value="{{ c.id }}">{{ c.code }} — {{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Tỷ trọng
+    <select name="scheme" class="form-control">
+      <option value="40_60">40 / 60</option>
+      <option value="50_50">50 / 50</option>
+    </select>
+  </label>
+  <button type="submit" class="btn btn-secondary btn-sm">Áp dụng cho môn</button>
+</form>
+{% endif %}
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ book.stats.students }}</span><span class="ops-stat-lbl">HV</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ book.stats.courses }}</span><span class="ops-stat-lbl">Học phần</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ book.stats.locked_cells }}</span><span class="ops-stat-lbl">Ô đã khóa</span></div>
+</div>
+
+<div class="ops-table-wrap" style="margin-top:1rem; overflow-x:auto">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>N°</th>
+        <th>NOM</th>
+        <th>DATE DE NAIS</th>
+        {% for c in book.courses %}
+        <th title="{{ c.name }}&#10;{{ c.lecturer }} · {{ c.institution }}">{{ c.module_no }}<br><small>{{ c.code }}</small></th>
+        {% endfor %}
+        <th>Total</th>
+        <th>Diplômé le</th>
+        <th>Observations</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for st in book.students %}
+      <tr>
+        <td data-label="N°">{{ st.student_code or st.id }}</td>
+        <td data-label="NOM">{{ st.full_name }}</td>
+        <td data-label="DOB">{{ st.dob or '—' }}</td>
+        {% for c in book.courses %}
+        {% set g = st.grades.get(c.id|string, {}) %}
+        <td data-label="{{ c.code }}">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:5.5rem">
+            {% if book.meta.grade_mode == 'weighted' %}
+            {% for comp in c.components %}
+            {% set cs = (g.component_scores or {}) %}
+            {% set cv = cs.get(comp.id|string) %}
+            <input class="form-control grade-comp" style="min-width:4rem;font-size:0.75rem"
+              data-student="{{ st.id }}" data-course="{{ c.id }}" data-field="component" data-component="{{ comp.id }}"
+              placeholder="{{ comp.name }} {{ comp.weight_pct|int }}%" title="{{ comp.name }} ({{ comp.weight_pct|int }}%)"
+              value="{{ cv if cv is not none else '' }}"
+              {% if g.locked %}readonly{% endif %} />
+            {% endfor %}
+            <input class="form-control" style="min-width:4rem;font-weight:600" readonly
+              placeholder="Tổng" title="Tổng theo tỷ trọng"
+              value="{{ g.score if g.score is not none else '' }}" />
+            {% else %}
+            <input class="form-control grade-comp" style="min-width:4rem;font-size:0.75rem"
+              data-student="{{ st.id }}" data-course="{{ c.id }}" data-field="group_assignment"
+              placeholder="GA 30%" title="Group assignment (30%)"
+              value="{{ g.group_assignment if g.group_assignment is not none else '' }}"
+              {% if g.locked %}readonly{% endif %} />
+            <input class="form-control grade-comp" style="min-width:4rem;font-size:0.75rem"
+              data-student="{{ st.id }}" data-course="{{ c.id }}" data-field="final_exam"
+              placeholder="FE 70%" title="Final exam (70%)"
+              value="{{ g.final_exam if g.final_exam is not none else '' }}"
+              {% if g.locked %}readonly{% endif %} />
+            <input class="form-control grade-in" style="min-width:4rem;font-weight:600"
+              data-student="{{ st.id }}" data-course="{{ c.id }}"
+              placeholder="Final" title="Final grade"
+              value="{{ g.score if g.score is not none else '' }}"
+              {% if g.locked %}readonly{% endif %} />
+            {% endif %}
+          </div>
+        </td>
+        {% endfor %}
+        <td data-label="Total"><strong>{{ st.total if st.total is not none else '—' }}</strong></td>
+        <td data-label="Diplômé">{{ st.graduated_at or '—' }}</td>
+        <td data-label="Obs">{{ st.observations or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="20" class="ops-empty">Lớp chưa có học viên.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+var classId = {{ book.meta.id }};
+function postGrade(payload){
+  return fetch('/api/ops/classes/' + classId + '/grades', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error);
+    else location.reload();
+  });
+}
+document.querySelectorAll('.grade-in').forEach(function(inp){
+  inp.addEventListener('change', function(){
+    var score = inp.value === '' ? null : inp.value;
+    postGrade({
+      student_id: parseInt(inp.dataset.student, 10),
+      course_id: parseInt(inp.dataset.course, 10),
+      score: score
+    });
+  });
+});
+document.querySelectorAll('.grade-comp').forEach(function(inp){
+  inp.addEventListener('change', function(){
+    var payload = {
+      student_id: parseInt(inp.dataset.student, 10),
+      course_id: parseInt(inp.dataset.course, 10)
+    };
+    var v = inp.value === '' ? null : inp.value;
+    if (inp.dataset.field === 'component') {
+      payload.component_id = parseInt(inp.dataset.component, 10);
+      payload.component_score = v;
+    } else {
+      payload[inp.dataset.field] = v;
+    }
+    postGrade(payload);
+  });
+});
+function lockAll(locked){
+  fetch('/api/ops/classes/' + classId + '/grades/lock', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({locked: locked})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else location.reload();
+  });
+}
+var schemeForm = document.getElementById('scheme-form');
+if (schemeForm) {
+  schemeForm.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var fd = new FormData(schemeForm);
+    fetch('/api/ops/classes/' + classId + '/grade-scheme', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({course_id: fd.get('course_id'), scheme: fd.get('scheme')})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    });
+  });
+}
+document.getElementById('btn-lock').addEventListener('click', function(){ if(confirm('Khóa toàn bộ điểm lớp?')) lockAll(true); });
+document.getElementById('btn-unlock').addEventListener('click', function(){ if(confirm('Mở khóa điểm?')) lockAll(false); });
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Điểm PV — {{ data.title }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_admissions_interviews') }}" class="back-link">← Phỏng vấn tuyển sinh</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ data.title }}</h1>
+    <p class="page-desc">{{ data.program_code }} · {{ data.round_code }} · {{ data.starts_at }} · Phòng {{ data.room or '—' }}</p>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.candidates }}</span><span class="ops-stat-lbl">Thí sinh</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.scored }}</span><span class="ops-stat-lbl">Đã chấm</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ data.stats.admitted }}</span><span class="ops-stat-lbl">Admitted</span></div>
+</div>
+
+<div class="ops-table-wrap" style="margin-top:1rem">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Fullname</th>
+        <th>Gd</th>
+        <th>Birthdate</th>
+        <th>Company</th>
+        {% for j in data.jury_names %}
+        <th>{{ j }}</th>
+        {% endfor %}
+        <th>Điểm TB</th>
+        <th>Result</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in data.slots %}
+      <tr data-slot="{{ s.id }}">
+        <td data-label="No">{{ s.slot_order }}</td>
+        <td data-label="Họ tên">{{ s.full_name }}</td>
+        <td data-label="Gd">{{ s.gender or '—' }}</td>
+        <td data-label="DOB">{{ s.dob or '—' }}</td>
+        <td data-label="Company">{{ s.company or '—' }}</td>
+        {% for j in data.jury_names %}
+        <td data-label="{{ j }}">
+          <input class="form-control score-in" data-jury="{{ j }}" value="{{ s.scores.get(j, '') }}" style="min-width:3.5rem" />
+        </td>
+        {% endfor %}
+        <td data-label="Điểm TB"><strong class="score-avg">{{ s.score_avg or '—' }}</strong></td>
+        <td data-label="Result">
+          <select class="form-control ops-select result-in" aria-label="Kết quả PV">
+            <option value="pending" {% if s.result=='pending' %}selected{% endif %}>Pending</option>
+            <option value="pass" {% if s.result=='pass' %}selected{% endif %}>Admitted</option>
+            <option value="fail" {% if s.result=='fail' %}selected{% endif %}>Non-Admitted</option>
+          </select>
+        </td>
+        <td data-label="Thao tác">
+          <button type="button" class="btn btn-primary btn-sm save-slot">Lưu</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="20" class="ops-empty">Chưa xếp thí sinh vào buổi này.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.querySelectorAll('.score-in').forEach(function(inp){
+  inp.addEventListener('input', function(){
+    var tr = inp.closest('tr');
+    var nums = [];
+    tr.querySelectorAll('.score-in').forEach(function(el){
+      var n = parseFloat(String(el.value || '').replace(',', '.'));
+      if (!isNaN(n)) nums.push(n);
+    });
+    var avgCell = tr.querySelector('.score-avg');
+    if (avgCell) avgCell.textContent = nums.length ? (Math.round((nums.reduce(function(a,b){return a+b;},0)/nums.length)*100)/100) : '—';
+  });
+});
+document.querySelectorAll('.save-slot').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var tr = btn.closest('tr');
+    var slotId = tr.dataset.slot;
+    var scores = {};
+    var nums = [];
+    tr.querySelectorAll('.score-in').forEach(function(inp){
+      scores[inp.dataset.jury] = inp.value;
+      var n = parseFloat(String(inp.value || '').replace(',', '.'));
+      if (!isNaN(n)) nums.push(n);
+    });
+    var avgCell = tr.querySelector('.score-avg');
+    if (avgCell) avgCell.textContent = nums.length ? (Math.round((nums.reduce(function(a,b){return a+b;},0)/nums.length)*100)/100) : '—';
+    var result = tr.querySelector('.result-in').value;
+    var conclusion = Object.values(scores).filter(Boolean).join('/');
+    fetch('/api/ops/interview-slots/' + slotId + '/scores', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({scores: scores, result: result, score_conclusion: conclusion})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else { alert('Đã lưu điểm'); location.reload(); }
+    });
+  });
+});
+</script>
+{% endblock %}

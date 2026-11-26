@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Storage - DeployWeb{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Edit Storage</h1>
+
+<form class="form form-wide" method="POST" action="{{ url_for('storages_edit', storage_id=storage.get('id')) }}">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="product">Product</label>
+            <input type="text" id="product" name="product" value="{{ storage.get('product', '') or '' }}" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="brand">Brand</label>
+            <input type="text" id="brand" name="brand" value="{{ storage.get('brand', '') or '' }}">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="model">Model</label>
+            <input type="text" id="model" name="model" value="{{ storage.get('model', '') or '' }}">
+        </div>
+        <div class="form-group">
+            <label for="rating">Rating</label>
+            <input type="text" id="rating" name="rating" value="{{ storage.get('rating', '') or '' }}">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="price">Price</label>
+            <input type="text" id="price" name="price" value="{{ storage.get('price', '') or '' }}">
+        </div>
+        <div class="form-group">
+            <label for="RAM">RAM</label>
+            <input type="text" id="RAM" name="RAM" value="{{ storage.get('RAM', '') or '' }}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="picture">Picture URL</label>
+        <input type="url" id="picture" name="picture" value="{{ storage.get('picture', '') or '' }}">
+        {% if storage.get('picture') %}
+        <div id="picture-preview-wrap" class="form-picture-preview">
+            <img id="picture-preview" src="{{ storage.get('picture') }}" alt="Preview" onerror="this.style.display='none'">
+        </div>
+        {% else %}
+        <div id="picture-preview-wrap" class="form-picture-preview" style="display:none">
+            <img id="picture-preview" src="" alt="Preview" onerror="this.style.display='none'">
+        </div>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        <label for="details">Details</label>
+        <textarea id="details" name="details" rows="3">{{ storage.get('details', '') or '' }}</textarea>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Update Storage</button>
+        <a href="{{ url_for('storages_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

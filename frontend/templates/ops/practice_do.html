@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ sub.homework_title }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_student_practice') }}" class="back-link">← {% if ui_lang == 'en' %}My practice{% else %}Bài thực hành của tôi{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ sub.homework_title }}</h1>
+    <p class="page-desc">
+      {% if ui_lang == 'en' %}Your label{% else %}Nhãn bài làm{% endif %}:
+      <strong><code>{{ sub.display_label }}</code></strong>
+      · {% if ui_lang == 'en' %}Variant{% else %}Mã đề{% endif %} <strong>{{ sub.variant_code }}</strong>
+      · {{ sub.status }}
+      {% if sub.score is not none %} · {% if ui_lang == 'en' %}Score{% else %}Điểm{% endif %}: {{ sub.score }}{% endif %}
+    </p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+{% if sub.instructions %}
+<p class="page-desc">{{ sub.instructions }}</p>
+{% endif %}
+
+<div class="ops-summary-grid" style="margin:1rem 0">
+  <div class="ops-stat"><span class="ops-stat-val" style="font-size:0.95rem">{{ sub.display_label }}</span><span class="ops-stat-lbl">STT_HoVaTen_MaDe</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ sub.variant_code }}</span><span class="ops-stat-lbl">{% if ui_lang == 'en' %}Paper code{% else %}Mã đề{% endif %}</span></div>
+</div>
+
+{% if sub.context_text %}
+<details open style="margin:1rem 0">
+  <summary><strong>{% if ui_lang == 'en' %}Scenario / data context{% else %}Ngữ cảnh / dữ liệu đề{% endif %}</strong></summary>
+  <pre style="white-space:pre-wrap;font-size:0.9rem">{{ sub.context_text }}</pre>
+</details>
+{% endif %}
+
+{% set readonly = sub.status in ('submitted', 'graded') or sub.homework_status == 'closed' %}
+
+<form id="practice-form">
+{% for q in sub.questions %}
+<section style="margin:1.25rem 0;padding-bottom:1rem;border-bottom:1px solid var(--border-color,#ddd)">
+  <h3 style="font-size:1rem;margin:0 0 0.35rem">
+    <code>{{ q.code }}</code>
+    · {{ q.points }} {% if ui_lang == 'en' %}pts{% else %}điểm{% endif %}
+  </h3>
+  <pre style="white-space:pre-wrap;font-size:0.88rem;margin:0 0 0.5rem">{{ q.content }}</pre>
+  <label class="form-label">{% if ui_lang == 'en' %}Your answer{% else %}Bài làm của bạn{% endif %}</label>
+  <textarea class="form-control ans-field" data-qid="{{ q.id }}" rows="6" {% if readonly %}readonly{% endif %}>{{ q.answer_text or '' }}</textarea>
+</section>
+{% endfor %}
+
+{% if not readonly %}
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:1rem 0 2rem">
+  <button type="button" class="btn btn-secondary" id="btn-save">{% if ui_lang == 'en' %}Save draft{% else %}Lưu nháp{% endif %}</button>
+  <button type="button" class="btn btn-primary" id="btn-submit">{% if ui_lang == 'en' %}Submit{% else %}Nộp bài{% endif %}</button>
+</div>
+{% else %}
+<p class="page-desc">{% if ui_lang == 'en' %}This attempt is locked.{% else %}Bài đã khóa (đã nộp hoặc đã chấm / bài đã đóng).{% endif %}</p>
+{% endif %}
+</form>
+
+<script>
+(function(){
+  var subId = {{ sub.id }};
+  var readonly = {{ 'true' if readonly else 'false' }};
+  function collect(){
+    var answers = {};
+    document.querySelectorAll('.ans-field').forEach(function(el){
+      answers[el.dataset.qid] = el.value;
+    });
+    return answers;
+  }
+  function post(submit){
+    return fetch('/api/ops/practice/submissions/' + subId + '/answers', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({answers: collect(), submit: !!submit})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); });
+  }
+  var btnSave = document.getElementById('btn-save');
+  var btnSubmit = document.getElementById('btn-submit');
+  if (btnSave) btnSave.addEventListener('click', function(){
+    post(false).then(function(x){
+      if (!x.ok) alert(x.d.error || 'Error');
+      else alert('{% if ui_lang == "en" %}Draft saved{% else %}Đã lưu nháp{% endif %}');
+    });
+  });
+  if (btnSubmit) btnSubmit.addEventListener('click', function(){
+    if (!confirm('{% if ui_lang == "en" %}Submit now? You cannot edit after submit.{% else %}Nộp bài ngay? Sau khi nộp không sửa được.{% endif %}')) return;
+    post(true).then(function(x){
+      if (!x.ok) alert(x.d.error || 'Error');
+      else location.reload();
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Create Project - ReadArticles{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('projects_index') }}" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Projects
+</a>
+<h1 class="page-title">Create Research Project</h1>
+<p class="page-desc">Define your project with title, aims, and instructions. Then select articles from the Articles list or upload new PDFs. Chat will use the selected articles.</p>
+
+<form id="project-form" class="form form-wide">
+    <div class="form-group">
+        <label for="title">Project Title *</label>
+        <input type="text" id="title" name="title" value="{{ title or '' }}" placeholder="e.g. Literature Review on Transformers" required>
+    </div>
+    <div class="form-group">
+        <label for="aims">Aims</label>
+        <textarea id="aims" name="aims" rows="3" placeholder="What are the main objectives of this project?">{{ aims or '' }}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="instructions">Instructions</label>
+        <textarea id="instructions" name="instructions" rows="4" placeholder="Guidance for AI when answering questions (e.g. focus on methodology, compare approaches)...">{{ instructions or '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Select Articles</label>
+        <p class="form-hint">Search and check articles from the list, or upload new PDFs (stored in Articles). Chat will use selected articles.</p>
+        <div class="article-selector create-project-article-selector">
+            <div class="article-search-row">
+                <div class="search-input-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="article-search" placeholder="Search articles by title or summary..." class="article-search-input create-article-search-input">
+                </div>
+                <strong id="selected-count" class="selected-count-badge">0 selected</strong>
+            </div>
+            <div class="article-list-wrap create-article-table-wrap">
+                <div id="article-list" class="article-list">
+                    <p class="loading-msg" id="article-loading">Loading articles...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Upload New PDF (adds to Articles and project)</label>
+            <div class="drop-zone drop-zone-lg" id="upload-zone">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="drop-zone-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                <p class="drop-zone-text">Drag &amp; drop PDF here, or click to browse</p>
+                <p class="drop-zone-hint">New PDFs will be added to Articles and linked to this project</p>
+                <input type="file" id="upload-input" accept=".pdf" class="drop-zone-input">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create &amp; Start Project
+        </button>
+        <a href="{{ url_for('projects_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<style>
+.article-selector { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; background: var(--bg-elevated); }
+.create-project-article-selector .article-search-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.create-project-article-selector .search-input-wrap { flex: 1; min-width: 200px; position: relative; }
+.create-project-article-selector .search-input-wrap .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted); }
+.create-project-article-selector .create-article-search-input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; }
+.create-project-article-selector .create-article-search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.selected-count-badge { font-size: 0.85rem; color: var(--accent); white-space: nowrap; }
+.create-article-table-wrap { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.create-article-table { width: 100%; border-collapse: collapse; }
+.create-article-table th, .create-article-table td { padding: 0.85rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.create-article-table th { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); background: var(--bg); }
+.create-article-table tbody tr:last-child td { border-bottom: none; }
+.create-article-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.02); }
+.create-article-table tbody tr:hover { background: rgba(37, 99, 235, 0.06) !important; cursor: pointer; }
+.create-article-table .col-select { width: 2.75rem; text-align: center; vertical-align: middle; }
+.create-article-table .col-select input { accent-color: var(--accent); margin: 0; cursor: pointer; }
+.create-article-table .col-title { font-size: 0.9rem; max-width: 320px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.2em; }
+.create-article-table .col-source { font-size: 0.85rem; white-space: nowrap; }
+.create-article-table .col-source a { color: var(--accent); text-decoration: none; }
+.create-article-table .col-source a:hover { text-decoration: underline; }
+.create-article-table .col-date { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+.form-hint { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+</style>
+
+<script>
+(function() {
+    var form = document.getElementById('project-form');
+    var titleInput = document.getElementById('title');
+    var aimsInput = document.getElementById('aims');
+    var instructionsInput = document.getElementById('instructions');
+    var searchInput = document.getElementById('article-search');
+    var articleList = document.getElementById('article-list');
+    var selectedCount = document.getElementById('selected-count');
+    var submitBtn = document.getElementById('submit-btn');
+    var uploadZone = document.getElementById('upload-zone');
+    var uploadInput = document.getElementById('upload-input');
+
+    var allArticles = [];
+    var selectedIds = new Set();
+
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function formatDate(s) {
+        if (!s || s === '-') return '-';
+        var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return m[3].replace(/^0/, '') + ' ' + months[parseInt(m[2],10)-1] + ' ' + m[1];
+        return s;
+    }
+
+    function renderArticles(articles) {
+        articleList.innerHTML = '';
+        if (!articles.length) {
+            articleList.innerHTML = '<p class="loading-msg" style="color:var(--text-muted);padding:1rem">No articles found.</p>';
+            return;
+        }
+        var wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        wrap.innerHTML = '<table class="table create-article-table"><thead><tr><th class="col-select"><input type="checkbox" id="create-select-all" title="Select all"></th><th>Title</th><th>Source</th><th>Date</th></tr></thead><tbody></tbody></table>';
+        var tbody = wrap.querySelector('tbody');
+        articles.forEach(function(a) {
+            var tr = document.createElement('tr');
+            var title = (a.title || 'Untitled').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            var source = (a.source_url || '-');
+            var sourceHtml = source !== '-' ? '<a href="' + source.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">Link</a>' : '-';
+            var date = formatDate(a.created_at);
+            var checked = selectedIds.has(a.id) ? ' checked' : '';
+            tr.innerHTML = '<td class="col-select"><input type="checkbox" class="create-article-cb" value="' + a.id + '" data-article-id="' + a.id + '"' + checked + '></td><td class="col-title" title="' + title + '">' + title + '</td><td class="col-source">' + sourceHtml + '</td><td class="col-date">' + date + '</td>';
+            tr.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'A') {
+                    var cb = tr.querySelector('input');
+                    cb.checked = !cb.checked;
+                    if (cb.checked) selectedIds.add(a.id);
+                    else selectedIds.delete(a.id);
+                    updateCount();
+                }
+            });
+            tr.querySelector('input').addEventListener('change', function() {
+                if (this.checked) selectedIds.add(a.id);
+                else selectedIds.delete(a.id);
+                updateCount();
+            });
+            tbody.appendChild(tr);
+        });
+        articleList.appendChild(wrap);
+        var selectAll = document.getElementById('create-select-all');
+        if (selectAll) {
+            selectAll.checked = articles.length > 0 && articles.every(function(a) { return selectedIds.has(a.id); });
+            selectAll.addEventListener('change', function() {
+                articleList.querySelectorAll('.create-article-cb').forEach(function(cb) {
+                    cb.checked = selectAll.checked;
+                    var id = parseInt(cb.value, 10);
+                    if (selectAll.checked) selectedIds.add(id);
+                    else selectedIds.delete(id);
+                });
+                updateCount();
+            });
+        }
+    }
+
+    function updateCount() {
+        selectedCount.textContent = selectedIds.size + ' selected';
+    }
+
+    function loadArticles(q) {
+        articleList.innerHTML = '<p class="loading-msg" style="padding:1rem">Loading...</p>';
+        var url = '/api/articles' + (q ? '?q=' + encodeURIComponent(q) : '');
+        fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'per_page=100').then(function(r) { return r.json(); }).then(function(data) {
+            allArticles = Array.isArray(data) ? data : (data && data.items ? data.items : []);
+            renderArticles(allArticles);
+        }).catch(function() {
+            articleList.innerHTML = '<p style="color:var(--danger);padding:1rem">Failed to load articles.</p>';
+        });
+    }
+
+    searchInput.addEventListener('input', function() {
+        var q = searchInput.value.trim();
+        loadArticles(q);
+    });
+
+    loadArticles('');
+
+    uploadZone.addEventListener('click', function() { uploadInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drop-zone-active'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('drop-zone-active'); });
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('drop-zone-active');
+        if (e.dataTransfer.files.length) {
+            uploadInput.files = e.dataTransfer.files;
+            handleUpload(e.dataTransfer.files[0]);
+        }
+    });
+    uploadInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) handleUpload(this.files[0]);
+    });
+
+    function handleUpload(file) {
+        if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+            alert('Please select a PDF file.');
+            return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Uploading & creating article…';
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/api/articles/upload', {
+            method: 'POST',
+            body: fd
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.id) {
+                selectedIds.add(data.id);
+                loadArticles(searchInput.value.trim());
+                updateCount();
+            } else {
+                alert(data.error || 'Upload failed.');
+            }
+        }).catch(function(err) {
+            alert('Upload failed: ' + err.message);
+        }).finally(function() {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create & Start Project';
+            uploadInput.value = '';
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var title = (titleInput.value || '').trim();
+        if (!title) {
+            alert('Title is required.');
+            return;
+        }
+        if (selectedIds.size === 0) {
+            if (!confirm('No articles selected. Create project anyway? You can add articles later.')) return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating…';
+        showProcessing({
+            title: 'Creating project…',
+            sub: selectedIds.size > 0 ? 'Linking ' + selectedIds.size + ' article(s)…' : 'Setting up project.',
+            steps: ['Creating project', 'Linking articles', 'Ready'],
+            stepIntervals: [2000, 3000]
+        });
+
+        fetch('{{ url_for("projects_create") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: title,
+                description: '',
+                aims: (aimsInput.value || '').trim(),
+                instructions: (instructionsInput.value || '').trim(),
+                article_ids: Array.from(selectedIds)
+            })
+        }).then(function(r) {
+            hideProcessing();
+            var ct = (r.headers.get('content-type') || '').toLowerCase();
+            var isJson = ct.indexOf('application/json') !== -1;
+            if (r.redirected && r.url.indexOf('/login') !== -1) {
+                window.location = r.url;
+                return;
+            }
+            if (r.status === 401) {
+                if (isJson) {
+                    return r.json().then(function(d) {
+                        alert(d.error || 'Session expired. Please log in again.');
+                        window.location = '/login?next=' + encodeURIComponent('/projects/create');
+                    });
+                }
+                window.location = '/login?next=' + encodeURIComponent('/projects/create');
+                return;
+            }
+            return r.text().then(function(text) {
+                var d;
+                try { d = isJson ? JSON.parse(text) : (text && text.trim().startsWith('{') ? JSON.parse(text) : null); } catch (e) { d = null; }
+                if (d && (d.id || d.project_id) && r.ok) {
+                    window.location = '/projects/' + (d.id || d.project_id);
+                    return;
+                }
+                if (d && d.error) {
+                    alert(d.error);
+                } else if (!d || !r.ok) {
+                    alert('Unexpected response. Please try logging in again.');
+                    window.location = '/login?next=' + encodeURIComponent('/projects/create');
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create & Start Project';
+            });
+        }).catch(function(err) {
+            hideProcessing();
+            alert('Failed: ' + (err.message || 'Unknown error'));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create & Start Project';
+        });
+    });
+})();
+</script>
+{% endblock %}

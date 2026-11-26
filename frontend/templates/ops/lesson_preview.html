@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Preview: {{ lesson.title }} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_student_lessons') if is_student else url_for('ops_assignment_lessons', assignment_id=lesson.assignment_id) }}" class="back-link">← {% if is_en %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <p class="ops-guide-meta" style="margin:0">
+      {% if lesson.meta %}{{ lesson.meta.class_name }} · {{ lesson.meta.course_code }} — {{ lesson.meta.course_name }}{% endif %}
+    </p>
+    <h1 class="page-title">{% if is_en %}Session{% else %}Buổi{% endif %} {{ lesson.lesson_no }}: {{ lesson.title }}</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<article class="ops-panel ops-lesson-preview">
+  {% if lesson.lesson_date %}<p class="page-desc">{% if is_en %}Date{% else %}Ngày{% endif %}: {{ lesson.lesson_date }}</p>{% endif %}
+  {% if lesson.publish_at %}<p class="page-desc">{% if is_en %}Published{% else %}Lịch phát{% endif %}: {{ lesson.publish_at }}</p>{% endif %}
+  {% if lesson.preview_summary %}
+  <div class="ops-syllabus-block"><strong>{% if is_en %}Summary{% else %}Tóm tắt{% endif %}</strong><p>{{ lesson.preview_summary }}</p></div>
+  {% endif %}
+  {% if lesson.content_outline %}
+  <div class="ops-syllabus-block"><strong>{% if is_en %}Content{% else %}Nội dung{% endif %}</strong><pre class="ops-pre">{{ lesson.content_outline }}</pre></div>
+  {% endif %}
+  {% if lesson.objectives %}
+  <div class="ops-syllabus-block"><strong>{% if is_en %}Objectives{% else %}Mục tiêu{% endif %}</strong><pre class="ops-pre">{{ lesson.objectives }}</pre></div>
+  {% endif %}
+  {% if lesson.group_id %}
+  <p class="page-desc"><a href="{{ url_for('ops_groups') }}">{% if is_en %}Open study group discussion{% else %}Thảo luận nhóm học tập{% endif %}</a></p>
+  {% endif %}
+</article>
+
+{% if lesson.video_url %}
+{% set vurl = lesson.video_url %}
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">{% if is_en %}Lecture video{% else %}Video bài giảng{% endif %}</h2>
+  {% if 'youtu' in vurl %}
+  <div class="ops-video-wrap" style="position:relative;padding-top:56.25%">
+    <iframe src="{{ vurl.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/') }}" title="lecture" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+  </div>
+  {% elif 'vimeo.com' in vurl %}
+  <div class="ops-video-wrap" style="position:relative;padding-top:56.25%">
+    <iframe src="{{ vurl }}" title="lecture" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen></iframe>
+  </div>
+  {% else %}
+  <video src="{{ vurl }}" controls style="width:100%;max-height:70vh;background:#111"></video>
+  {% endif %}
+</section>
+{% endif %}
+
+{% for m in lesson.materials %}
+  {% if m.material_type == 'video' and m.can_download %}
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">{{ m.title }}</h2>
+  <video src="/api/ops/materials/{{ m.id }}/file?as_student=1" controls style="width:100%;max-height:70vh;background:#111"></video>
+</section>
+  {% endif %}
+{% endfor %}
+
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">{% if is_en %}Lecture files{% else %}Tài liệu bài giảng{% endif %}</h2>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead><tr><th>{% if is_en %}File{% else %}Tài liệu{% endif %}</th><th>{% if is_en %}Type{% else %}Loại{% endif %}</th>{% if not is_student %}<th>Release</th>{% endif %}<th></th></tr></thead>
+      <tbody>
+        {% for m in lesson.materials %}
+        <tr>
+          <td data-label="File">
+            <strong>{{ m.title }}</strong>
+            {% if m.original_filename %}<div class="page-desc">{{ m.original_filename }}</div>{% endif %}
+            {% if m.description %}<div class="page-desc">{{ m.description }}</div>{% endif %}
+          </td>
+          <td data-label="Type">{{ status_labels.get(m.material_type, m.material_type) }}</td>
+          {% if not is_student %}
+          <td data-label="Release"><span class="ops-status">{{ status_labels.get(m.release_status, m.release_status) }}</span></td>
+          {% endif %}
+          <td data-label="Thao tác">
+            {% if m.can_download %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('ops_material_preview', material_id=m.id) }}?as_student=1&lesson_id={{ lesson.id }}">{% if is_en %}Open viewer{% else %}Mở xem{% endif %}</a>
+            <a class="btn btn-secondary btn-sm" href="/api/ops/materials/{{ m.id }}/file?as_student=1">{% if is_en %}Download{% else %}Tải xuống{% endif %}</a>
+            {% else %}
+            <span class="ops-status">{% if is_en %}No file{% else %}Chưa có file{% endif %}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="{% if is_student %}3{% else %}4{% endif %}" class="ops-empty">{% if is_en %}No released materials yet.{% else %}Chưa có tài liệu được release.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if not is_student %}
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">{% if is_en %}Upload materials for this session{% else %}Upload tài liệu buổi học{% endif %}</h2>
+  <p class="page-desc">
+    {% if is_en %}Files stay draft until you release them to students.{% else %}File giữ nháp cho đến khi bấm Release tới HV.{% endif %}
+  </p>
+  <form id="preview-upload-form" class="ops-form" enctype="multipart/form-data">
+    <label>{% if is_en %}Title{% else %}Tiêu đề{% endif %}
+      <input type="text" name="title" class="form-control" placeholder="{% if is_en %}Slide / reading…{% else %}Slide / tài liệu đọc…{% endif %}" />
+    </label>
+    <label>{% if is_en %}Type{% else %}Loại{% endif %}
+      <select name="material_type" class="form-control">
+        <option value="slide">Slide</option>
+        <option value="video">Video</option>
+        <option value="reading">{% if is_en %}Reading{% else %}Đọc thêm{% endif %}</option>
+        <option value="exercise">{% if is_en %}Exercise{% else %}Bài tập{% endif %}</option>
+        <option value="other">{% if is_en %}Other{% else %}Khác{% endif %}</option>
+      </select>
+    </label>
+    <label>{% if is_en %}Description{% else %}Mô tả{% endif %}
+      <textarea name="description" class="form-control" rows="2"></textarea>
+    </label>
+    <label>{% if is_en %}File{% else %}File{% endif %}
+      <span class="ops-file" data-ops-file>
+        <input type="file" name="file" required />
+        <span class="ops-file-btn">{% if is_en %}Choose file…{% else %}Chọn file…{% endif %}</span>
+        <span class="ops-file-name">{% if is_en %}No file selected{% else %}Chưa chọn file{% endif %}</span>
+      </span>
+    </label>
+    <label>{% if is_en %}Release to students?{% else %}Release tới HV?{% endif %}
+      <select name="release_status" class="form-control">
+        <option value="draft">{% if is_en %}Keep draft{% else %}Giữ nháp{% endif %}</option>
+        <option value="released">{% if is_en %}Release now{% else %}Release ngay{% endif %}</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">{% if is_en %}Upload{% else %}Upload{% endif %}</button>
+  </form>
+</section>
+{% endif %}
+
+{% if lesson.chapter_work %}
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">
+    {% if is_en %}Practice &amp; quizzes for this chapter{% else %}Bài tập / trắc nghiệm chương {{ lesson.lesson_no }}{% endif %}
+  </h2>
+  <p class="page-desc">
+    {% if is_en %}Open and answer the parts linked to this session/chapter.{% else %}Vào làm các phần bài gắn với buổi/chương này (có thể lưu nháp, nộp khi xong).{% endif %}
+  </p>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>{% if is_en %}Type{% else %}Loại{% endif %}</th>
+          <th>{% if is_en %}Assignment{% else %}Bài{% endif %}</th>
+          <th>{% if is_en %}This chapter{% else %}Chương này{% endif %}</th>
+          <th>{% if is_en %}Status{% else %}TT{% endif %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in lesson.chapter_work %}
+        <tr>
+          <td data-label="Loại">
+            {% if w.kind == 'mc' %}{% if is_en %}MC{% else %}Trắc nghiệm{% endif %}
+            {% else %}{% if is_en %}Practice{% else %}Thực hành{% endif %}{% endif %}
+          </td>
+          <td data-label="Bài"><strong>{{ w.title }}</strong></td>
+          <td data-label="Chương">
+            {% if w.kind == 'mc' %}
+              {{ w.chapter_question_count }}/{{ w.question_count }} {% if is_en %}Q{% else %}câu{% endif %}
+            {% else %}
+              {{ w.chapter_question_count }} {% if is_en %}items{% else %}câu/đề{% endif %}
+              {% if w.variant_codes %}<div class="page-desc">{{ w.variant_codes|join(', ') }}</div>{% endif %}
+            {% endif %}
+          </td>
+          <td data-label="TT">{{ w.submission_status or (w.status or '—') }}{% if w.score is not none %} · {{ w.score }}{% if w.max_score is not none %}/{{ w.max_score }}{% endif %}{% endif %}</td>
+          <td data-label="Thao tác">
+            {% if w.kind == 'mc' %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('ops_mc_do', quiz_id=w.id, chapter=w.chapter or lesson.lesson_no) }}">
+              {% if is_en %}Answer chapter{% else %}Làm câu chương này{% endif %}
+            </a>
+            {% else %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('ops_practice_do', hw_id=w.id) }}">
+              {% if is_en %}Do practice{% else %}Làm thực hành{% endif %}
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="ops-panel" style="margin-top:1rem">
+  <h2 class="ops-section-title">{% if is_en %}Q&amp;A / comments{% else %}Câu hỏi · Góp ý · Bàn luận{% endif %}</h2>
+  <div class="ops-comments" id="comment-list">
+    {% for c in lesson.comments %}
+    <div class="ops-comment {% if c.comment_type == 'question' or c.is_question %}is-question{% elif c.comment_type == 'feedback' %}is-feedback{% endif %}">
+      <div class="ops-comment-meta">
+        <strong>{{ c.author_name }}</strong>
+        <span class="ops-guide-meta">
+          {{ status_labels.get(c.author_role, c.author_role) }}
+          · {{ c.comment_type_label or c.comment_type or ('Câu hỏi' if c.is_question else 'Bàn luận') }}
+          · {{ c.created_at }}
+        </span>
+      </div>
+      <p>{{ c.body }}</p>
+    </div>
+    {% else %}
+    <p class="ops-empty">{% if is_en %}Be the first to comment.{% else %}Hãy là người đầu tiên đặt câu hỏi hoặc bình luận.{% endif %}</p>
+    {% endfor %}
+  </div>
+
+  <form id="qa-form" class="ops-form" style="margin-top:1rem">
+    <label>{% if is_en %}Type{% else %}Dạng{% endif %}
+      <select name="comment_type" class="form-control" required>
+        <option value="question">{% if is_en %}Question{% else %}Câu hỏi{% endif %}</option>
+        <option value="feedback">{% if is_en %}Feedback{% else %}Góp ý{% endif %}</option>
+        <option value="discussion" selected>{% if is_en %}Discussion{% else %}Bàn luận{% endif %}</option>
+      </select>
+    </label>
+    <label>{% if is_en %}Content{% else %}Nội dung{% endif %}
+      <textarea name="body" class="form-control" rows="3" required placeholder="{% if is_en %}Ask a question, give feedback, or discuss…{% else %}Đặt câu hỏi, góp ý hoặc bàn luận về bài học…{% endif %}"></textarea>
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">{% if is_en %}Send{% else %}Gửi{% endif %}</button>
+  </form>
+</section>
+
+<style>
+.ops-comment.is-feedback { border-left: 3px solid #0d9488; }
+</style>
+
+<script>
+(function(){
+  var lessonId = {{ lesson.id }};
+  var viewSessionId = null;
+  function postJSON(url, body, keepalive){
+    return fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body||{}), keepalive: !!keepalive
+    }).then(function(r){ return r.json().catch(function(){return {};}); });
+  }
+  {% if is_student %}
+  postJSON('/api/ops/class-lessons/' + lessonId + '/views/open', {
+    student_name: {{ (session.get('user') or {}).get('name')|tojson }},
+    student_email: {{ ((session.get('user') or {}).get('student_email') or (session.get('user') or {}).get('contact_email') or (session.get('user') or {}).get('email') or '')|tojson }}
+  }).then(function(d){ if (d && d.id) viewSessionId = d.id; });
+  var hb = setInterval(function(){
+    if (viewSessionId) postJSON('/api/ops/lesson-views/' + viewSessionId + '/heartbeat', {});
+  }, 25000);
+  function closeView(){
+    if (!viewSessionId) return;
+    var id = viewSessionId; viewSessionId = null; clearInterval(hb);
+    if (navigator.sendBeacon) navigator.sendBeacon('/api/ops/lesson-views/' + id + '/close', new Blob([JSON.stringify({})], {type:'application/json'}));
+    else postJSON('/api/ops/lesson-views/' + id + '/close', {}, true);
+  }
+  window.addEventListener('pagehide', closeView);
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState==='hidden') closeView(); });
+  {% endif %}
+
+  var up = document.getElementById('preview-upload-form');
+  if (up) up.addEventListener('submit', function(e){
+    e.preventDefault();
+    fetch('/api/ops/class-lessons/' + lessonId + '/upload', { method:'POST', body: new FormData(e.target) })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || ({{ (ui_lang|default('vi') == 'en')|tojson }} ? 'Upload failed' : 'Upload thất bại'));
+        else location.reload();
+      }).catch(function(err){ alert(err.message); });
+  });
+
+  document.getElementById('qa-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    fetch('/api/ops/class-lessons/' + lessonId + '/comments', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        body: fd.get('body'),
+        comment_type: fd.get('comment_type'),
+        author_role: 'student'
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    }).catch(function(err){ alert(err.message); });
+  });
+})();
+</script>
+{% endblock %}

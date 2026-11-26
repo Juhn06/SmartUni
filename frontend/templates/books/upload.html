@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Book - ReadArticles{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('books_index') }}" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Books
+</a>
+
+<div class="book-upload-page">
+    <header class="book-upload-header">
+        <div class="book-upload-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+        </div>
+        <h1 class="book-upload-title">Upload Book PDF</h1>
+        <p class="book-upload-desc">Add a long-form book for in-depth reading. It will be indexed with RAG for precise retrieval, so you can ask questions and get accurate answers from any part of the text.</p>
+        <div class="book-upload-features">
+            <span class="book-upload-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> RAG search</span>
+            <span class="book-upload-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Notes</span>
+            <span class="book-upload-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export to Excel/Word</span>
+        </div>
+    </header>
+
+    <div class="book-upload-card">
+        <form method="post" action="{{ url_for('books_upload') }}" enctype="multipart/form-data" class="form book-upload-form">
+            <div class="book-upload-grid">
+                <div class="book-upload-meta">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" value="{{ title or '' }}" placeholder="e.g. Deep Learning by Goodfellow" class="form-control">
+                        <span class="form-hint">Optional — defaults to filename</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="source_url">Source URL</label>
+                        <input type="text" id="source_url" name="source_url" value="{{ source_url or '' }}" placeholder="https://... or doi.org/..." class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="category_id">Category</label>
+                        <select id="category_id" name="category_id" class="form-control book-category-select">
+                            <option value="">— No category —</option>
+                            {% for c in book_categories %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="book-upload-drop-wrap">
+                    <div class="drop-zone book-drop-zone" id="drop-zone">
+                        <div class="book-drop-zone-inner">
+                            <div class="book-drop-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+                            </div>
+                            <p class="book-drop-text">Drag &amp; drop your PDF here</p>
+                            <p class="book-drop-sub">or click to browse</p>
+                            <p class="book-drop-hint" id="drop-zone-hint">No file selected</p>
+                            <input type="file" id="file" name="file" accept=".pdf" required class="drop-zone-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="book-upload-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="upload-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload &amp; Index
+                </button>
+                <a href="{{ url_for('books_index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    var zone = document.getElementById('drop-zone');
+    var input = document.getElementById('file');
+    var hint = document.getElementById('drop-zone-hint');
+
+    zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zone.classList.add('drop-zone-active');
+    });
+    zone.addEventListener('dragleave', function() {
+        zone.classList.remove('drop-zone-active');
+    });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('drop-zone-active');
+        if (e.dataTransfer.files.length > 0) {
+            input.files = e.dataTransfer.files;
+            updateHint();
+        }
+    });
+    input.addEventListener('change', updateHint);
+
+    function updateHint() {
+        if (input.files && input.files.length > 0) {
+            var name = input.files[0].name;
+            hint.textContent = name.length > 45 ? name.substring(0, 42) + '…' : name;
+            zone.classList.add('drop-zone-has-file');
+        } else {
+            hint.textContent = 'No file selected';
+            zone.classList.remove('drop-zone-has-file');
+        }
+    }
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (!input.files || input.files.length === 0) return;
+        showProcessing({
+            title: 'Processing book…',
+            sub: 'Extracting text, generating summary, and building RAG index for precise retrieval.',
+            steps: ['Uploading PDF', 'Extracting text', 'Generating summary', 'Indexing for RAG (optimized for long books)'],
+            stepIntervals: [5000, 15000, 35000]
+        });
+    });
+})();
+</script>
+{% endblock %}

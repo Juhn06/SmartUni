@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - ReadArticles{% endblock %}
+
+{% block content %}
+<div class="page-title-row">
+    <h1 class="page-title">Research Projects</h1>
+    <a href="{{ url_for('projects_create') }}" class="btn btn-primary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Project
+    </a>
+</div>
+<p class="page-desc">Create research projects with multiple PDFs. Ask questions across all files and get combined summaries.</p>
+
+<div class="list-search-row">
+    <form method="get" action="{{ url_for('projects_index') }}">
+        <input type="search" name="q" value="{{ search_q or '' }}" placeholder="Search projects by title or description&hellip;" aria-label="Search projects">
+        {% if request.args.get('per_page') %}<input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">{% endif %}
+        <button type="submit" class="btn btn-primary btn-search">Search</button>
+        {% if search_q %}<a href="{{ url_for('projects_index') }}" class="btn btn-secondary btn-search">Clear</a>{% endif %}
+    </form>
+</div>
+
+{% if projects and session.get('user', {}).get('is_admin') %}
+<div class="batch-bar" id="batch-bar">
+    <label class="batch-select-all">
+        <input type="checkbox" id="select-all"> Select All
+    </label>
+    <span class="batch-count" id="batch-count"></span>
+    <div class="batch-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-rerun" disabled onclick="batchRerun()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            ReRun Selected
+        </button>
+        <button class="btn btn-danger btn-sm" id="btn-delete-all" disabled onclick="batchDelete()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete Selected
+        </button>
+    </div>
+</div>
+{% endif %}
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+<div class="articles-grid">
+    {% for p in projects %}
+    <article class="article-card{% if session.get('user', {}).get('is_admin') %} has-check{% endif %}" data-id="{{ p.id }}">
+        {% if session.get('user', {}).get('is_admin') %}
+        <div class="article-card-check">
+            <input type="checkbox" class="item-check" value="{{ p.id }}">
+        </div>
+        {% endif %}
+        <a href="{{ url_for('project_detail', project_id=p.id) }}" class="article-card-link" aria-label="Open project {{ p.get('title', 'Untitled') }}">
+        <h3 class="article-card-title">
+            {{ p.get('title', 'Untitled') }}
+            {% if p.get('shared_by') %}
+            <span class="badge badge-shared" title="Shared with you">Shared by {{ p.shared_by }}</span>
+            {% endif %}
+            {% if p.get('article_count', 0) > 0 %}
+            <span class="badge">{{ p.article_count }} article{{ 's' if p.article_count != 1 }}</span>
+            {% endif %}
+            {% if p.get('file_count', 0) > 0 %}
+            <span class="badge">{{ p.file_count }} file{{ 's' if p.file_count != 1 }}</span>
+            {% endif %}
+            {% if p.get('chat_count', 0) > 0 %}
+            <span class="badge">{{ p.chat_count }} chat{{ 's' if p.chat_count != 1 }}</span>
+            {% endif %}
+        </h3>
+        {% if p.get('description') %}
+        <p class="article-card-summary">{{ p.description[:180] }}{% if p.description|length > 180 %}&hellip;{% endif %}</p>
+        {% endif %}
+        {% if p.get('combined_summary') %}
+        <p class="article-card-summary" style="font-size:0.8rem">{{ p.combined_summary[:120] }}{% if p.combined_summary|length > 120 %}&hellip;{% endif %}</p>
+        {% endif %}
+        </a>
+        <div class="article-card-actions">
+            <a href="{{ url_for('project_detail', project_id=p.id) }}" class="btn btn-primary btn-sm">Open Project</a>
+            {% if not p.get('shared_by') %}
+            <form method="post" action="{{ url_for('projects_delete', project_id=p.id) }}" class="inline-form article-card-delete" onsubmit="return confirm('Are you sure? This will permanently delete this project and ALL its files, summaries, and chat history. This cannot be undone.');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+    </article>
+    {% else %}
+    <div class="articles-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:1rem"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <p>No projects yet.</p>
+        <a href="{{ url_for('projects_create') }}" class="btn btn-primary btn-sm" style="margin-top:0.5rem; color: white">Create your first project</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+{% if projects %}
+<script>
+(function() {
+    var selectAll = document.getElementById('select-all');
+    var checks = document.querySelectorAll('.item-check');
+    if (!selectAll || !checks.length) return;
+    var btnRerun = document.getElementById('btn-rerun');
+    var btnDelete = document.getElementById('btn-delete-all');
+    var countEl = document.getElementById('batch-count');
+
+    function getSelected() {
+        var ids = [];
+        checks.forEach(function(c) { if (c.checked) ids.push(parseInt(c.value)); });
+        return ids;
+    }
+
+    function updateUI() {
+        var ids = getSelected();
+        var n = ids.length;
+        btnRerun.disabled = n === 0;
+        btnDelete.disabled = n === 0;
+        countEl.textContent = n > 0 ? n + ' selected' : '';
+        checks.forEach(function(c) {
+            var card = c.closest('.article-card');
+            if (c.checked) card.classList.add('article-card-selected');
+            else card.classList.remove('article-card-selected');
+        });
+        selectAll.checked = n === checks.length && n > 0;
+        selectAll.indeterminate = n > 0 && n < checks.length;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checks.forEach(function(c) { c.checked = selectAll.checked; });
+        updateUI();
+    });
+    checks.forEach(function(c) { c.addEventListener('change', updateUI); });
+
+    window.batchRerun = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: Re-running will re-extract text, regenerate summaries, and re-index all files in ' + ids.length + ' project(s). This overwrites existing data. Proceed only if you are certain.')) return;
+
+        btnRerun.disabled = true;
+        btnRerun.textContent = 'Processing\u2026';
+        showProcessing({
+            title: 'Re-processing ' + ids.length + ' project(s)\u2026',
+            sub: 'All files in each project will be re-processed and summaries regenerated.',
+            steps: ['Re-extracting text from PDFs', 'Regenerating file summaries', 'Rebuilding search index', 'Regenerating combined summaries'],
+            stepIntervals: [5000, 15000, 30000]
+        });
+
+        try {
+            var resp = await fetch('/api/projects/batch-rerun', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            hideProcessing();
+            var u = (data.updated || []).length;
+            var e = (data.errors || []).length;
+            alert(u + ' project(s) re-processed' + (e > 0 ? ', ' + e + ' error(s)' : '') + '.');
+            location.reload();
+        } catch (err) {
+            hideProcessing();
+            alert('ReRun failed: ' + err.message);
+            btnRerun.disabled = false;
+            btnRerun.textContent = 'ReRun Selected';
+        }
+    };
+
+    window.batchDelete = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: This is a permanent action. ' + ids.length + ' project(s) and ALL their PDFs, summaries, and chat history will be deleted. This CANNOT be undone. Proceed only if you are certain.')) return;
+
+        btnDelete.disabled = true;
+        btnDelete.textContent = 'Deleting\u2026';
+
+        try {
+            var resp = await fetch('/api/projects/batch-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            var d = (data.deleted || []).length;
+            var e = (data.errors || []).length;
+            alert(d + ' project(s) deleted' + (e > 0 ? ', ' + e + ' error(s)' : '') + '.');
+            location.reload();
+        } catch (err) {
+            alert('Delete failed: ' + err.message);
+            btnDelete.disabled = false;
+            btnDelete.textContent = 'Delete Selected';
+        }
+    };
+})();
+</script>
+{% endif %}
+{% endblock %}

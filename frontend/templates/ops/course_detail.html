@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}{{ course.code }} — {{ course.name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_courses') }}" class="back-link">← {{ L('Học phần / Syllabus', 'Courses / Syllabus') }}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ course.code }} — {{ course.name }}</h1>
+    <p class="page-desc">{{ course.program_code }} · {{ course.version_code }} · {{ course.version_name }}
+      · {{ L('HK', 'Term') }}{{ course.semester }}
+      {% if course.credits %} · {{ course.credits }} ECTS{% endif %}
+      · {% if course.practice_sessions %}{{ course.theory_sessions }} {{ L('LT', 'theory') }} + {{ course.practice_sessions }} {{ L('TH', 'practice') }}{% else %}{{ course.theory_sessions }} {{ L('buổi', 'sessions') }}{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_materials') }}?q={{ course.code }}">{{ L('Tài liệu môn', 'Course materials') }}</a>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="ops-two-col">
+  <section class="ops-panel">
+    <h2 class="ops-section-title">Syllabus</h2>
+    <form id="syllabus-form" class="ops-form">
+      <label>{{ L('Trạng thái công bố', 'Release status') }}
+        <select name="syllabus_status" class="form-control">
+          <option value="draft" {% if course.syllabus_status=='draft' %}selected{% endif %}>{{ L('Nháp', 'Draft') }}</option>
+          <option value="published" {% if course.syllabus_status=='published' %}selected{% endif %}>{{ L('Công bố tới HV', 'Published to learners') }}</option>
+        </select>
+      </label>
+      <label>{{ L('Mô tả / đề cương', 'Description / syllabus') }}
+        <textarea name="syllabus_note" class="form-control" rows="4">{{ course.syllabus_note or '' }}</textarea>
+      </label>
+      <label>{{ L('Chuẩn đầu ra', 'Learning outcomes') }}
+        <textarea name="learning_outcomes" class="form-control" rows="3">{{ course.learning_outcomes or '' }}</textarea>
+      </label>
+      <label>{{ L('Đánh giá', 'Assessment') }}
+        <textarea name="assessment_note" class="form-control" rows="2">{{ course.assessment_note or '' }}</textarea>
+      </label>
+      <label>{{ L('Tài liệu đọc thêm', 'Reading list') }}
+        <textarea name="reading_list" class="form-control" rows="2">{{ course.reading_list or '' }}</textarea>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">{{ L('Lưu syllabus', 'Save syllabus') }}</button>
+    </form>
+  </section>
+
+  <section class="ops-panel">
+    <h2 class="ops-section-title">{{ L('Upload tài liệu', 'Upload a file') }}</h2>
+    <form id="upload-form" class="ops-form" enctype="multipart/form-data">
+      <input type="hidden" name="course_id" value="{{ course.id }}" />
+      <label>{{ L('Tiêu đề', 'Title') }}
+        <input type="text" name="title" class="form-control" placeholder="{{ L('Slide buổi 1 / Syllabus PDF…', 'Session 1 slide / syllabus PDF…') }}" />
+      </label>
+      <label>{{ L('Loại', 'Type') }}
+        <select name="material_type" class="form-control">
+          <option value="syllabus">Syllabus</option>
+          <option value="slide" selected>Slide</option>
+          <option value="reading">{{ L('Đọc thêm', 'Reading') }}</option>
+          <option value="exercise">{{ L('Bài tập', 'Exercise') }}</option>
+          <option value="other">{{ L('Khác', 'Other') }}</option>
+        </select>
+      </label>
+      <label>{{ L('Gắn buổi học', 'Attach to session') }}
+        <select name="session_id" class="form-control">
+          <option value="">{{ L('— Cấp học phần (không gắn buổi) —', '— Course level (no session) —') }}</option>
+          {% for s in course.sessions %}
+          <option value="{{ s.id }}">{{ L('Buổi', 'Session') }} {{ s.session_no }}: {{ s.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ L('Mô tả', 'Description') }}
+        <textarea name="description" class="form-control" rows="2"></textarea>
+      </label>
+      <label>{{ L('File (pdf, pptx, docx, zip…)', 'File (pdf, pptx, docx, zip…)') }}
+        <span class="ops-file" data-ops-file>
+          <input type="file" name="file" />
+          <span class="ops-file-btn">{{ L('Chọn file…', 'Choose file…') }}</span>
+          <span class="ops-file-name">{{ L('Chưa chọn file', 'No file chosen') }}</span>
+        </span>
+      </label>
+      <label>{{ L('Release ngay cho HV?', 'Release to learners now?') }}
+        <select name="release_status" class="form-control">
+          <option value="draft">{{ L('Giữ nháp', 'Keep as draft') }}</option>
+          <option value="released">{{ L('Release ngay', 'Release now') }}</option>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+    </form>
+  </section>
+</div>
+
+<section class="ops-panel" style="margin-top:1.25rem">
+  <div class="ops-section-head">
+    <h2 class="ops-section-title">{{ L('Nội dung từng buổi học', 'Session content') }}</h2>
+    {% if course.sessions %}
+    <p class="ops-session-dnd-hint" id="session-order-hint">{{ L('Kéo thả để sắp xếp lại trình tự buổi học · thả xong sẽ lưu tự động', 'Drag to reorder sessions · the new order is saved when you drop') }}</p>
+    {% endif %}
+  </div>
+  {% if course.sessions %}
+  <div class="ops-session-list" id="session-list" data-course-id="{{ course.id }}">
+    {% for s in course.sessions %}
+    <article class="ops-session-card" data-session-id="{{ s.id }}">
+      <header class="ops-session-card-head">
+        <button type="button" class="ops-session-drag" draggable="true" title="{{ L('Kéo để sắp xếp', 'Drag to reorder') }}" aria-label="{{ L('Kéo để sắp xếp', 'Drag to reorder') }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+        </button>
+        <span class="ops-session-no">{{ L('Buổi', 'Session') }} {{ s.session_no }}</span>
+        <span class="ops-status">{{ status_labels.get(s.session_type, s.session_type) }}</span>
+        <span class="ops-status">{{ status_labels.get(s.status, s.status) }}</span>
+        <button type="button" class="btn btn-primary btn-sm sess-save">{{ L('Lưu', 'Save') }}</button>
+      </header>
+      <div class="ops-session-card-body">
+        <label class="ops-field">
+          <span class="ops-field-label">{{ L('Tiêu đề', 'Title') }}</span>
+          <input type="text" class="form-control sess-title" value="{{ s.title }}" placeholder="{{ L('Tiêu đề buổi học…', 'Session title…') }}" />
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">{{ L('Mô tả chi tiết', 'Description') }}</span>
+          <textarea class="form-control sess-outline" rows="3" placeholder="{{ L('Mô tả chi tiết buổi học…', 'Session description…') }}">{{ s.content_outline or '' }}</textarea>
+        </label>
+        <label class="ops-field">
+          <span class="ops-field-label">{{ L('Yêu cầu', 'Requirements') }}</span>
+          <textarea class="form-control sess-requirements" rows="2" placeholder="{{ L('Yêu cầu với học viên…', 'What learners must do…') }}">{{ s.requirements or '' }}</textarea>
+        </label>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="ops-empty">{{ L('Chưa có buổi học.', 'No sessions yet.') }}</p>
+  {% endif %}
+</section>
+
+<section class="ops-panel" style="margin-top:1.25rem">
+  <h2 class="ops-section-title">{{ L('Tài liệu đã gắn học phần', 'Files on this course') }}</h2>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>{{ L('Tiêu đề', 'Title') }}</th>
+          <th>{{ L('Loại', 'Type') }}</th>
+          <th>File</th>
+          <th>Release</th>
+          <th>{{ L('Thao tác', 'Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in course.materials %}
+        <tr>
+          <td data-label="Tiêu đề">{{ m.title }}</td>
+          <td data-label="Loại">{{ status_labels.get(m.material_type, m.material_type) }}</td>
+          <td data-label="File">{% if m.has_file %}{{ m.original_filename }}{% else %}<em>{{ L('Chỉ metadata', 'No file yet') }}</em>{% endif %}</td>
+          <td data-label="Release"><span class="ops-status">{{ status_labels.get(m.release_status, m.release_status) }}</span></td>
+          <td class="ops-row-actions" data-label="Thao tác">
+            {% if m.has_file %}
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_material_preview', material_id=m.id) }}">{{ L('Xem', 'View') }}</a>
+            <a class="btn btn-secondary btn-sm" href="/api/ops/materials/{{ m.id }}/file">{{ L('Tải', 'Download') }}</a>
+            {% endif %}
+            {% if m.release_status != 'released' %}
+            <button class="btn btn-primary btn-sm mat-release" data-id="{{ m.id }}" data-status="released">{{ L('Release HV', 'Release') }}</button>
+            {% else %}
+            <button class="btn btn-secondary btn-sm mat-release" data-id="{{ m.id }}" data-status="draft">{{ L('Thu hồi nháp', 'Back to draft') }}</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="ops-empty">{{ L('Chưa có tài liệu.', 'No files yet.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.getElementById('syllabus-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target);
+  var body = {};
+  fd.forEach(function(v,k){ body[k]=v; });
+  fetch('/api/ops/courses/{{ course.id }}', {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else { alert('{{ L('Đã lưu syllabus', 'Syllabus saved') }}'); location.reload(); }
+  }).catch(function(err){ alert(err.message); });
+});
+
+document.getElementById('upload-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target);
+  fetch('/api/ops/materials/upload', { method:'POST', body: fd })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) alert(res.d.error || "{{ L('Upload thất bại', 'Upload failed') }}");
+      else location.reload();
+    }).catch(function(err){ alert(err.message); });
+});
+
+document.querySelectorAll('.sess-save').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var card = btn.closest('.ops-session-card') || btn.closest('tr');
+    var id = card.dataset.sessionId;
+    fetch('/api/ops/course-sessions/' + id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        title: card.querySelector('.sess-title').value,
+        content_outline: card.querySelector('.sess-outline').value,
+        requirements: (card.querySelector('.sess-requirements') || {}).value || ''
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else {
+        btn.textContent = '{{ L('Đã lưu', 'Saved') }}';
+        btn.classList.add('is-saved');
+        setTimeout(function(){ btn.textContent = '{{ L('Lưu', 'Save') }}'; btn.classList.remove('is-saved'); }, 1200);
+      }
+    });
+  });
+});
+
+(function initSessionDragReorder(){
+  var list = document.getElementById('session-list');
+  if (!list) return;
+  var hint = document.getElementById('session-order-hint');
+  var courseId = list.dataset.courseId;
+  var dragCard = null;
+  var saving = false;
+
+  function cards(){ return Array.from(list.querySelectorAll('.ops-session-card')); }
+
+  function renumberLocal(){
+    cards().forEach(function(card, idx){
+      var no = card.querySelector('.ops-session-no');
+      if (no) no.textContent = 'Buổi ' + (idx + 1);
+    });
+    var sel = document.querySelector('#upload-form select[name="session_id"]');
+    if (!sel) return;
+    cards().forEach(function(card, idx){
+      var opt = sel.querySelector('option[value="' + card.dataset.sessionId + '"]');
+      if (!opt) return;
+      var title = (card.querySelector('.sess-title') || {}).value || '';
+      opt.textContent = 'Buổi ' + (idx + 1) + ': ' + title;
+    });
+  }
+
+  function persistOrder(){
+    if (saving) return;
+    var ids = cards().map(function(c){ return parseInt(c.dataset.sessionId, 10); });
+    saving = true;
+    if (hint) hint.textContent = 'Đang lưu trình tự…';
+    list.classList.add('is-saving-order');
+    fetch('/api/ops/courses/' + courseId + '/sessions/reorder', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({session_ids: ids})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) {
+          if (hint) hint.textContent = res.d.error || 'Không lưu được trình tự';
+          alert(res.d.error || "{{ L('Không lưu được trình tự buổi học', 'Could not save the session order') }}");
+          location.reload();
+          return;
+        }
+        renumberLocal();
+        if (hint) {
+          hint.textContent = "{{ L('Đã lưu trình tự buổi học', 'Session order saved') }}";
+          setTimeout(function(){
+            hint.textContent = 'Kéo thả để sắp xếp lại trình tự buổi học · thả xong sẽ lưu tự động';
+          }, 1600);
+        }
+      })
+      .catch(function(err){
+        if (hint) hint.textContent = err.message || 'Lỗi kết nối';
+        alert(err.message || "{{ L('Lỗi kết nối', 'Connection error') }}");
+      })
+      .finally(function(){
+        saving = false;
+        list.classList.remove('is-saving-order');
+      });
+  }
+
+  list.addEventListener('dragstart', function(e){
+    var handle = e.target.closest('.ops-session-drag');
+    if (!handle || !list.contains(handle)) return;
+    var card = handle.closest('.ops-session-card');
+    if (!card) return;
+    dragCard = card;
+    card.classList.add('is-dragging');
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.sessionId || '');
+      e.dataTransfer.setDragImage(card, 24, 24);
+    } catch (err) {}
+  });
+
+  list.addEventListener('dragend', function(){
+    if (dragCard) dragCard.classList.remove('is-dragging');
+    cards().forEach(function(c){ c.classList.remove('is-drop-before', 'is-drop-after'); });
+    dragCard = null;
+  });
+
+  list.addEventListener('dragover', function(e){
+    if (!dragCard) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+    var over = e.target.closest('.ops-session-card');
+    cards().forEach(function(c){ c.classList.remove('is-drop-before', 'is-drop-after'); });
+    if (!over || over === dragCard) return;
+    var rect = over.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    over.classList.add(before ? 'is-drop-before' : 'is-drop-after');
+  });
+
+  list.addEventListener('drop', function(e){
+    if (!dragCard) return;
+    e.preventDefault();
+    var over = e.target.closest('.ops-session-card');
+    cards().forEach(function(c){ c.classList.remove('is-drop-before', 'is-drop-after'); });
+    if (!over || over === dragCard) {
+      dragCard.classList.remove('is-dragging');
+      dragCard = null;
+      return;
+    }
+    var rect = over.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    if (before) list.insertBefore(dragCard, over);
+    else list.insertBefore(dragCard, over.nextSibling);
+    dragCard.classList.remove('is-dragging');
+    dragCard = null;
+    renumberLocal();
+    persistOrder();
+  });
+})();
+
+document.querySelectorAll('.mat-release').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = btn.dataset.id, status = btn.dataset.status;
+    fetch('/api/ops/materials/' + id + '/release', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({release_status: status})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - ReadArticles{% endblock %}
+
+{% block content %}
+{% set stats = stats or {} %}
+<div class="page-title-row">
+    <h1 class="page-title">Admin Dashboard</h1>
+    <a href="{{ url_for('admin_upload') }}" class="btn btn-primary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload PDF
+    </a>
+    <a href="{{ url_for('admin_bulk_import') }}" class="btn btn-secondary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Add Multiple Articles
+    </a>
+</div>
+<p class="page-desc">Manage uploaded articles and system configuration.</p>
+
+<div class="admin-dashboard-stats">
+    <a href="{{ url_for('articles_index') }}" class="admin-stat-card admin-stat-card-link" title="View articles">
+        <span class="admin-stat-value">{{ stats.get('articles_count', 0) }}</span>
+        <span class="admin-stat-label">Articles</span>
+    </a>
+    <a href="{{ url_for('projects_index') }}" class="admin-stat-card admin-stat-card-link" title="View projects">
+        <span class="admin-stat-value">{{ stats.get('projects_count', 0) }}</span>
+        <span class="admin-stat-label">Projects</span>
+    </a>
+    <a href="{{ url_for('theses_index') }}" class="admin-stat-card admin-stat-card-link" title="View theses">
+        <span class="admin-stat-value">{{ stats.get('theses_count', 0) }}</span>
+        <span class="admin-stat-label">Theses</span>
+    </a>
+    <a href="{{ url_for('books_index') }}" class="admin-stat-card admin-stat-card-link" title="View books">
+        <span class="admin-stat-value">{{ stats.get('books_count', 0) }}</span>
+        <span class="admin-stat-label">Books</span>
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="admin-stat-card admin-stat-card-link" title="Người dùng">
+        <span class="admin-stat-value">{{ stats.get('users_count', 0) }}</span>
+        <span class="admin-stat-label">Users</span>
+    </a>
+    <a href="{{ url_for('ops_admissions_applications') }}" class="admin-stat-card admin-stat-card-link" title="Hồ sơ tuyển sinh">
+        <span class="admin-stat-value">{{ stats.get('applications_count', 0) }}</span>
+        <span class="admin-stat-label">Applications</span>
+    </a>
+    {% if stats.get('qa_label') %}
+    <div class="admin-stat-card" title="{{ stats.get('qa_flags') }} {{ stats.get('qa_suggestions') }}">
+        <span class="admin-stat-value">{{ stats.get('qa_label') }}</span>
+        <span class="admin-stat-label">Rà soát AI</span>
+    </div>
+    {% endif %}
+    <div class="admin-stat-card">
+        <span class="admin-stat-value">{{ stats.get('dislikes_total', 0) }}</span>
+        <span class="admin-stat-label">Dislikes</span>
+    </div>
+</div>
+
+<div class="admin-dashboard-chats">
+    <h3 class="admin-subsection-title">Chat counts & feedback by type</h3>
+    <div class="admin-chart-wrap">
+        <canvas id="admin-stats-chart" width="400" height="220"
+            data-chats="{{ [stats.get('article_chats_count', 0), stats.get('thesis_chats_count', 0), stats.get('project_chats_count', 0), stats.get('book_chats_count', 0)]|tojson }}"
+            data-likes="{{ [stats.get('article_likes', 0), stats.get('thesis_likes', 0), stats.get('project_likes', 0), stats.get('book_likes', 0)]|tojson }}"
+            data-dislikes="{{ [stats.get('article_dislikes', 0), stats.get('thesis_dislikes', 0), stats.get('project_dislikes', 0), stats.get('book_dislikes', 0)]|tojson }}">
+        </canvas>
+    </div>
+</div>
+
+{% if not llm_ok %}
+<div class="alert alert-warning">
+    <strong>LLM not configured.</strong> Set <code>OPENAI_API_KEY</code> or <code>OPENAI_BASE_URL</code> (e.g. for Ollama) in the backend environment. Upload will fail until configured.
+</div>
+{% endif %}
+
+<div class="admin-articles">
+    <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Articles ({{ articles|length }})
+    </h2>
+    {% for a in articles %}
+    <div class="admin-article-row">
+        <div class="admin-article-info">
+            <strong>{{ a.get('title', 'Untitled') }}</strong>
+            {% if a.get('chat_count', 0) > 0 %}<span class="badge">{{ a.chat_count }} chat{{ 's' if a.chat_count != 1 }}</span>{% endif %}
+            {% if a.source_url %}<span class="meta"> &middot; <a href="{{ a.source_url }}" target="_blank">Source</a></span>{% endif %}
+            {% if a.get('summary') %}
+            <p class="admin-article-preview">{{ a.summary[:150] }}{% if a.summary|length > 150 %}&hellip;{% endif %}</p>
+            {% endif %}
+        </div>
+        <div class="admin-article-actions">
+            <a href="{{ url_for('article_detail', article_id=a.id) }}" class="btn btn-secondary btn-sm" title="View article">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+            </a>
+            <form method="post" action="{{ url_for('admin_delete_article', article_id=a.id) }}" class="admin-article-delete" onsubmit="return confirm('Are you sure? This will permanently delete this article, its PDF, and all chat history. This cannot be undone.');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="articles-empty" style="margin-top:0.5rem">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:0.75rem"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p>No articles yet. <a href="{{ url_for('admin_upload') }}">Upload</a> a PDF to get started.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="admin-articles" style="margin-top:2rem">
+    <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+        Books ({{ books|length }})
+    </h2>
+    {% for b in books %}
+    <div class="admin-article-row">
+        <div class="admin-article-info">
+            <strong>{{ b.get('title', 'Untitled') }}</strong>
+            {% if b.get('category_name') %}<span class="badge" style="background:var(--accent-light);color:var(--accent)">{{ b.category_name }}</span>{% endif %}
+            {% if b.get('chat_count', 0) > 0 %}<span class="badge">{{ b.chat_count }} chat{{ 's' if b.chat_count != 1 }}</span>{% endif %}
+            {% if b.source_url %}<span class="meta"> &middot; <a href="{{ b.source_url }}" target="_blank">Source</a></span>{% endif %}
+            {% if b.get('summary') %}
+            <p class="admin-article-preview">{{ b.summary[:150] }}{% if b.summary|length > 150 %}&hellip;{% endif %}</p>
+            {% endif %}
+        </div>
+        <div class="admin-article-actions">
+            <a href="{{ url_for('book_detail', book_id=b.id) }}" class="btn btn-secondary btn-sm" title="View book">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+            </a>
+            <form method="post" action="{{ url_for('books_delete', book_id=b.id) }}" class="admin-article-delete" onsubmit="return confirm('Are you sure? This will permanently delete this book, its PDF, notes, and chat history.');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="articles-empty" style="margin-top:0.5rem">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:0.75rem"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+        <p>No books yet. <a href="{{ url_for('books_upload') }}">Upload</a> a book PDF to get started.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    var canvas = document.getElementById('admin-stats-chart');
+    if (!canvas) return;
+    var chats = JSON.parse(canvas.getAttribute('data-chats') || '[0,0,0,0]');
+    var likes = JSON.parse(canvas.getAttribute('data-likes') || '[0,0,0,0]');
+    var dislikes = JSON.parse(canvas.getAttribute('data-dislikes') || '[0,0,0,0]');
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: ['Articles', 'Theses', 'Projects', 'Books'],
+            datasets: [
+                { label: 'Chats', data: chats, backgroundColor: 'rgba(37, 99, 235, 0.7)', borderColor: '#2563eb', borderWidth: 1 },
+                { label: 'Likes', data: likes, backgroundColor: 'rgba(22, 163, 74, 0.7)', borderColor: '#16a34a', borderWidth: 1 },
+                { label: 'Dislikes', data: dislikes, backgroundColor: 'rgba(220, 38, 38, 0.7)', borderColor: '#dc2626', borderWidth: 1 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

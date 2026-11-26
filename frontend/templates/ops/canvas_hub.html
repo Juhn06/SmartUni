@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+{% block title %}{{ hub.title or cfg.title }} - SmartUni{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">{{ hub.title or cfg.title }}</h1>
+  </div>
+  <div class="page-title-actions">
+    {% if cfg.canvas_export_roster %}
+    <button type="button" class="btn btn-primary btn-sm" id="btn-export-roster">Xuất roster → Canvas</button>
+    {% endif %}
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-canvas-print">{% if ui_lang == 'en' %}Print{% else %}In{% endif %}</button>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-canvas-excel">{% if ui_lang == 'en' %}Export Excel{% else %}Xuất Excel{% endif %}</button>
+    <a class="btn btn-secondary btn-sm" href="{{ hub.canvas_login_url }}" target="_blank" rel="noopener">Mở Canvas</a>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+{% if hub.stats %}
+<div class="ops-summary-grid">
+  {% for k, v in hub.stats.items() %}
+  <div class="ops-stat"><span class="ops-stat-val">{{ v }}</span><span class="ops-stat-lbl">{{ k }}</span></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if hub.guides %}
+<div class="ops-canvas-guides">
+  <h2 class="ops-section-title">Quy trình theo đối tượng</h2>
+  <ol class="ops-guide-list">
+    {% for g in hub.guides %}
+    <li>
+      <strong>{{ g.title }}</strong>
+      <span class="ops-guide-meta">{{ g.canvas_area }} · {{ g.smartuni_perm }}</span>
+      <p>{{ g.detail }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        {% for col in cfg.columns %}
+        {% set key = col.key if col is mapping else col[0] %}
+        {% set label = col.label if col is mapping else col[1] %}
+        {% set source = col.source if col is mapping else 'own' %}
+        {% set src_title = (col.src_label_en if ui_lang == 'en' else col.src_label) if col is mapping else '' %}
+        <th class="ops-src ops-src--{{ source }}" data-source="{{ source }}" title="{{ src_title }}">{{ label }}</th>
+        {% endfor %}
+        {% if cfg.canvas_row_export or cfg.canvas_it_panel %}
+        <th class="ops-th-actions">{% if ui_lang == 'en' %}Actions{% else %}Thao tác{% endif %}</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        {% for col in cfg.columns %}
+        {% set key = col.key if col is mapping else col[0] %}
+        {% set label = col.label if col is mapping else col[1] %}
+        {% set source = col.source if col is mapping else 'own' %}
+        <td class="ops-td-src ops-src--{{ source }}" data-label="{{ label }}" data-source="{{ source }}">
+          {% set val = row.get(key) %}
+          {% if key in ('status','sync_status','sync_label','access') %}
+            <span class="ops-status">{{ status_labels.get(val, val) }}</span>
+          {% else %}{{ val if val is not none else '—' }}{% endif %}
+        </td>
+        {% endfor %}
+        {% if cfg.canvas_row_export %}
+        <td class="ops-row-actions" data-label="Thao tác">
+          <div class="ops-row-actions-inner">
+          <button type="button" class="ops-icon-btn ops-icon-btn--primary canvas-export-class" data-id="{{ row.id }}" title="Xuất gói Canvas" aria-label="Xuất gói Canvas">{{ svg('cloud') }}</button>
+          </div>
+        </td>
+        {% elif cfg.canvas_it_panel %}
+        <td class="ops-row-actions" data-label="Thao tác"><div class="ops-row-actions-inner">—</div></td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="20" class="ops-empty">Chưa có dữ liệu cho đối tượng này.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+{% if hub.id_maps %}
+<h2 class="ops-section-title">SIS ID map (mới nhất)</h2>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr><th>Loại</th><th>Local key</th><th>SIS ID</th><th>Nhãn</th><th>Cập nhật</th></tr>
+    </thead>
+    <tbody>
+      {% for m in hub.id_maps %}
+      <tr>
+        <td>{{ m.entity_type }}</td>
+        <td><code>{{ m.local_key }}</code></td>
+        <td><code>{{ m.sis_id }}</code></td>
+        <td>{{ m.label }}</td>
+        <td>{{ m.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if cfg.canvas_it_panel %}
+<div class="ops-toolbar" style="margin-top:1rem">
+  <label>Đánh dấu export đã đẩy lên Canvas — ID gói:
+    <input type="number" id="mark-export-id" class="form-control" style="width:8rem;display:inline-block" />
+  </label>
+  <button type="button" class="btn btn-primary btn-sm" id="btn-mark-pushed">Đánh dấu đã đẩy</button>
+</div>
+{% endif %}
+
+<div id="canvas-export-result" class="ops-canvas-result" hidden></div>
+
+<script>
+function showExportResult(data) {
+  var el = document.getElementById('canvas-export-result');
+  el.hidden = false;
+  var counts = data.counts || {};
+  var csvKeys = Object.keys(data.sis_csvs || {});
+  var html = '<h3>Gói Canvas #' + (data.export_id || '') + '</h3>';
+  html += '<p>Users: ' + (counts.users || counts.students || 0) +
+    ' · Courses: ' + (counts.courses || 0) +
+    ' · Enrollments: ' + (counts.enrollments || 0) + '</p>';
+  if (csvKeys.length) {
+    html += '<p>SIS CSV sẵn sàng: ' + csvKeys.join(', ') + '</p>';
+    csvKeys.forEach(function(name) {
+      var blob = new Blob([data.sis_csvs[name]], {type: 'text/csv;charset=utf-8'});
+      var url = URL.createObjectURL(blob);
+      html += '<p><a class="btn btn-secondary btn-sm" download="' + name + '" href="' + url + '">Tải ' + name + '</a></p>';
+    });
+  }
+  html += '<p><button class="btn btn-secondary btn-sm" onclick="location.reload()">Làm mới</button></p>';
+  el.innerHTML = html;
+}
+
+var rosterBtn = document.getElementById('btn-export-roster');
+if (rosterBtn) {
+  rosterBtn.addEventListener('click', function() {
+    if (!confirm('Xuất roster HV official sang gói Canvas (users.csv)?')) return;
+    fetch('/api/ops/canvas/export/roster', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || 'Lỗi xuất roster');
+        else {
+          // fetch detail for CSV
+          return fetch('/api/ops/canvas/exports/' + res.d.export_id).then(function(r){ return r.json(); })
+            .then(function(detail){
+              showExportResult(Object.assign({}, res.d, {sis_csvs: detail.sis_csvs || {}}));
+            });
+        }
+      }).catch(function(e){ alert(e.message); });
+  });
+}
+
+document.querySelectorAll('.canvas-export-class').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = btn.dataset.id;
+    if (!confirm('Xuất gói Canvas cho lớp #' + id + ' (users + courses + enrollments)?')) return;
+    fetch('/api/ops/canvas/export/class/' + id, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || 'Lỗi xuất lớp');
+        else {
+          return fetch('/api/ops/canvas/exports/' + res.d.export_id).then(function(r){ return r.json(); })
+            .then(function(detail){
+              showExportResult(Object.assign({}, res.d, {sis_csvs: detail.sis_csvs || {}}));
+            });
+        }
+      }).catch(function(e){ alert(e.message); });
+  });
+});
+
+var markBtn = document.getElementById('btn-mark-pushed');
+if (markBtn) {
+  markBtn.addEventListener('click', function(){
+    var id = document.getElementById('mark-export-id').value;
+    if (!id) { alert('Nhập ID gói export'); return; }
+    if (!confirm('Đánh dấu gói #' + id + ' đã đẩy lên Canvas?')) return;
+    fetch('/api/ops/canvas/exports/' + id + '/mark-pushed', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify({})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else location.reload();
+    }).catch(function(e){ alert(e.message); });
+  });
+}
+
+(function(){
+  var printBtn = document.getElementById('btn-canvas-print');
+  if (printBtn) {
+    printBtn.addEventListener('click', function(){
+      document.body.classList.add('ops-printing');
+      window.print();
+      setTimeout(function(){ document.body.classList.remove('ops-printing'); }, 500);
+    });
+  }
+  var excelBtn = document.getElementById('btn-canvas-excel');
+  if (excelBtn) {
+    excelBtn.addEventListener('click', function(){
+      var table = document.querySelector('.ops-table');
+      if (!table) return;
+      var rows = [];
+      table.querySelectorAll('tr').forEach(function(tr){
+        var cells = [];
+        tr.querySelectorAll('th,td').forEach(function(td){
+          if (td.classList.contains('ops-th-actions') || td.classList.contains('ops-row-actions')) return;
+          var t = (td.textContent || '').replace(/\s+/g, ' ').trim().replace(/"/g, '""');
+          cells.push('"' + t + '"');
+        });
+        if (cells.length) rows.push(cells.join(','));
+      });
+      var blob = new Blob(['\ufeff' + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'canvas_hub.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+  }
+})();
+</script>
+{% endblock %}

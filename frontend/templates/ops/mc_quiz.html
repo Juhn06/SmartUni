@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+{% block title %}{{ quiz.title }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_mc_ta', ta_id=quiz.teaching_assignment_id) }}" class="back-link">← {% if ui_lang == 'en' %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ quiz.title }}</h1>
+    <p class="page-desc">
+      {{ quiz.meta.class_name }} · {{ quiz.meta.course_code }} · {{ quiz.questions|length }} {% if ui_lang == 'en' %}questions{% else %}câu{% endif %}
+      · {% if quiz.status == 'published' %}{% if ui_lang == 'en' %}Published{% else %}Đã mở{% endif %}{% elif quiz.status == 'closed' %}{% if ui_lang == 'en' %}Closed{% else %}Đã đóng{% endif %}{% else %}{% if ui_lang == 'en' %}Draft{% else %}Nháp{% endif %}{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">
+    {% if quiz.status != 'published' %}
+    <button type="button" class="btn btn-primary btn-sm btn-status" data-status="published">{% if ui_lang == 'en' %}Publish{% else %}Mở cho HV{% endif %}</button>
+    {% else %}
+    <button type="button" class="btn btn-secondary btn-sm btn-status" data-status="closed">{% if ui_lang == 'en' %}Close{% else %}Đóng bài{% endif %}</button>
+    {% endif %}
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<details style="margin:1rem 0">
+  <summary><strong>{% if ui_lang == 'en' %}Question bank{% else %}Ngân hàng câu hỏi{% endif %}</strong></summary>
+  <ol style="font-size:0.9rem">
+  {% for q in quiz.questions %}
+    <li style="margin:0.35rem 0">
+      <strong>Q{{ q.q_no or loop.index }}</strong> (Ch.{{ q.chapter or '—' }}, Lv.{{ q.difficulty or '—' }})
+      — {{ q.question[:140] }}{% if q.question|length > 140 %}…{% endif %}
+      · <em>Ans: {{ q.answer }}</em>
+    </li>
+  {% endfor %}
+  </ol>
+</details>
+
+<h2 class="page-title" style="font-size:1.15rem">{% if ui_lang == 'en' %}Submissions{% else %}Bài nộp{% endif %}</h2>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if ui_lang == 'en' %}Student{% else %}Học viên{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Status{% else %}TT{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Score{% else %}Điểm{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Submitted{% else %}Nộp{% endif %}</th>
+        <th class="ops-th-actions">{% if ui_lang == 'en' %}View{% else %}Xem{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in submissions %}
+      <tr>
+        <td>{{ s.student_name }}{% if s.student_email %}<br><small>{{ s.student_email }}</small>{% endif %}</td>
+        <td>{{ s.status }}</td>
+        <td>{% if s.score is not none %}{{ s.score }}/{{ s.max_score }}{% else %}—{% endif %}</td>
+        <td>{{ s.submitted_at or '—' }}</td>
+        <td class="ops-row-actions">
+          <div class="ops-row-actions-inner">
+            <a class="ops-icon-btn" href="{{ url_for('ops_mc_submission', sub_id=s.id) }}" title="{% if ui_lang == 'en' %}View{% else %}Xem{% endif %}">{{ svg('clipboard') }}</a>
+          </div>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="ops-empty">{% if ui_lang == 'en' %}No submissions yet.{% else %}Chưa có bài nộp.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function(){
+  var quizId = {{ quiz.id }};
+  document.querySelectorAll('.btn-status').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/api/ops/mc/quizzes/' + quizId + '/status', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({status: btn.dataset.status})
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.error) alert(d.error); else location.reload();
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

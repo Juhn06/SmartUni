@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Xem — {{ preview.title }} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+{% set track = track_views and lesson_id %}
+<a href="javascript:history.back()" class="back-link">← {% if is_en %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="viewer-shell" id="viewer-shell">
+  <div class="viewer-toolbar">
+    <div class="viewer-toolbar-left">
+      <h1 class="viewer-title">{{ preview.material_title or preview.title }}</h1>
+      <span class="viewer-meta">{{ preview.kind|upper }}{% if preview.slide_count %} · {{ preview.slide_count }} slides{% endif %}</span>
+    </div>
+    <div class="viewer-toolbar-right">
+      {% if preview.kind == 'pptx' and preview.slides %}
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-prev" title="←">‹</button>
+      <span class="viewer-slide-counter" id="slide-counter">1 / {{ preview.slides|length }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-next" title="→">›</button>
+      {% endif %}
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-fs" title="{% if is_en %}Fullscreen{% else %}Toàn màn hình{% endif %}">{% if is_en %}Fullscreen{% else %}Toàn màn hình{% endif %}</button>
+      <a class="btn btn-primary btn-sm" href="{{ download_url }}">{% if is_en %}Download{% else %}Tải xuống{% endif %}</a>
+      {% include 'partials/feedback_btn.html' %}
+    </div>
+  </div>
+
+  <div class="viewer-stage" id="viewer-stage">
+    {% if preview.kind == 'pdf' %}
+    <iframe class="viewer-frame" src="{{ file_url }}" title="PDF"></iframe>
+    {% elif preview.kind == 'image' %}
+    <div class="viewer-image-wrap"><img src="{{ file_url }}" alt="{{ preview.title }}" class="viewer-image"></div>
+    {% elif preview.kind == 'pptx' and preview.slides %}
+    <div class="viewer-deck" id="viewer-deck">
+      {% for s in preview.slides %}
+      <article class="viewer-slide{% if loop.first %} is-active{% endif %}" data-idx="{{ loop.index0 }}">
+        <div class="viewer-slide-badge">Slide {{ s.index }}</div>
+        <div class="viewer-slide-body">{{ s.html|safe }}</div>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="viewer-thumbs" id="viewer-thumbs">
+      {% for s in preview.slides %}
+      <button type="button" class="viewer-thumb{% if loop.first %} is-active{% endif %}" data-idx="{{ loop.index0 }}" title="{{ s.title }}">{{ s.index }}</button>
+      {% endfor %}
+    </div>
+    {% elif preview.html %}
+    <div class="viewer-html ops-preview-html">{{ preview.html|safe }}</div>
+    {% else %}
+    <p class="ops-empty">{% if is_en %}Cannot preview. Please{% else %}Không xem trước được. Hãy{% endif %} <a href="{{ download_url }}">{% if is_en %}download{% else %}tải file{% endif %}</a>.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.viewer-shell {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border, #dbe3ec);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
+  overflow: hidden;
+  min-height: 78vh;
+  display: flex;
+  flex-direction: column;
+}
+.viewer-toolbar {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border, #dbe3ec); backdrop-filter: blur(6px);
+  position: sticky; top: 0; z-index: 5;
+}
+.viewer-title { margin: 0; font-size: 1.05rem; font-weight: 650; color: var(--color-primary, #00528c); }
+.viewer-meta { font-size: 0.8rem; color: #64748b; margin-left: 0.35rem; }
+.viewer-toolbar-right { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.viewer-slide-counter { font-variant-numeric: tabular-nums; font-size: 0.9rem; min-width: 4.5rem; text-align: center; }
+.viewer-stage { flex: 1; padding: 1rem; position: relative; }
+.viewer-frame { width: 100%; min-height: 70vh; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,0.08); }
+.viewer-image-wrap { text-align: center; padding: 1rem; }
+.viewer-image { max-width: 100%; max-height: 72vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,0.1); }
+.viewer-html { background: #fff; border-radius: 10px; padding: 1.25rem 1.5rem; max-height: 72vh; overflow: auto; box-shadow: 0 8px 24px rgba(15,23,42,0.06); line-height: 1.6; }
+.viewer-deck { background: #0f2740; border-radius: 12px; min-height: 58vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; position: relative; }
+.viewer-slide { display: none; width: min(960px, 100%); background: #fff; border-radius: 10px; padding: 2rem 2.25rem; min-height: 48vh; box-shadow: 0 18px 40px rgba(0,0,0,0.28); animation: viewerFade 0.25s ease; }
+.viewer-slide.is-active { display: block; }
+.viewer-slide-badge { font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; margin-bottom: 0.75rem; }
+.viewer-slide-body { font-size: 1.15rem; line-height: 1.55; color: #0f172a; }
+.viewer-slide-body .ops-slide-title-line { font-size: 1.45rem; font-weight: 700; color: var(--color-primary, #00528c); margin-bottom: 0.85rem; }
+.viewer-slide-body p { margin: 0.35rem 0; }
+.viewer-thumbs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.85rem; justify-content: center; }
+.viewer-thumb { width: 2rem; height: 2rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 0.8rem; }
+.viewer-thumb.is-active { background: var(--color-primary, #00528c); color: #fff; border-color: transparent; }
+.viewer-shell.is-fs { position: fixed; inset: 0; z-index: 2000; margin: 0; border-radius: 0; min-height: 100vh; }
+.viewer-shell.is-fs .viewer-stage { padding: 1.25rem 1.5rem 1.5rem; }
+.viewer-shell.is-fs .viewer-deck { min-height: calc(100vh - 7rem); }
+.viewer-shell.is-fs .viewer-slide { min-height: 70vh; }
+@keyframes viewerFade { from { opacity: 0.4; transform: translateY(6px);} to { opacity: 1; transform: none;} }
+@media (max-width: 720px) {
+  .viewer-slide { padding: 1.25rem; min-height: 42vh; }
+  .viewer-slide-body { font-size: 1rem; }
+  .viewer-slide-body .ops-slide-title-line { font-size: 1.2rem; }
+}
+</style>
+
+<script>
+(function(){
+  var shell = document.getElementById('viewer-shell');
+  var fsBtn = document.getElementById('btn-fs');
+  if (fsBtn) fsBtn.addEventListener('click', function(){
+    shell.classList.toggle('is-fs');
+    fsBtn.textContent = shell.classList.contains('is-fs')
+      ? '{% if is_en %}Exit{% else %}Thoát{% endif %}'
+      : '{% if is_en %}Fullscreen{% else %}Toàn màn hình{% endif %}';
+  });
+
+  {% if preview.kind == 'pptx' and preview.slides %}
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.viewer-slide'));
+  var thumbs = Array.prototype.slice.call(document.querySelectorAll('.viewer-thumb'));
+  var idx = 0;
+  var counter = document.getElementById('slide-counter');
+  function go(n){
+    if (!slides.length) return;
+    idx = (n + slides.length) % slides.length;
+    slides.forEach(function(el,i){ el.classList.toggle('is-active', i===idx); });
+    thumbs.forEach(function(el,i){ el.classList.toggle('is-active', i===idx); });
+    if (counter) counter.textContent = (idx+1) + ' / ' + slides.length;
+  }
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx-1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx+1); });
+  thumbs.forEach(function(btn){ btn.addEventListener('click', function(){ go(parseInt(btn.dataset.idx,10)); }); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(idx+1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx-1); }
+    if (e.key === 'Escape' && shell.classList.contains('is-fs')) { shell.classList.remove('is-fs'); fsBtn.textContent = '{% if is_en %}Fullscreen{% else %}Toàn màn hình{% endif %}'; }
+    if (e.key === 'f' || e.key === 'F') { fsBtn.click(); }
+  });
+  {% endif %}
+
+  {% if track %}
+  var viewSessionId = null;
+  var lessonId = {{ lesson_id|int }};
+  var materialId = {{ preview.material_id|int }};
+  function postJSON(url, body, keepalive){
+    return fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body || {}),
+      keepalive: !!keepalive
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); });
+  }
+  postJSON('/api/ops/class-lessons/' + lessonId + '/views/open', {
+    material_id: materialId,
+    student_name: {{ (session.get('user') or {}).get('name')|tojson }},
+    student_email: {{ ((session.get('user') or {}).get('student_email') or (session.get('user') or {}).get('contact_email') or (session.get('user') or {}).get('email') or '')|tojson }}
+  }).then(function(d){ if (d && d.id) viewSessionId = d.id; });
+
+  var hb = setInterval(function(){
+    if (!viewSessionId) return;
+    postJSON('/api/ops/lesson-views/' + viewSessionId + '/heartbeat', {});
+  }, 25000);
+
+  function closeView(){
+    if (!viewSessionId) return;
+    var id = viewSessionId;
+    viewSessionId = null;
+    clearInterval(hb);
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/ops/lesson-views/' + id + '/close', new Blob([JSON.stringify({})], {type:'application/json'}));
+    } else {
+      postJSON('/api/ops/lesson-views/' + id + '/close', {}, true);
+    }
+  }
+  window.addEventListener('pagehide', closeView);
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'hidden') closeView();
+  });
+  {% endif %}
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Books - ReadArticles{% endblock %}
+
+{% block content %}
+<div class="page-title-row">
+    <h1 class="page-title">Books</h1>
+    <a href="{{ url_for('books_upload') }}" class="btn btn-primary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload Book
+    </a>
+</div>
+<p class="page-desc">Read long books with full RAG indexing. Take notes and export to Excel or Word.</p>
+
+<div class="list-search-row">
+    <form method="get" action="{{ url_for('books_index') }}">
+        <input type="search" name="q" value="{{ search_q or '' }}" placeholder="Search books by title or summary&hellip;" aria-label="Search books">
+        {% if current_category_id %}<input type="hidden" name="category_id" value="{{ current_category_id }}">{% endif %}
+        {% if request.args.get('per_page') %}<input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">{% endif %}
+        <button type="submit" class="btn btn-primary btn-search">Search</button>
+        {% if search_q %}<a href="{{ url_for('books_index', category_id=current_category_id) if current_category_id else url_for('books_index') }}" class="btn btn-secondary btn-search">Clear</a>{% endif %}
+    </form>
+</div>
+
+{% if books and session.get('user', {}).get('is_admin') %}
+<div class="batch-bar" id="batch-bar">
+    <label class="batch-select-all">
+        <input type="checkbox" id="select-all"> Select All
+    </label>
+    <span class="batch-count" id="batch-count"></span>
+    <div class="batch-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-rerun" disabled onclick="batchRerun()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            ReRun Selected
+        </button>
+        <button class="btn btn-danger btn-sm" id="btn-delete-all" disabled onclick="batchDelete()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete Selected
+        </button>
+    </div>
+</div>
+{% endif %}
+
+{% if book_categories %}
+<div class="books-filter-row">
+    <a href="{{ url_for('books_index') }}" class="btn btn-sm {{ 'btn-primary' if not current_category_id else 'btn-secondary' }}">All</a>
+    {% for c in book_categories %}
+    <a href="{{ url_for('books_index', category_id=c.id) }}" class="btn btn-sm {{ 'btn-primary' if current_category_id == c.id else 'btn-secondary' }}">{{ c.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+<div class="articles-grid">
+    {% for b in books %}
+    <article class="article-card{% if session.get('user', {}).get('is_admin') %} has-check{% endif %}" data-id="{{ b.id }}">
+        {% if session.get('user', {}).get('is_admin') %}
+        <div class="article-card-check">
+            <input type="checkbox" class="item-check" value="{{ b.id }}">
+        </div>
+        {% endif %}
+        <h3 class="article-card-title">
+            {{ b.get('title', 'Untitled') }}
+            {% if b.get('category_name') %}<span class="badge" style="background:var(--accent-light);color:var(--accent);font-size:0.75rem">{{ b.category_name }}</span>{% endif %}
+            {% if b.get('chat_count', 0) > 0 %}
+            <span class="badge">{{ b.chat_count }} chat{{ 's' if b.chat_count != 1 }}</span>
+            {% endif %}
+        </h3>
+        {% if b.get('source_url') %}
+        <p class="article-card-meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <a href="{{ b.source_url }}" target="_blank" rel="noopener">Source</a>
+        </p>
+        {% endif %}
+        {% if b.get('summary') %}
+        <p class="article-card-summary">{{ b.summary[:180] }}{% if b.summary|length > 180 %}&hellip;{% endif %}</p>
+        {% endif %}
+        <div class="article-card-actions">
+            <a href="{{ url_for('book_detail', book_id=b.id) }}" class="btn btn-primary btn-sm">Read &amp; Chat</a>
+            <form method="post" action="{{ url_for('books_delete', book_id=b.id) }}" class="inline-form article-card-delete" onsubmit="return confirm('Are you sure? This will permanently delete this book, its PDF, notes, and chat history.');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </article>
+    {% else %}
+    <div class="articles-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:1rem"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+        <p>No books yet.</p>
+        <a href="{{ url_for('books_upload') }}" class="btn btn-primary btn-sm" style="margin-top:0.5rem; color: white">Upload your first book</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+{% if books %}
+<script>
+(function() {
+    var selectAll = document.getElementById('select-all');
+    var checks = document.querySelectorAll('.item-check');
+    if (!selectAll || !checks.length) return;
+    var btnRerun = document.getElementById('btn-rerun');
+    var btnDelete = document.getElementById('btn-delete-all');
+    var countEl = document.getElementById('batch-count');
+
+    function getSelected() {
+        var ids = [];
+        checks.forEach(function(c) { if (c.checked) ids.push(parseInt(c.value)); });
+        return ids;
+    }
+
+    function updateUI() {
+        var ids = getSelected();
+        var n = ids.length;
+        btnRerun.disabled = n === 0;
+        btnDelete.disabled = n === 0;
+        countEl.textContent = n > 0 ? n + ' selected' : '';
+
+        checks.forEach(function(c) {
+            var card = c.closest('.article-card');
+            if (c.checked) card.classList.add('article-card-selected');
+            else card.classList.remove('article-card-selected');
+        });
+
+        selectAll.checked = n === checks.length && n > 0;
+        selectAll.indeterminate = n > 0 && n < checks.length;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checks.forEach(function(c) { c.checked = selectAll.checked; });
+        updateUI();
+    });
+
+    checks.forEach(function(c) {
+        c.addEventListener('change', updateUI);
+    });
+
+    window.batchRerun = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: Re-running will re-extract text, regenerate summaries, and rebuild the index for ' + ids.length + ' book' + (ids.length !== 1 ? 's' : '') + '. This overwrites existing data. Books can be large; this may take a while. Proceed only if you are certain.')) return;
+
+        btnRerun.disabled = true;
+        btnRerun.textContent = 'Processing\u2026';
+        showProcessing({
+            title: 'Re-processing ' + ids.length + ' book' + (ids.length !== 1 ? 's' : '') + '\u2026',
+            sub: 'Each book will be re-extracted, re-summarized, and re-indexed.',
+            steps: ['Re-extracting text from PDFs', 'Regenerating summaries', 'Rebuilding search index', 'Finishing up'],
+            stepIntervals: [5000, 20000, 60000]
+        });
+
+        try {
+            var resp = await fetch('/api/books/rerun', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            hideProcessing();
+            var u = (data.updated || []).length;
+            var e = (data.errors || []).length;
+            alert(u + ' book' + (u !== 1 ? 's' : '') + ' re-processed' + (e > 0 ? ', ' + e + ' error' + (e !== 1 ? 's' : '') : '') + '.');
+            location.reload();
+        } catch (err) {
+            hideProcessing();
+            alert('ReRun failed: ' + err.message);
+            btnRerun.disabled = false;
+            btnRerun.textContent = 'ReRun Selected';
+        }
+    };
+
+    window.batchDelete = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: This is a permanent action. ' + ids.length + ' book' + (ids.length !== 1 ? 's' : '') + ' will be deleted along with all PDFs, notes, and chat history. This CANNOT be undone. Proceed only if you are certain.')) return;
+
+        btnDelete.disabled = true;
+        btnDelete.textContent = 'Deleting\u2026';
+
+        try {
+            var resp = await fetch('/api/books/batch-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            var d = (data.deleted || []).length;
+            var e = (data.errors || []).length;
+            alert(d + ' book' + (d !== 1 ? 's' : '') + ' deleted' + (e > 0 ? ', ' + e + ' error' + (e !== 1 ? 's' : '') : '') + '.');
+            location.reload();
+        } catch (err) {
+            alert('Delete failed: ' + err.message);
+            btnDelete.disabled = false;
+            btnDelete.textContent = 'Delete Selected';
+        }
+    };
+})();
+</script>
+{% endif %}
+{% endblock %}

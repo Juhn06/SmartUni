@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}{{ t('dashboard_home') }} - SmartUni{% endblock %}
+{% block content %}
+<div class="ops-home">
+  <div class="page-title-row">
+    <div class="page-title-main">
+      <h1 class="page-title">{{ t('dashboard_home') }}</h1>
+    </div>
+    <div class="page-title-actions">
+      <a class="btn-help" href="{{ url_for('ops_guide') }}" title="{{ t('guide_open') }}" aria-label="{{ t('guide_open') }}">?</a>
+      {% include 'partials/feedback_btn.html' %}
+    </div>
+  </div>
+
+  {% if user_departments %}
+  <p class="ops-dept-line">
+    {{ t('department') }}:
+    {% for d in user_departments %}
+      <span class="ops-chip">{{ d.name }}</span>
+    {% endfor %}
+  </p>
+  {% endif %}
+
+  <section class="ops-dash-section" aria-labelledby="ops-dash-heading">
+    <h2 id="ops-dash-heading" class="ops-section-title">{{ t('dashboard_section') }}</h2>
+    {% set links = summary_links or {} %}
+    {% macro kpi(key, val, lbl) -%}
+      {% if links.get(key) %}
+      <a class="ops-stat ops-stat--link" href="{{ links[key] }}"><span class="ops-stat-val">{{ val or 0 }}</span><span class="ops-stat-lbl">{{ lbl }}</span></a>
+      {% else %}
+      <div class="ops-stat"><span class="ops-stat-val">{{ val or 0 }}</span><span class="ops-stat-lbl">{{ lbl }}</span></div>
+      {% endif %}
+    {%- endmacro %}
+    <div class="ops-summary-grid">
+      {{ kpi('applications', summary.applications, t('applications')) }}
+      {{ kpi('fees_pending', summary.fees_pending, t('fees_pending')) }}
+      {% if summary.fees_overdue is defined %}
+      {{ kpi('fees_due_soon', summary.fees_due_soon, 'Due soon' if ui_lang == 'en' else 'Sắp hạn nộp HP') }}
+      {{ kpi('fees_overdue', summary.fees_overdue, 'Overdue items' if ui_lang == 'en' else 'Khoản HP quá hạn') }}
+      {{ kpi('overdue_students', summary.overdue_students, 'Students overdue' if ui_lang == 'en' else 'HV quá hạn HP') }}
+      {{ kpi('fee_alerts', summary.fee_alerts, 'Tuition alerts' if ui_lang == 'en' else 'Cảnh báo học phí') }}
+      {% endif %}
+      {{ kpi('students_active', summary.students_active, 'Active students' if ui_lang == 'en' else 'HV đang học') }}
+      {{ kpi('classes', summary.classes, t('classes')) }}
+      {{ kpi('faculty', summary.faculty, 'Faculty') }}
+      {{ kpi('alumni', summary.alumni, 'Alumni') }}
+    </div>
+  </section>
+
+  {% if summary.pipeline %}
+  <section class="ops-dash-section" aria-labelledby="ops-pipeline-heading">
+    <h2 id="ops-pipeline-heading" class="ops-section-title">
+      {% if ui_lang == 'en' %}Admissions → enrollment pipeline{% else %}Luồng liên thông hồ sơ → ghi danh{% endif %}
+    </h2>
+    <div class="ops-pipeline">
+      {% for step in summary.pipeline %}
+      {% set step_href = links.get(step.code) %}
+      {% if step_href %}
+      <a class="ops-pipeline-step ops-stat--link" href="{{ step_href }}">
+        <span class="ops-pipeline-count">{{ step.count }}</span>
+        <span class="ops-pipeline-label">{{ step.label }}</span>
+      </a>
+      {% else %}
+      <div class="ops-pipeline-step">
+        <span class="ops-pipeline-count">{{ step.count }}</span>
+        <span class="ops-pipeline-label">{{ step.label }}</span>
+      </div>
+      {% endif %}
+      {% if not loop.last %}<span class="ops-pipeline-arrow" aria-hidden="true">→</span>{% endif %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if summary.by_program %}
+  <section class="ops-dash-section" aria-labelledby="ops-prog-heading">
+    <h2 id="ops-prog-heading" class="ops-section-title">
+      {% if ui_lang == 'en' %}By program{% else %}Theo chương trình{% endif %}
+    </h2>
+    <div class="ops-prog-grid">
+      {% for p in summary.by_program %}
+      <div class="ops-prog-card">
+        <strong class="ops-prog-code">{{ p.program_code }}</strong>
+        <div class="ops-prog-metrics">
+          <span>{{ p.applications or 0 }} {% if ui_lang == 'en' %}apps{% else %}hồ sơ{% endif %}</span>
+          <span>{{ p.students or 0 }} {% if ui_lang == 'en' %}students{% else %}HV{% endif %}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if summary.asst %}
+  <section class="ops-dash-section" aria-labelledby="ops-asst-heading">
+    <h2 id="ops-asst-heading" class="ops-section-title">
+      {% if ui_lang == 'en' %}Shared management (Assistant / Director){% else %}Điều hành chung (Trợ lý / BGD){% endif %}
+    </h2>
+    <div class="ops-summary-grid ops-summary-grid--asst">
+      {{ kpi('tasks_open', summary.asst.tasks_open, 'Open tasks' if ui_lang == 'en' else 'Nhiệm vụ mở') }}
+      {{ kpi('leave_pending', summary.asst.leave_pending, 'Leave pending' if ui_lang == 'en' else 'Nghỉ chờ duyệt') }}
+      {{ kpi('intl_faculty_prep', summary.asst.intl_faculty_prep, 'Intl faculty prep' if ui_lang == 'en' else 'GVQT đang chuẩn bị') }}
+      {{ kpi('fees_paid', summary.fees_paid, 'Fees paid' if ui_lang == 'en' else 'Phí đã thu') }}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if show_workflow_hints %}
+  <ol class="ops-flow">
+    <li><strong>1.</strong> {% if ui_lang == 'en' %}Admissions{% else %}Tuyển sinh{% endif %}</li>
+    <li><strong>2.</strong> {% if ui_lang == 'en' %}Enrollment fee{% else %}Ghi danh / phí{% endif %}</li>
+    <li><strong>3.</strong> {% if ui_lang == 'en' %}Program version{% else %}Chương trình{% endif %}</li>
+    <li><strong>4.</strong> {% if ui_lang == 'en' %}Class{% else %}Lớp học{% endif %}</li>
+    <li><strong>5.</strong> {% if ui_lang == 'en' %}Teaching{% else %}Giảng dạy{% endif %}</li>
+    <li><strong>6.</strong> {% if ui_lang == 'en' %}Grades & exams{% else %}Điểm & thi{% endif %}</li>
+    <li><strong>7.</strong> Alumni</li>
+  </ol>
+  {% endif %}
+
+  <h2 class="ops-section-title">{{ t('modules_section') }}</h2>
+  {% set ns = namespace(prev=None) %}
+  {% for code, m in modules %}
+    {% if m.get('flow_group') != ns.prev %}
+      {% if ns.prev is not none %}</div>{% endif %}
+      {% set ns.prev = m.get('flow_group') %}
+      <h3 class="ops-section-title ops-section-title--sub">{{ m.get('flow_group') or '' }}</h3>
+      <div class="ops-module-grid">
+    {% endif %}
+    <a class="ops-module-card mode-{{ m.mode }}" href="{{ url_for(m.endpoint) }}">
+      <div class="ops-module-top">
+        <span class="ops-mode-tag">{{ t('manage') if m.mode == 'manage' else t('view_search') }}</span>
+      </div>
+      <h3>{{ m.title }}</h3>
+      <p>{{ m.desc }}</p>
+      {% if show_workflow_hints and m.get('workflow') %}<p class="ops-workflow">{{ m.workflow }}</p>{% endif %}
+    </a>
+  {% else %}
+    <p class="page-desc">{{ t('no_modules') }}</p>
+  {% endfor %}
+  {% if modules %}</div>{% endif %}
+</div>
+{% endblock %}

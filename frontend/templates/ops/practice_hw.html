@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+{% block title %}{{ hw.title }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_practice_ta', ta_id=hw.teaching_assignment_id) }}" class="back-link">← {% if ui_lang == 'en' %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ hw.title }}</h1>
+    <p class="page-desc">
+      {{ hw.meta.class_name }} · {{ hw.meta.course_code }} —
+      {% if hw.status == 'published' %}{% if ui_lang == 'en' %}Published{% else %}Đã mở{% endif %}
+      {% elif hw.status == 'closed' %}{% if ui_lang == 'en' %}Closed{% else %}Đã đóng{% endif %}
+      {% else %}{% if ui_lang == 'en' %}Draft{% else %}Nháp{% endif %}{% endif %}
+      {% if hw.source_filename %} · {{ hw.source_filename }}{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">
+    {% if hw.status != 'published' %}
+    <button type="button" class="btn btn-primary btn-sm btn-hw-status" data-status="published">{% if ui_lang == 'en' %}Publish{% else %}Mở cho HV{% endif %}</button>
+    {% else %}
+    <button type="button" class="btn btn-secondary btn-sm btn-hw-status" data-status="closed">{% if ui_lang == 'en' %}Close{% else %}Đóng bài{% endif %}</button>
+    {% endif %}
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+{% if hw.instructions %}
+<p class="page-desc">{{ hw.instructions }}</p>
+{% endif %}
+
+<details open style="margin:1rem 0">
+  <summary><strong>{% if ui_lang == 'en' %}Variants & questions{% else %}Mã đề & câu hỏi{% endif %}</strong> ({{ hw.variants|length }})</summary>
+  {% for v in hw.variants %}
+  <div style="margin:0.75rem 0 1rem;padding-left:0.5rem;border-left:3px solid var(--color-primary,#00528c)">
+    <div><strong>{{ v.code }}</strong> · {{ v.questions|length }} {% if ui_lang == 'en' %}questions{% else %}câu{% endif %}</div>
+    {% if v.context_text %}<pre style="white-space:pre-wrap;font-size:0.85rem;margin:0.35rem 0;opacity:0.9">{{ v.context_text[:800] }}{% if v.context_text|length > 800 %}…{% endif %}</pre>{% endif %}
+    <ol style="margin:0.35rem 0 0;padding-left:1.25rem;font-size:0.9rem">
+      {% for q in v.questions %}
+      <li><code>{{ q.code }}</code> ({{ q.points }} {% if ui_lang == 'en' %}pts{% else %}điểm{% endif %}) — {{ q.content[:160] }}{% if q.content|length > 160 %}…{% endif %}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% else %}
+  <p class="ops-empty">{% if ui_lang == 'en' %}No questions.{% else %}Chưa có câu hỏi.{% endif %}</p>
+  {% endfor %}
+</details>
+
+<h2 class="page-title" style="font-size:1.15rem;margin-top:1.5rem">{% if ui_lang == 'en' %}Submissions{% else %}Bài nộp{% endif %}</h2>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if ui_lang == 'en' %}Label{% else %}Nhãn{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Student{% else %}Học viên{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Variant{% else %}Mã đề{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Status{% else %}TT{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Score{% else %}Điểm{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Submitted{% else %}Nộp{% endif %}</th>
+        <th class="ops-th-actions">{% if ui_lang == 'en' %}Grade{% else %}Chấm{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in submissions %}
+      <tr>
+        <td><code>{{ s.display_label or '—' }}</code></td>
+        <td>{{ s.student_name }}{% if s.student_email %}<br><small>{{ s.student_email }}</small>{% endif %}</td>
+        <td>{{ s.variant_code }}</td>
+        <td>{{ s.status }}</td>
+        <td>{{ s.score if s.score is not none else '—' }}</td>
+        <td>{{ s.submitted_at or '—' }}</td>
+        <td class="ops-row-actions">
+          <div class="ops-row-actions-inner">
+            <a class="ops-icon-btn" href="{{ url_for('ops_practice_submission', sub_id=s.id) }}" title="{% if ui_lang == 'en' %}View / grade{% else %}Xem / chấm{% endif %}">{{ svg('clipboard') }}</a>
+          </div>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="ops-empty">{% if ui_lang == 'en' %}No submissions yet.{% else %}Chưa có bài nộp.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function(){
+  var hwId = {{ hw.id }};
+  document.querySelectorAll('.btn-hw-status').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      fetch('/api/ops/practice/homeworks/' + hwId + '/status', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({status: btn.dataset.status})
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.error) alert(d.error); else location.reload();
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

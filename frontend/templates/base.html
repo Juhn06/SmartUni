@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="{{ ui_lang|default('vi') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#00528C">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>{% block title %}SmartUni{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=20261031pick">
+    {% block extra_head %}{% endblock %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body class="theme-courses{% block body_class %}{% endblock %}">
+    <header class="header">
+        <nav class="nav" id="main-nav" aria-label="{{ t('main_nav') }}">
+            <div class="nav-primary">
+                <a href="{{ url_for('ops_home') if session.get('user') else url_for('login') }}" class="brand{% if session.get('user') and request.endpoint == 'ops_home' %} brand-active{% endif %}">
+                    <span class="brand-mark" aria-hidden="true">NEU</span>
+                    <span class="brand-text">
+                        <span class="brand-title">SmartUni</span>
+                        <span class="brand-sub">{{ t('brand_ops') }}</span>
+                    </span>
+                </a>
+                <div class="nav-menu" id="nav-drawer" role="navigation" aria-label="{% if ui_lang == 'en' %}Functions by role{% else %}Chức năng theo vai trò{% endif %}">
+                {% if session.get('user') and nav_groups %}
+                {% for group in nav_groups %}
+                {% set g_active = namespace(v=false) %}
+                {% for item in group['items'] %}
+                  {% if request.endpoint == item.route %}{% set g_active.v = true %}{% endif %}
+                {% endfor %}
+                {% if group['items']|length == 1 %}
+                {% set only = group['items'][0] %}
+                <a href="{{ url_for(only.route) }}"
+                   class="nav-link{% if request.endpoint == only.route %} nav-active{% endif %}">
+                  <span class="nav-dd-label">{{ group.group.split('. ', 1)[-1] if '. ' in group.group else group.group }}</span>
+                </a>
+                {% else %}
+                <div class="nav-dd{% if g_active.v %} is-active{% endif %}">
+                  <button type="button" class="nav-link nav-dd-toggle{% if g_active.v %} nav-active{% endif %}"
+                          aria-expanded="false" data-nav-dd>
+                    <span class="nav-dd-label">{{ group.group.split('. ', 1)[-1] if '. ' in group.group else group.group }}</span>
+                    <span class="nav-mega-caret" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="nav-dd-panel" hidden>
+                    {% for item in group['items'] %}
+                    {% if item.get('show_section') and item.get('section') %}
+                    <div class="nav-dd-section" role="presentation">{{ item.section }}</div>
+                    {% endif %}
+                    <a href="{{ url_for(item.route) }}"
+                       class="nav-dd-item{% if request.endpoint == item.route %} nav-active{% endif %}">{{ item.label }}</a>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+                {% if session.get('user') %}
+                <a href="{{ url_for('ops_guide') }}"
+                   class="nav-link{% if request.endpoint == 'ops_guide' %} nav-active{% endif %}">{{ t('guide_menu') }}</a>
+                {% endif %}
+                {% if show_admin_nav %}
+                <div class="nav-dd nav-dd-admin">
+                    <button type="button" class="nav-link nav-dd-toggle{% if request.endpoint and (request.endpoint.startswith('admin_') or request.endpoint == 'ops_reports') %} nav-active{% endif %}"
+                            aria-expanded="false" data-nav-dd>
+                      {{ t('admin') }} <span class="nav-mega-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="nav-dd-panel nav-dd-panel--admin" hidden>
+                        <a href="{{ url_for('admin_system_hub') }}" class="nav-dd-item{% if request.endpoint == 'admin_system_hub' %} nav-active{% endif %}">{% if ui_lang == 'en' %}Admin overview{% else %}Tổng quan Admin{% endif %}</a>
+                        <div class="nav-dd-section" role="presentation">{% if ui_lang == 'en' %}Accounts & access{% else %}Tài khoản & phân quyền{% endif %}</div>
+                        <a href="{{ url_for('admin_users') }}" class="nav-dd-item{% if request.endpoint == 'admin_users' %} nav-active{% endif %}">{{ t('admin_users') }}</a>
+                        <a href="{{ url_for('admin_departments') }}" class="nav-dd-item{% if request.endpoint == 'admin_departments' %} nav-active{% endif %}">{{ t('admin_departments') }}</a>
+                        <a href="{{ url_for('admin_permissions') }}" class="nav-dd-item{% if request.endpoint == 'admin_permissions' %} nav-active{% endif %}">{{ t('admin_permissions') }}</a>
+                        <div class="nav-dd-section" role="presentation">{% if ui_lang == 'en' %}Request tracking{% else %}Theo dõi yêu cầu{% endif %}</div>
+                        <a href="{{ url_for('admin_suggestions') }}" class="nav-dd-item{% if request.endpoint == 'admin_suggestions' %} nav-active{% endif %}">{{ t('admin_suggestions') }}</a>
+                        <div class="nav-dd-section" role="presentation">{% if ui_lang == 'en' %}Status catalogs{% else %}Danh mục trạng thái{% endif %}</div>
+                        <a href="{{ url_for('admin_status_catalog') }}" class="nav-dd-item{% if request.endpoint == 'admin_status_catalog' %} nav-active{% endif %}">{{ t('admin_status_types') }}</a>
+                        <a href="{{ url_for('admin_book_categories') }}" class="nav-dd-item{% if request.endpoint == 'admin_book_categories' %} nav-active{% endif %}">{{ t('admin_categories') }}</a>
+                        <div class="nav-dd-section" role="presentation">{% if ui_lang == 'en' %}Reports{% else %}Thống kê báo cáo{% endif %}</div>
+                        <a href="{{ url_for('ops_reports') }}" class="nav-dd-item{% if request.endpoint == 'ops_reports' %} nav-active{% endif %}">{% if ui_lang == 'en' %}Ops reports{% else %}Báo cáo Ops{% endif %}</a>
+                        <a href="{{ url_for('admin_index') }}" class="nav-dd-item{% if request.endpoint == 'admin_index' %} nav-active{% endif %}">{{ t('admin_dashboard') }}</a>
+                    </div>
+                </div>
+                {% endif %}
+                </div>
+            </div>
+            <div class="nav-user">
+                {% if session.get('user') %}
+                    <div class="nav-lang" role="group" aria-label="{{ t('language') }}">
+                      <a href="{{ url_for('set_language', lang='vi', next=request.full_path) }}"
+                         class="ops-icon-btn nav-lang-btn{% if ui_lang != 'en' %} is-active{% endif %}"
+                         title="{{ t('lang_vi') }}"
+                         aria-label="{{ t('lang_vi') }}"
+                         hreflang="vi">
+                        <svg class="nav-lang-flag-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                          <rect width="24" height="24" rx="3" fill="#da251d"/>
+                          <polygon points="12,5.2 13.5,9.8 18.4,9.8 14.45,12.7 16,17.3 12,14.3 8,17.3 9.55,12.7 5.6,9.8 10.5,9.8" fill="#ff0"/>
+                        </svg>
+                      </a>
+                      <a href="{{ url_for('set_language', lang='en', next=request.full_path) }}"
+                         class="ops-icon-btn nav-lang-btn{% if ui_lang == 'en' %} is-active{% endif %}"
+                         title="{{ t('lang_en') }}"
+                         aria-label="{{ t('lang_en') }}"
+                         hreflang="en">
+                        <svg class="nav-lang-flag-svg" viewBox="0 0 60 30" width="18" height="12" aria-hidden="true">
+                          <clipPath id="nav-uk-clip"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+                          <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+                          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6" clip-path="url(#nav-uk-clip)"/>
+                          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="2" clip-path="url(#nav-uk-clip)"/>
+                          <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+                          <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+                        </svg>
+                      </a>
+                    </div>
+                    <div class="nav-dd nav-dd-user">
+                      <button type="button" class="nav-user-btn" aria-expanded="false" data-nav-dd>
+                        {% if session.user.avatar_path %}
+                          <img class="nav-user-avatar" src="{{ url_for('api_uploads', relpath=session.user.avatar_path) }}" alt="" width="28" height="28">
+                        {% endif %}
+                        <span class="nav-user-name">
+                          <span class="nav-user-fullname">{{ session.user.name.split('—')[0].strip() }}</span>
+                          <span class="nav-user-login">{{ session.user.email }}</span>
+                        </span>
+                        <span class="nav-mega-caret" aria-hidden="true">▾</span>
+                      </button>
+                      <div class="nav-dd-panel nav-dd-panel--user" hidden>
+                        <div class="nav-user-meta">
+                          {% if session.user.avatar_path %}
+                            <img class="nav-user-avatar nav-user-avatar--lg" src="{{ url_for('api_uploads', relpath=session.user.avatar_path) }}" alt="" width="40" height="40">
+                          {% endif %}
+                          <div class="nav-user-meta-text">
+                            <strong>{{ session.user.name.split('—')[0].strip() }}</strong>
+                            <span>{{ session.user.email }}</span>
+                          </div>
+                        </div>
+                        <a href="{{ url_for('account_profile') }}" class="nav-dd-item">
+                          {{ t('account_profile') }}
+                        </a>
+                        <a href="{{ url_for('change_password') }}" class="nav-dd-item">
+                          {{ t('change_password') }}
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="nav-dd-item nav-dd-item--danger">
+                          {{ t('logout') }}
+                        </a>
+                      </div>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn-login-nav{% if request.endpoint == 'login' %} nav-active{% endif %}">Login</a>
+                {% endif %}
+                <button type="button" class="nav-toggle" id="nav-toggle"
+                        aria-expanded="false" aria-controls="nav-drawer"
+                        aria-label="{{ t('open_menu') }}">
+                    <span class="nav-toggle-bars" aria-hidden="true"></span>
+                    <span class="nav-toggle-label">{{ t('open_menu') }}</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flash-list">
+                    {% for message in messages %}
+                        <li class="flash">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if session.get('user') %}
+    <div class="ops-modal-backdrop" id="feature-feedback-modal" hidden>
+        <div class="ops-modal feature-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="ff-title">
+        <div class="ff-modal-head">
+          <h2 id="ff-title">{{ t('suggest_title') }}</h2>
+          <button type="button" class="btn btn-secondary btn-sm" id="ff-close-x" title="{{ t('close') }}" aria-label="{{ t('close') }}">✕</button>
+        </div>
+        <p class="page-desc" id="ff-meta"></p>
+        <form id="ff-form" class="ops-form" autocomplete="off">
+          <label>Tiêu đề
+            <input type="text" name="title" id="ff-title-input" class="form-control" required maxlength="500" value="Yêu cầu" placeholder="Tóm tắt ngắn yêu cầu hoàn thiện…">
+          </label>
+          <label>Nội dung đề xuất
+            <textarea name="body" id="ff-body-input" class="form-control" rows="8" required maxlength="20000" placeholder="Mô tả yêu cầu, bước làm, kết quả mong muốn…"></textarea>
+          </label>
+        </form>
+        <div class="ops-modal-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="ff-cancel">Đóng cửa sổ</button>
+          <button type="button" class="btn btn-primary btn-sm" id="ff-save">Lưu đề xuất</button>
+        </div>
+        <div class="ff-mine">
+          <h3>Danh sách yêu cầu <span id="ff-mine-count" class="ff-mine-count" aria-live="polite"></span></h3>
+          <div id="ff-mine-list" class="ff-mine-list"><p class="admin-users-empty">Đang tải…</p></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <footer class="footer">
+        <div class="footer-inner">
+            SmartUni · X / NEU
+        </div>
+    </footer>
+
+    <script>
+    (function(){
+      var nav = document.getElementById('main-nav');
+      var btn = document.getElementById('nav-toggle');
+      var mqMobile = window.matchMedia('(max-width: 720px)');
+
+      function clearPanelPos(panel){
+        if (!panel) return;
+        panel.classList.remove('nav-dd-panel--fixed');
+        panel.style.removeProperty('--nav-dd-top');
+        panel.style.removeProperty('--nav-dd-left');
+      }
+
+      function placePanel(dd, panel){
+        if (!panel || mqMobile.matches) {
+          clearPanelPos(panel);
+          return;
+        }
+        /* absolute first to measure, then pin fixed so sticky/overflow ancestors cannot clip */
+        clearPanelPos(panel);
+        panel.hidden = false;
+        var toggle = dd.querySelector('[data-nav-dd]');
+        var tr = (toggle || dd).getBoundingClientRect();
+        var pad = 8;
+        var width = Math.min(panel.offsetWidth || 208, window.innerWidth - pad * 2);
+        var left = tr.left;
+        if (left + width > window.innerWidth - pad) {
+          left = Math.max(pad, window.innerWidth - pad - width);
+        }
+        if (left < pad) left = pad;
+        var top = tr.bottom + 2;
+        var maxH = Math.min(window.innerHeight * 0.7, 384);
+        if (top + Math.min(panel.scrollHeight || 160, maxH) > window.innerHeight - pad) {
+          var up = tr.top - 2 - Math.min(panel.scrollHeight || 160, maxH);
+          if (up >= pad) top = up;
+        }
+        panel.classList.add('nav-dd-panel--fixed');
+        panel.style.setProperty('--nav-dd-top', Math.round(top) + 'px');
+        panel.style.setProperty('--nav-dd-left', Math.round(left) + 'px');
+      }
+
+      function closeAllDd(except){
+        document.querySelectorAll('.nav-dd.is-open').forEach(function(dd){
+          if (except && dd === except) return;
+          dd.classList.remove('is-open');
+          var t = dd.querySelector('[data-nav-dd]');
+          var p = dd.querySelector('.nav-dd-panel');
+          if (t) t.setAttribute('aria-expanded', 'false');
+          if (p) {
+            clearPanelPos(p);
+            p.hidden = true;
+          }
+        });
+      }
+
+      if (nav && btn) {
+        btn.addEventListener('click', function(e){
+          e.stopPropagation();
+          var open = nav.classList.toggle('is-open');
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          document.body.classList.toggle('nav-drawer-open', open);
+          if (!open) closeAllDd();
+        });
+        nav.querySelectorAll('.nav-menu a.nav-dd-item, .nav-drawer a.nav-dd-item, .nav-menu > a.nav-link').forEach(function(a){
+          a.addEventListener('click', function(){
+            nav.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('nav-drawer-open');
+            closeAllDd();
+          });
+        });
+      }
+
+      /* Click to toggle every dropdown (menu groups + user). More reliable than hover. */
+      document.querySelectorAll('[data-nav-dd]').forEach(function(t){
+        t.addEventListener('click', function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var dd = t.closest('.nav-dd');
+          var panel = dd && dd.querySelector('.nav-dd-panel');
+          if (!dd || !panel) return;
+          var willOpen = !dd.classList.contains('is-open');
+          closeAllDd(willOpen ? dd : null);
+          dd.classList.toggle('is-open', willOpen);
+          t.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+          if (willOpen) {
+            placePanel(dd, panel);
+            panel.hidden = false;
+            /* remeasure after paint (font/layout) */
+            requestAnimationFrame(function(){ placePanel(dd, panel); });
+          } else {
+            clearPanelPos(panel);
+            panel.hidden = true;
+          }
+        });
+      });
+
+      document.querySelectorAll('.nav-dd-panel').forEach(function(p){
+        p.addEventListener('click', function(e){ e.stopPropagation(); });
+      });
+
+      document.addEventListener('click', function(){ closeAllDd(); });
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') {
+          closeAllDd();
+          if (nav && nav.classList.contains('is-open')) {
+            nav.classList.remove('is-open');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('nav-drawer-open');
+          }
+        }
+      });
+      window.addEventListener('resize', function(){
+        if (mqMobile.matches) {
+          document.querySelectorAll('.nav-dd-panel').forEach(clearPanelPos);
+        } else {
+          var open = document.querySelector('.nav-dd.is-open');
+          if (open) {
+            var p = open.querySelector('.nav-dd-panel');
+            if (p && !p.hidden) placePanel(open, p);
+          }
+        }
+      });
+      window.addEventListener('scroll', function(){
+        if (mqMobile.matches) return;
+        var open = document.querySelector('.nav-dd.is-open');
+        if (!open) return;
+        var p = open.querySelector('.nav-dd-panel');
+        if (p && !p.hidden) placePanel(open, p);
+      }, true);
+    })();
+    </script>
+
+    <script>
+    (function(){
+      var openBtn = document.getElementById('open-feature-feedback');
+      var modal = document.getElementById('feature-feedback-modal');
+      if (!openBtn || !modal) return;
+      var meta = document.getElementById('ff-meta');
+      var listEl = document.getElementById('ff-mine-list');
+      var form = document.getElementById('ff-form');
+      var code = openBtn.dataset.code || '';
+      var path = openBtn.dataset.path || location.pathname;
+
+      function statusLabel(s){
+        return s === 'done' ? 'Đã xử lý' : 'Chờ xử lý';
+      }
+      function setMineCount(n){
+        var el = document.getElementById('ff-mine-count');
+        if (!el) return;
+        var count = Number(n) || 0;
+        el.textContent = '(' + count + ')';
+        el.setAttribute('data-count', String(count));
+      }
+      function loadMine(){
+        listEl.innerHTML = '<p class="page-desc">Đang tải…</p>';
+        setMineCount(0);
+        var qs = '?function_code=' + encodeURIComponent(code) + '&mine=1';
+        fetch('/api/ops/suggestions' + qs, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var items = (d && d.items) || [];
+            setMineCount(items.length);
+            if (!items.length) {
+              listEl.innerHTML = '<p class="page-desc">Chưa có yêu cầu nào cho chức năng này.</p>';
+              return;
+            }
+            listEl.innerHTML = items.map(function(it){
+              return '<article class="ff-item">' +
+                '<div class="ff-item-head"><strong>' + (it.title || '') + '</strong>' +
+                '<span class="ops-status ff-status-' + (it.status || 'open') + '">' + statusLabel(it.status) + '</span></div>' +
+                '<div class="ff-item-meta">' + (it.created_at || '') + '</div>' +
+                '<p class="ff-item-body">' + (it.body || '').replace(/</g,'&lt;') + '</p></article>';
+            }).join('');
+          }).catch(function(){
+            setMineCount(0);
+            listEl.innerHTML = '<p class="page-desc">Không tải được danh sách.</p>';
+          });
+      }
+      function resetSuggestionForm(){
+        form.reset();
+        var ti = document.getElementById('ff-title-input');
+        if (ti) ti.value = 'Yêu cầu';
+      }
+      function openModal(){
+        meta.textContent = 'Chức năng: ' + code + ' · Đường dẫn: ' + path;
+        resetSuggestionForm();
+        modal.hidden = false;
+        document.body.classList.add('ff-modal-open');
+        loadMine();
+        var ti = document.getElementById('ff-title-input');
+        if (ti) setTimeout(function(){ ti.focus(); ti.select(); }, 50);
+      }
+      function hasDraft(){
+        var title = (document.getElementById('ff-title-input').value || '').trim();
+        var body = (document.getElementById('ff-body-input').value || '').trim();
+        /* Default title alone is not considered a draft */
+        return !!(body || (title && title !== 'Yêu cầu'));
+      }
+      function requestClose(){
+        if (modal.hidden) return;
+        var msg = hasDraft()
+          ? 'Nội dung chưa lưu sẽ mất. Bạn chắc chắn muốn đóng cửa sổ đề xuất?'
+          : 'Đóng cửa sổ đề xuất?';
+        if (!confirm(msg)) return;
+        modal.hidden = true;
+        document.body.classList.remove('ff-modal-open');
+      }
+      openBtn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openModal(); });
+      document.getElementById('ff-cancel').addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        requestClose();
+      });
+      var closeX = document.getElementById('ff-close-x');
+      if (closeX) closeX.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        requestClose();
+      });
+      /* Do not close on backdrop click — only via confirm button */
+      modal.addEventListener('click', function(e){
+        if (e.target === modal) {
+          e.stopPropagation();
+          /* hint: require explicit close */
+        }
+      });
+      var panel = modal.querySelector('.feature-feedback-modal');
+      if (panel) panel.addEventListener('click', function(e){ e.stopPropagation(); });
+      document.addEventListener('keydown', function(e){
+        if (e.key !== 'Escape' || modal.hidden) return;
+        e.preventDefault();
+        e.stopPropagation();
+        requestClose();
+      }, true);
+      document.getElementById('ff-save').addEventListener('click', function(){
+        var title = (document.getElementById('ff-title-input').value || '').trim();
+        var body = (document.getElementById('ff-body-input').value || '').trim();
+        if (!title || !body) { alert('Vui lòng nhập tiêu đề và nội dung.'); return; }
+        if (!code) { alert('Thiếu mã chức năng. Hãy mở lại trang rồi bấm Đề xuất.'); return; }
+        var saveBtn = document.getElementById('ff-save');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Đang lưu…'; }
+        fetch('/api/ops/suggestions', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+          body: JSON.stringify({
+            title: title.slice(0, 500),
+            body: body.slice(0, 20000),
+            function_code: code,
+            relative_path: (path || location.pathname || '/').slice(0, 500)
+          })
+        }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+          .then(function(res){
+            if (!res.ok || res.d.error) {
+              alert(res.d.error || ('Không lưu được (HTTP ' + (res.ok ? '' : 'error') + ')'));
+              return;
+            }
+            resetSuggestionForm();
+            loadMine();
+            alert('Đã lưu đề xuất. Cảm ơn bạn!');
+          }).catch(function(e){ alert(e.message || 'Lỗi kết nối khi lưu đề xuất'); })
+          .finally(function(){
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Lưu đề xuất'; }
+          });
+      });
+    })();
+    </script>
+
+    <script>
+        function downloadPptx(url) {
+            fetch(url).then(function(resp) {
+                if (!resp.ok) return resp.json().then(function(err) { throw new Error(err.error || 'Failed'); });
+                var cd = resp.headers.get('Content-Disposition') || '';
+                var filename = (cd.match(/filename[^;=\n]*=['"]?([^'";\n]+)/) || [])[1] || 'summary.pptx';
+                return resp.blob().then(function(blob) { return { blob: blob, filename: filename }; });
+            }).then(function(o) {
+                var blobUrl = URL.createObjectURL(o.blob);
+                var a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = o.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.open(blobUrl, '_blank', 'noopener');
+                setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000);
+            }).catch(function(e) { alert('Failed to generate PPTX: ' + (e.message || 'Unknown error')); });
+        }
+
+        document.querySelectorAll('input[type="url"][name="picture"]').forEach(function(input) {
+            var wrap = input.parentElement.querySelector('.form-picture-preview');
+            if (!wrap) return;
+            input.addEventListener('input', function() {
+                var img = wrap.querySelector('img');
+                img.src = this.value || '';
+                wrap.style.display = this.value ? 'block' : 'none';
+            });
+        });
+
+        function showProcessing(opts) {
+            opts = opts || {};
+            var title = opts.title || 'Processing document\u2026';
+            var sub = opts.sub || 'This may take a minute. The PDF is being parsed, summarized, and indexed.';
+            var steps = opts.steps || [
+                'Uploading file',
+                'Extracting text from PDF',
+                'Generating summary',
+                'Building search index'
+            ];
+
+            var overlay = document.createElement('div');
+            overlay.className = 'processing-overlay';
+            overlay.id = 'processing-overlay';
+
+            var stepHtml = steps.map(function(s, i) {
+                var icon = i === 0
+                    ? '<svg class="processing-step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/></svg>'
+                    : '<svg class="processing-step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/></svg>';
+                return '<div class="processing-step' + (i === 0 ? ' active' : '') + '" data-step="' + i + '">' + icon + '<span>' + s + '</span></div>';
+            }).join('');
+
+            overlay.innerHTML =
+                '<div class="processing-spinner">' +
+                    '<svg class="processing-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+                        '<polyline points="14 2 14 8 20 8"/>' +
+                    '</svg>' +
+                '</div>' +
+                '<div class="processing-text">' + title + '</div>' +
+                '<div class="processing-progress"><div class="processing-progress-bar"></div></div>' +
+                '<div class="processing-steps">' + stepHtml + '</div>' +
+                '<div class="processing-sub">' + sub + '</div>';
+
+            document.body.appendChild(overlay);
+
+            var stepEls = overlay.querySelectorAll('.processing-step');
+            var current = 0;
+            var intervals = opts.stepIntervals || [3000, 8000, 15000];
+            function advanceStep() {
+                if (current >= stepEls.length - 1) return;
+                stepEls[current].classList.remove('active');
+                stepEls[current].classList.add('done');
+                stepEls[current].querySelector('.processing-step-icon').innerHTML =
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                current++;
+                stepEls[current].classList.add('active');
+            }
+            for (var i = 0; i < intervals.length; i++) {
+                (function(idx) {
+                    setTimeout(function() { advanceStep(); }, intervals[idx]);
+                })(i);
+            }
+
+            return overlay;
+        }
+
+        function hideProcessing() {
+            var el = document.getElementById('processing-overlay');
+            if (el) el.remove();
+        }
+
+        function renderMarkdown(text) {
+            if (!text || typeof text !== 'string') return '';
+            try {
+                if (typeof marked !== 'undefined' && marked.parse) {
+                    var html = marked.parse(text, { breaks: true });
+                    return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+                }
+                return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            } catch (e) {
+                return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            }
+        }
+
+        function renderMarkdownWithMath(element, text) {
+            if (!element) return;
+            var html = renderMarkdown(text);
+            element.innerHTML = html;
+            if (typeof renderMathInElement === 'function') {
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false }
+                        ],
+                        throwOnError: false
+                    });
+                } catch (err) { /* ignore math errors */ }
+            }
+        }
+
+        /* Speech-to-text and text-to-speech (Web Speech API).
+         * For offline/custom models see: https://github.com/RunanywhereAI/sherpa-onnx */
+        function startVoiceInput(inputEl) {
+            if (!inputEl) return;
+            if (!window.isSecureContext) {
+                var port = window.location.port || (window.location.protocol === 'https:' ? 443 : 80);
+                var localhostUrl = 'http://localhost:' + port + window.location.pathname + window.location.search;
+                alert('Voice input requires a secure connection (HTTPS or localhost).\n\n' +
+                    'You appear to be using an IP address. If you\'re on the same machine, open this URL instead:\n\n' +
+                    localhostUrl + '\n\n' +
+                    'For remote access: use HTTPS or a tunnel like ngrok.');
+                return;
+            }
+            var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Recognition) {
+                alert('Speech recognition is not supported in this browser. Try Chrome or Edge.');
+                return;
+            }
+            var rec = new Recognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = navigator.language || 'en-US';
+            rec.onresult = function(e) {
+                var transcript = (e.results[0][0].transcript || '').trim();
+                if (transcript) {
+                    var cur = inputEl.value || '';
+                    inputEl.value = cur ? cur + ' ' + transcript : transcript;
+                }
+            };
+            rec.onerror = function(e) {
+                if (e.error === 'aborted') return;
+                var msg = {
+                    'not-allowed': 'Microphone access was denied. Please allow microphone permission for this site in your browser settings, then try again.',
+                    'service-not-allowed': 'Speech recognition is blocked. Try enabling it in your browser or system settings.',
+                    'no-speech': 'No speech detected. Please try again.',
+                    'audio-capture': 'No microphone found. Connect a microphone and try again.',
+                    'network': 'Network error. Speech recognition requires an internet connection.'
+                }[e.error] || ('Speech recognition error: ' + (e.error || 'unknown'));
+                alert(msg);
+            };
+            rec.start();
+        }
+        function speakText(text, callbacks) {
+            if (!text || typeof text !== 'string') return;
+            text = text.replace(/\s+/g, ' ').trim();
+            if (!text) return;
+            callbacks = callbacks || {};
+            if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                window.speechSynthesis.cancel();
+            }
+            var u = new SpeechSynthesisUtterance(text);
+            u.rate = 0.95;
+            u.pitch = 1;
+            var voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                var preferred = voices.find(function(v) { return v.lang.startsWith('en'); }) || voices[0];
+                u.voice = preferred;
+            }
+            u.onstart = function() { if (callbacks.onStart) callbacks.onStart(); };
+            u.onend = function() { if (callbacks.onEnd) callbacks.onEnd(); };
+            u.onerror = function() { if (callbacks.onEnd) callbacks.onEnd(); };
+            u.onpause = function() { if (callbacks.onPause) callbacks.onPause(); };
+            u.onresume = function() { if (callbacks.onResume) callbacks.onResume(); };
+            u.onboundary = function(e) { if (callbacks.onBoundary && e && e.charIndex !== undefined) callbacks.onBoundary(e.charIndex, e.name); };
+            window.speechSynthesis.speak(u);
+        }
+        var ttsOverlay = {
+            el: null,
+            text: '',
+            charIndex: 0,
+            startTime: 0,
+            fallbackInterval: null,
+            visible: false,
+            init: function() {
+                if (this.el) return;
+                var self = this;
+                this.el = document.createElement('div');
+                this.el.className = 'tts-enlarge-overlay';
+                this.el.innerHTML = '<div class="tts-enlarge-backdrop"></div><div class="tts-enlarge-modal"><div class="tts-enlarge-header"><span class="tts-enlarge-title">Text-to-Speech</span><button type="button" class="tts-enlarge-close" title="Close">&#10005;</button></div><div class="tts-enlarge-body"></div></div>';
+                this.el.querySelector('.tts-enlarge-backdrop').addEventListener('click', function() { self.hide(); });
+                this.el.querySelector('.tts-enlarge-close').addEventListener('click', function() { self.hide(); });
+                document.body.appendChild(this.el);
+            },
+            show: function(text) {
+                this.init();
+                this.text = text || '';
+                this.visible = true;
+                this.el.classList.add('visible');
+                this.render();
+                this.startFallback();
+            },
+            hide: function() {
+                this.visible = false;
+                this.el.classList.remove('visible');
+                this.stopFallback();
+            },
+            setCharIndex: function(i) {
+                this.charIndex = i;
+                if (this.visible) this.render();
+            },
+            startFallback: function() {
+                var self = this;
+                this.stopFallback();
+                this.fallbackInterval = setInterval(function() {
+                    if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) return;
+                    var elapsed = (Date.now() - self.startTime) / 1000;
+                    var est = Math.min(Math.floor(elapsed * 14), self.text.length);
+                    if (est > self.charIndex) self.setCharIndex(est);
+                }, 200);
+            },
+            stopFallback: function() {
+                if (this.fallbackInterval) { clearInterval(this.fallbackInterval); this.fallbackInterval = null; }
+            },
+            render: function() {
+                var body = this.el.querySelector('.tts-enlarge-body');
+                if (!this.text) { body.innerHTML = ''; return; }
+                var sentences = this.text.split(/(?<=[.!?])\s+/);
+                var pos = 0;
+                var html = '';
+                var currentSentenceEnd = 0;
+                var highlightedIndex = -1;
+                for (var i = 0; i < sentences.length; i++) {
+                    var s = sentences[i];
+                    currentSentenceEnd = pos + s.length;
+                    var cls = (this.charIndex >= pos && this.charIndex < currentSentenceEnd) ? ' tts-sentence-current' : '';
+                    html += '<span class="tts-sentence' + cls + '" data-start="' + pos + '" data-end="' + currentSentenceEnd + '">' + s.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span> ';
+                    pos = currentSentenceEnd;
+                }
+                body.innerHTML = html;
+                var current = body.querySelector('.tts-sentence-current');
+                if (current) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+        function addTtsButton(container, getTextFn, insertBeforeEl) {
+            if (!container || !getTextFn) return;
+            var group = document.createElement('span');
+            group.className = 'chat-tts-group';
+            var playSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+            var pauseSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            var stopSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"/></svg>';
+            var enlargeSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+            var playBtn = document.createElement('button');
+            playBtn.type = 'button';
+            playBtn.className = 'chat-tts-btn';
+            playBtn.title = 'Read aloud (Text-to-speech)';
+            playBtn.innerHTML = playSvg;
+            var ttsInterval = null;
+            function showIdle() {
+                if (ttsInterval) { clearInterval(ttsInterval); ttsInterval = null; }
+                ttsOverlay.hide();
+                group.innerHTML = '';
+                group.appendChild(playBtn);
+            }
+            function showSpeaking() {
+                group.innerHTML = '';
+                var pauseBtn = document.createElement('button');
+                pauseBtn.type = 'button';
+                pauseBtn.className = 'chat-tts-btn chat-tts-pause-btn';
+                pauseBtn.title = 'Pause';
+                pauseBtn.innerHTML = pauseSvg;
+                var stopBtn = document.createElement('button');
+                stopBtn.type = 'button';
+                stopBtn.className = 'chat-tts-btn chat-tts-stop-btn';
+                stopBtn.title = 'Stop';
+                stopBtn.innerHTML = stopSvg;
+                function updatePauseBtn() {
+                    if (window.speechSynthesis.paused) {
+                        pauseBtn.title = 'Resume';
+                        pauseBtn.innerHTML = playSvg;
+                        pauseBtn.onclick = function() { window.speechSynthesis.resume(); };
+                    } else {
+                        pauseBtn.title = 'Pause';
+                        pauseBtn.innerHTML = pauseSvg;
+                        pauseBtn.onclick = function() { window.speechSynthesis.pause(); };
+                    }
+                }
+                pauseBtn.onclick = function() { window.speechSynthesis.pause(); };
+                stopBtn.addEventListener('click', function() {
+                    window.speechSynthesis.cancel();
+                    showIdle();
+                });
+                var enlargeBtn = document.createElement('button');
+                enlargeBtn.type = 'button';
+                enlargeBtn.className = 'chat-tts-btn chat-tts-enlarge-btn';
+                enlargeBtn.title = 'Enlarge – view text with live highlighting';
+                enlargeBtn.innerHTML = enlargeSvg;
+                enlargeBtn.addEventListener('click', function() {
+                    var t = getTextFn();
+                    if (t) ttsOverlay.show(t);
+                });
+                group.appendChild(pauseBtn);
+                group.appendChild(stopBtn);
+                group.appendChild(enlargeBtn);
+                ttsInterval = setInterval(function() {
+                    if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+                        clearInterval(ttsInterval);
+                        ttsInterval = null;
+                        showIdle();
+                        return;
+                    }
+                    updatePauseBtn();
+                }, 150);
+            }
+            playBtn.addEventListener('click', function() {
+                var t = getTextFn();
+                if (!t) return;
+                speakText(t, {
+                    onStart: function() { ttsOverlay.charIndex = 0; ttsOverlay.startTime = Date.now(); showSpeaking(); },
+                    onEnd: showIdle,
+                    onBoundary: function(charIndex) { ttsOverlay.setCharIndex(charIndex); }
+                });
+                showSpeaking();
+            });
+            group.appendChild(playBtn);
+            var before = insertBeforeEl || container.querySelector('.chat-ask-again');
+            if (before) {
+                container.insertBefore(group, before);
+            } else {
+                container.appendChild(group);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.chat-history-answer.markdown-content, .summary-content.markdown-content, .project-article-summary.markdown-content, .project-file-summary-body.markdown-content, .analysis-table .markdown-content').forEach(function(el) {
+                var raw = el.textContent || '';
+                el.classList.remove('markdown-content');
+                renderMarkdownWithMath(el, raw);
+            });
+            document.querySelectorAll('.chat-history-body').forEach(function(body) {
+                var row = body.querySelector('.chat-actions-row');
+                var answerEl = body.querySelector('.chat-history-answer');
+                if (row && answerEl && !row.querySelector('.chat-tts-btn')) {
+                    addTtsButton(row, function() { return (answerEl.textContent || '').replace(/\s+/g, ' ').trim(); });
+                }
+            });
+            document.querySelectorAll('.section-toolbar .chat-tts-group[data-tts-sibling]').forEach(function(ttsGroup) {
+                var targetId = ttsGroup.getAttribute('data-tts-sibling');
+                if (!targetId || ttsGroup.querySelector('.chat-tts-btn')) return;
+                var contentEl = document.getElementById(targetId);
+                if (contentEl) {
+                    addTtsButton(ttsGroup, function() { return (contentEl.textContent || '').replace(/\s+/g, ' ').trim(); });
+                }
+            });
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+    <script>
+    (function(){
+      function bindOpsFile(root){
+        (root || document).querySelectorAll('[data-ops-file]').forEach(function(wrap){
+          if (wrap.dataset.bound) return;
+          wrap.dataset.bound = '1';
+          var input = wrap.querySelector('input[type="file"]');
+          var nameEl = wrap.querySelector('.ops-file-name');
+          if (!input || !nameEl) return;
+          function sync(){
+            var f = input.files && input.files[0];
+            wrap.classList.toggle('has-file', !!f);
+            nameEl.textContent = f ? f.name : 'Chưa chọn file';
+          }
+          wrap.addEventListener('click', function(e){
+            if (e.target === input) return;
+            input.click();
+          });
+          input.addEventListener('change', sync);
+          wrap.addEventListener('dragover', function(e){ e.preventDefault(); wrap.classList.add('is-dragover'); });
+          wrap.addEventListener('dragleave', function(){ wrap.classList.remove('is-dragover'); });
+          wrap.addEventListener('drop', function(e){
+            e.preventDefault();
+            wrap.classList.remove('is-dragover');
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+              input.files = e.dataTransfer.files;
+              sync();
+            }
+          });
+          sync();
+        });
+      }
+      window.bindOpsFile = bindOpsFile;
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bindOpsFile(); });
+      else bindOpsFile();
+    })();
+    </script>
+</body>
+</html>

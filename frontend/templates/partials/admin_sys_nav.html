@@ -1,0 +1,23 @@
+{# Shared Admin group navigation — 4 khối chức năng hệ thống #}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+{% set groups = admin_sys_groups if admin_sys_groups is defined else [] %}
+<nav class="admin-sys-nav" aria-label="{% if is_en %}Admin functions{% else %}Chức năng Admin{% endif %}">
+  <div class="admin-sys-nav-scroll">
+    {% for g in groups %}
+    {% set g_active = namespace(v=false) %}
+    {% for it in g['items'] %}
+      {% if request.endpoint == it.route %}{% set g_active.v = true %}{% endif %}
+    {% endfor %}
+    <div class="admin-sys-nav-group{% if g_active.v %} is-active{% endif %}" data-group="{{ g.id }}">
+      <div class="admin-sys-nav-group-title">{{ g.title_en if is_en else g.title }}</div>
+      <div class="admin-sys-nav-links">
+        {% for it in g['items'] %}
+        <a href="{{ url_for(it.route) }}"
+           class="admin-sys-nav-link{% if request.endpoint == it.route %} is-active{% endif %}"
+           title="{{ it.hint }}">{{ it.label_en if is_en else it.label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</nav>

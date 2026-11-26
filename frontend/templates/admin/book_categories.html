@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Book Categories - Admin - ReadArticles{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('admin_index') }}" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Admin
+</a>
+
+<h1 class="page-title">Book Categories</h1>
+<p class="page-desc">Manage categories for organizing books (e.g. English Book, Programming Book, Computer Science Book).</p>
+
+<div class="admin-categories-section">
+    <div class="admin-categories-toolbar">
+        <input type="text" id="new-category-name" placeholder="New category name" class="form-control">
+        <button type="button" class="btn btn-primary btn-sm" onclick="addCategory()">Add</button>
+    </div>
+    <ul id="admin-categories-list" class="admin-categories-list">
+        {% for c in book_categories %}
+        <li class="admin-category-item" data-id="{{ c.id }}">
+            <input type="text" value="{{ c.name }}" class="category-edit-input" data-id="{{ c.id }}">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="updateCategory({{ c.id }}, this)">Save</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory({{ c.id }}, this)">Delete</button>
+        </li>
+        {% else %}
+        <li class="admin-category-empty">No categories yet. Add one above.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+function addCategory() {
+    var inp = document.getElementById('new-category-name');
+    var name = (inp.value || '').trim();
+    if (!name) { alert('Enter a category name.'); return; }
+    fetch('/api/admin/book-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.id) {
+            inp.value = '';
+            var ul = document.getElementById('admin-categories-list');
+            var empty = ul.querySelector('.admin-category-empty');
+            if (empty) empty.remove();
+            var li = document.createElement('li');
+            li.className = 'admin-category-item';
+            li.dataset.id = data.id;
+            li.innerHTML = '<input type="text" value="' + (name.replace(/"/g,'&quot;')) + '" class="category-edit-input" data-id="' + data.id + '">' +
+                '<button type="button" class="btn btn-secondary btn-sm" onclick="updateCategory(' + data.id + ', this)">Save</button>' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory(' + data.id + ', this)">Delete</button>';
+            ul.appendChild(li);
+        } else alert(data.error || 'Failed');
+    }).catch(function(e){ alert('Failed: ' + e.message); });
+}
+function updateCategory(id, btn) {
+    var li = btn.closest('.admin-category-item');
+    var inp = li.querySelector('.category-edit-input');
+    var name = (inp.value || '').trim();
+    if (!name) { alert('Enter a name.'); return; }
+    fetch('/api/admin/book-categories/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.ok) { btn.textContent = 'Saved'; setTimeout(function(){ btn.textContent = 'Save'; }, 1500); }
+        else alert(data.error || 'Failed');
+    }).catch(function(e){ alert('Failed: ' + e.message); });
+}
+function deleteCategory(id, btn) {
+    if (!confirm('Delete this category? Books in it will become uncategorized.')) return;
+    fetch('/api/admin/book-categories/' + id, { method: 'DELETE' }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.ok) btn.closest('.admin-category-item').remove();
+        else alert(data.error || 'Failed');
+    }).catch(function(e){ alert('Failed: ' + e.message); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{% if ui_lang == 'en' %}Account profile{% else %}Thông tin tài khoản{% endif %} - SmartUni{% endblock %}
+
+{% block content %}
+{% set p = profile or {} %}
+{% set avatar_url = ('/api/uploads/' ~ p.avatar_path) if p.avatar_path else '' %}
+<div class="login-page account-profile-page">
+  <div class="login-card account-profile-card">
+    <h1 class="page-title">{% if ui_lang == 'en' %}Account profile{% else %}Thông tin tài khoản{% endif %}</h1>
+    <p class="page-desc">
+      {% if ui_lang == 'en' %}
+        Update personal details and avatar. All modules use the NEU AI blue theme.
+      {% else %}
+        Cập nhật thông tin cá nhân và ảnh đại diện. Toàn bộ chức năng dùng giao diện xanh NEU AI.
+      {% endif %}
+    </p>
+
+    <form method="post" action="{{ url_for('account_profile') }}" class="form form-narrow" enctype="multipart/form-data" autocomplete="off">
+      <input type="hidden" name="action" value="save">
+
+      <div class="form-group account-avatar-row">
+        <label>{% if ui_lang == 'en' %}Avatar{% else %}Ảnh đại diện{% endif %}</label>
+        <div class="account-avatar-preview">
+          {% if avatar_url %}
+            <img src="{{ avatar_url }}" alt="" class="account-avatar-img" width="72" height="72">
+          {% else %}
+            <span class="account-avatar-placeholder" aria-hidden="true">{{ (p.name or '?')[:1]|upper }}</span>
+          {% endif %}
+          <div class="account-avatar-fields">
+            <input type="file" id="avatar" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif">
+            <p class="form-hint">{% if ui_lang == 'en' %}JPG, PNG, WEBP or GIF.{% else %}JPG, PNG, WEBP hoặc GIF.{% endif %}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="name">{% if ui_lang == 'en' %}Display name{% else %}Họ và tên{% endif %}</label>
+        <input type="text" id="name" name="name" value="{{ p.name or '' }}" maxlength="200" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">{% if ui_lang == 'en' %}Login{% else %}Tài khoản{% endif %}</label>
+        <input type="text" id="email" value="{{ p.email or '' }}" disabled>
+      </div>
+
+      <div class="form-group">
+        <label for="gender">{% if ui_lang == 'en' %}Gender{% else %}Giới tính{% endif %}</label>
+        <select id="gender" name="gender">
+          <option value="">{% if ui_lang == 'en' %}— Select —{% else %}— Chọn —{% endif %}</option>
+          <option value="F"{% if p.gender == 'F' %} selected{% endif %}>{% if ui_lang == 'en' %}Female{% else %}Nữ{% endif %}</option>
+          <option value="M"{% if p.gender == 'M' %} selected{% endif %}>{% if ui_lang == 'en' %}Male{% else %}Nam{% endif %}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="birth_year">{% if ui_lang == 'en' %}Birth year{% else %}Năm sinh{% endif %}</label>
+        <input type="number" id="birth_year" name="birth_year" min="1940" max="2012" step="1" value="{{ p.birth_year or '' }}" placeholder="YYYY">
+      </div>
+
+      <fieldset class="form-group account-theme-fieldset">
+        <legend>{% if ui_lang == 'en' %}Color theme{% else %}Giao diện màu{% endif %}</legend>
+        <p class="account-theme-note text-muted" style="margin:0.25rem 0 0">
+          {% if ui_lang == 'en' %}
+            All modules use the NEU AI blue theme (#00528C).
+          {% else %}
+            Toàn bộ chức năng dùng giao diện xanh NEU AI (#00528C).
+          {% endif %}
+        </p>
+        <input type="hidden" name="theme_mode" value="auto">
+        <input type="hidden" name="theme" value="courses">
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{% if ui_lang == 'en' %}Save{% else %}Lưu{% endif %}</button>
+        <a href="{{ url_for('ops_home') }}" class="btn btn-secondary">{% if ui_lang == 'en' %}Cancel{% else %}Hủy{% endif %}</a>
+      </div>
+    </form>
+
+    {% if p.avatar_path %}
+    <form method="post" action="{{ url_for('account_profile') }}" class="account-avatar-remove-form" onsubmit="return confirm('{% if ui_lang == 'en' %}Remove avatar?{% else %}Xóa ảnh đại diện?{% endif %}');">
+      <input type="hidden" name="action" value="remove_avatar">
+      <button type="submit" class="btn btn-secondary btn-sm">{% if ui_lang == 'en' %}Remove avatar{% else %}Xóa ảnh đại diện{% endif %}</button>
+    </form>
+    {% endif %}
+
+    <p class="account-profile-links">
+      <a href="{{ url_for('change_password') }}">{{ t('change_password') }}</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartuni-backend
+    ports:
+      - "8026:8026"
+    volumes:
+      - backend_db:/app/db
+      - backend_uploads:/app/uploads
+      - backend_chroma:/app/chroma_db
+      - ./backend/data:/app/data
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      - DB_PATH=./db/website.db
+      - RESET_STAFF_PASSWORDS=true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartuni-frontend
+    ports:
+      - "8027:8027"
+    environment:
+      - PORT=8027
+      - API_BASE_URL=http://backend:8026
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - FLASK_DEBUG=false
+      - PREFERRED_URL_SCHEME=${PREFERRED_URL_SCHEME:-http}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend_db:
+  backend_uploads:
+  backend_chroma:

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}CP — {{ row.cp_number or row.full_name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_thesis') }}" class="back-link">← Luận văn / Đề án</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ row.full_name }}</h1>
+    <p class="page-desc">{{ row.program_code }} · {{ row.cp_number or '—' }} · <span class="ops-status">{{ status_labels.get(row.status, row.status) }}</span></p>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<section class="ops-panel">
+  <form id="thesis-form" class="ops-form">
+    <div class="ops-two-col">
+      <label>Mã đề án (CP Number) <input name="cp_number" class="form-control" value="{{ row.cp_number or '' }}" /></label>
+      <label>Email <input name="email" class="form-control" value="{{ row.email or '' }}" /></label>
+      <label>Gender <input name="gender" class="form-control" value="{{ row.gender or '' }}" /></label>
+      <label>Status thanh toán <input name="payment_status" class="form-control" value="{{ row.payment_status or '' }}" /></label>
+      <label style="grid-column:1/-1">Tên đề án (CP Title)
+        <textarea name="title" class="form-control" rows="2">{{ row.title or '' }}</textarea>
+      </label>
+      <label>GVHD (Tutor) <input name="tutor" class="form-control" value="{{ row.tutor or '' }}" /></label>
+      <label>Turnitin % <input name="turnitin_pct" type="number" step="0.01" class="form-control" value="{{ row.turnitin_pct if row.turnitin_pct is not none else '' }}" /></label>
+      <label>AI % <input name="ai_pct" type="number" step="0.01" class="form-control" value="{{ row.ai_pct if row.ai_pct is not none else '' }}" /></label>
+      <label>Chủ tịch HĐ <input name="jury_host" class="form-control" value="{{ row.jury_host or '' }}" /></label>
+      <label>TV HĐ 1 <input name="jury_member_1" class="form-control" value="{{ row.jury_member_1 or '' }}" /></label>
+      <label>TV HĐ 2 <input name="jury_member_2" class="form-control" value="{{ row.jury_member_2 or '' }}" /></label>
+      <label>Ngày bảo vệ <input name="defense_date" class="form-control" value="{{ row.defense_date or '' }}" /></label>
+      <label>Giờ BV (VN) <input name="defense_time" class="form-control" value="{{ row.defense_time or '' }}" /></label>
+      <label>Phòng <input name="room" class="form-control" value="{{ row.room or '' }}" /></label>
+      <label>Total Grade (/20) <input name="total_grade" type="number" step="0.1" class="form-control" value="{{ row.total_grade if row.total_grade is not none else '' }}" /></label>
+      <label>Trạng thái
+        <select name="status" class="form-control">
+          <option value="draft" {% if row.status=='draft' %}selected{% endif %}>Nháp</option>
+          <option value="scheduled" {% if row.status=='scheduled' %}selected{% endif %}>Đã xếp lịch</option>
+          <option value="defended" {% if row.status=='defended' %}selected{% endif %}>Đã bảo vệ</option>
+        </select>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:1rem">Lưu</button>
+  </form>
+</section>
+
+<script>
+var thesisId = {{ row.id }};
+document.getElementById('thesis-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target), body = {};
+  fd.forEach(function(v,k){
+    if (v === '') body[k] = null;
+    else if (k === 'turnitin_pct' || k === 'ai_pct' || k === 'total_grade') body[k] = parseFloat(v);
+    else body[k] = v;
+  });
+  fetch('/api/ops/thesis-records/' + thesisId, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) alert(d.error); else { alert('Đã lưu'); location.reload(); }
+  });
+});
+</script>
+{% endblock %}

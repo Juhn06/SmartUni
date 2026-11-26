@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Learning time{% else %}Thời gian học{% endif %} — {{ stats.lesson.title }} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_class_lesson_detail', lesson_id=stats.lesson.id) }}" class="back-link">← {% if is_en %}Back to lesson{% else %}Quay lại bài giảng{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if is_en %}Learning time{% else %}Thống kê thời gian học{% endif %}</h1>
+    <p class="page-desc">
+      {% if is_en %}Session{% else %}Buổi{% endif %} {{ stats.lesson.lesson_no }}: {{ stats.lesson.title }}
+      {% if stats.lesson.meta %} · {{ stats.lesson.meta.class_name }} · {{ stats.lesson.meta.course_code }}{% endif %}
+    </p>
+  </div>
+  <div class="page-title-actions">{% include 'partials/feedback_btn.html' %}</div>
+</div>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.students }}</span><span class="ops-stat-lbl">{% if is_en %}Students{% else %}Học viên{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.total_hm }}</span><span class="ops-stat-lbl">{% if is_en %}Total time{% else %}Tổng thời gian{% endif %}</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ stats.totals.opens }}</span><span class="ops-stat-lbl">{% if is_en %}Opens{% else %}Lượt mở{% endif %}</span></div>
+</div>
+
+<h2 class="ops-section-title" style="margin-top:1.25rem">{% if is_en %}By student{% else %}Theo học viên{% endif %}</h2>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if is_en %}Student{% else %}Học viên{% endif %}</th>
+        <th>{% if is_en %}Total{% else %}Tổng{% endif %}</th>
+        <th>{% if is_en %}Opens{% else %}Lượt{% endif %}</th>
+        <th>{% if is_en %}Per file{% else %}Theo file{% endif %}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in stats.students %}
+      <tr>
+        <td>{{ s.student_name }}{% if s.student_email %}<br><small>{{ s.student_email }}</small>{% endif %}</td>
+        <td><strong>{{ s.total_hm }}</strong></td>
+        <td>{{ s.open_count }}</td>
+        <td>
+          <ul style="margin:0;padding-left:1.1rem;font-size:0.88rem">
+          {% for f in s.files %}
+            <li>{{ f.material_title }} — {{ f.total_hm }} ({{ f.open_count }})</li>
+          {% endfor %}
+          </ul>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="ops-empty">{% if is_en %}No view data yet.{% else %}Chưa có dữ liệu xem bài.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

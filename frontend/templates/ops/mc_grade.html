@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Submission{% else %}Bài làm{% endif %} — {{ sub.student_name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_mc_quiz', quiz_id=sub.quiz_id) }}" class="back-link">← {% if ui_lang == 'en' %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ sub.quiz_title }}</h1>
+    <p class="page-desc">
+      {{ sub.student_name }} · {{ sub.status }}
+      {% if sub.score is not none %} · {% if ui_lang == 'en' %}Score{% else %}Điểm{% endif %}: <strong>{{ sub.score }}/{{ sub.max_score }}</strong> ({{ sub.correct_count }} {% if ui_lang == 'en' %}correct{% else %}đúng{% endif %}){% endif %}
+    </p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+{% for q in sub.questions %}
+<section style="margin:1.1rem 0;padding-bottom:0.9rem;border-bottom:1px solid var(--border-color,#ddd)">
+  <h3 style="font-size:1rem;margin:0 0 0.4rem">
+    Q{{ q.q_no or loop.index }}
+    {% if q.is_correct == 1 %}<span class="badge badge-ok">✓</span>
+    {% elif q.is_correct == 0 %}<span class="badge">✗</span>{% endif %}
+  </h3>
+  <p style="margin:0 0 0.5rem">{{ q.question }}</p>
+  <ul style="list-style:none;padding:0;margin:0;font-size:0.9rem">
+    {% for i in [1,2,3,4] %}
+    {% set txt = q['choice' ~ i] %}
+    <li style="margin:0.2rem 0;{% if q.answer == i %}font-weight:600{% endif %}{% if q.chosen == i and q.answer != i %};color:#b00020{% endif %}">
+      {{ ['A','B','C','D'][i-1] }}. {{ txt }}
+      {% if q.answer == i %} ← {% if ui_lang == 'en' %}correct{% else %}đúng{% endif %}{% endif %}
+      {% if q.chosen == i and q.answer != i %} ← {% if ui_lang == 'en' %}chosen{% else %}đã chọn{% endif %}{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if q.explain_text %}<p class="page-desc" style="margin-top:0.35rem"><em>{{ q.explain_text }}</em></p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

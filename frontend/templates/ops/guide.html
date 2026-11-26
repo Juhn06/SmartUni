@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block body_class %} page-guide{% endblock %}
+{% block title %}{{ t('guide_title') }} - SmartUni{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/guide.css') }}?v=20261003guide2">
+{% endblock %}
+{% block content %}
+<div class="gd-root" id="guide-root">
+  <div class="gd-stagewrap" id="guide-stage">
+    <div class="gd-canvas" id="guide-canvas"></div>
+  </div>
+  <div class="gd-bar">
+    <a class="gd-back" href="{{ url_for('ops_home') }}"><span>{{ t('guide_back') }}</span></a>
+    <button type="button" class="gd-navbtn" id="guide-prev" aria-label="{{ t('guide_prev') }}">←</button>
+    <div class="gd-progress" id="guide-progress"></div>
+    <span class="gd-count" id="guide-count"></span>
+    <button type="button" class="gd-navbtn" id="guide-next" aria-label="{{ t('guide_next') }}">→</button>
+    <button type="button" class="gd-tocbtn" id="guide-toc-open" aria-expanded="false" aria-controls="guide-toc">{{ t('guide_contents') }}</button>
+  </div>
+  <aside class="gd-toc" id="guide-toc" hidden>
+    <div class="gd-toc-head">
+      <h2>{{ t('guide_contents') }}</h2>
+      <button type="button" class="gd-navbtn" id="guide-toc-close">{{ t('close') }}</button>
+    </div>
+    <div id="guide-toc-list"></div>
+  </aside>
+</div>
+<script id="guide-data" type="application/json">{{ deck|tojson }}</script>
+<script>
+(function () {
+  var deck = JSON.parse(document.getElementById("guide-data").textContent);
+  var ui = deck.ui || {};
+  var audiences = deck.audiences || [];
+  var flat = [];
+  audiences.forEach(function (aud, ai) {
+    (aud.slides || []).forEach(function (slide, si) {
+      flat.push({ aud: aud, ai: ai, si: si, slide: slide });
+    });
+  });
+
+  var canvas = document.getElementById("guide-canvas");
+  var stage = document.getElementById("guide-stage");
+  var progress = document.getElementById("guide-progress");
+  var countEl = document.getElementById("guide-count");
+  var toc = document.getElementById("guide-toc");
+  var tocList = document.getElementById("guide-toc-list");
+  var tocBtn = document.getElementById("guide-toc-open");
+  var index = 0;
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function brand() {
+    var row = el("div", "gd-brand");
+    row.appendChild(el("div", "gd-seal", "NEU"));
+    var name = el("div", "gd-brand-name");
+    name.appendChild(document.createTextNode("Đại học Kinh tế Quốc dân"));
+    var sub = el("span", "gd-brand-sub", "National Economics University · SmartUni");
+    name.appendChild(sub);
+    row.appendChild(name);
+    return row;
+  }
+
+  var ICONS = [
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg>',
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19l4-1 11-11-3-3L5 15z"/><path d="M13 6l3 3"/></svg>',
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c.6-2.6 2.8-4 5.5-4s4.9 1.4 5.5 4"/><path d="M14 15.2c1.4-.4 2.8-.2 4 .8 1 1 1.6 2.2 1.8 3"/></svg>',
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5c.6-1 3.4-1 4 1s-1 2-2.5 2-3.1.6-2.5 2 3.4 1.6 4.2.6"/></svg>'
+  ];
+
+  function mosaic() {
+    var row = el("div", "gd-mosaic");
+    for (var i = 0; i < 18; i++) {
+      var box = el("div", "gd-ico" + (i % 6 === 0 ? " on" : ""));
+      box.innerHTML = ICONS[i % ICONS.length];
+      row.appendChild(box);
+    }
+    return row;
+  }
+
+  function renderCover(slide) {
+    var root = el("div", "gd-slide");
+    root.appendChild(brand());
+    root.appendChild(el("div", "gd-rule"));
+    root.appendChild(el("div", "gd-pill", slide.kicker || ui.guide));
+    var h = el("h1", "gd-cover-title");
+    h.appendChild(document.createTextNode(slide.title || ""));
+    if (slide.accent) h.appendChild(el("span", "gd-accent", slide.accent));
+    root.appendChild(h);
+    if (slide.lead) root.appendChild(el("p", "gd-cover-lead", slide.lead));
+    var meta = el("div", "gd-meta");
+    (slide.meta || []).forEach(function (line) { meta.appendChild(el("div", "", line)); });
+    root.appendChild(meta);
+    root.appendChild(mosaic());
+    return root;
+  }
+
+  function renderCards(slide) {
+    var root = el("div", "gd-slide");
+    root.appendChild(brand());
+    root.appendChild(el("div", "gd-rule"));
+    root.appendChild(el("div", "gd-kicker", slide.kicker || ""));
+    root.appendChild(el("h2", "gd-h", slide.title || ""));
+    var grid = el("div", "gd-cards");
+    (slide.cards || []).forEach(function (card) {
+      var box = el("article", "gd-card");
+      var top = el("div", "gd-card-top");
+      top.appendChild(el("span", "gd-num", card.n || ""));
+      box.appendChild(top);
+      box.appendChild(el("h3", "", card.title || ""));
+      box.appendChild(el("p", "", card.body || ""));
+      if (card.items && card.items.length) {
+        var ul = el("ul");
+        card.items.forEach(function (item) { ul.appendChild(el("li", "", item)); });
+        box.appendChild(ul);
+      }
+      grid.appendChild(box);
+    });
+    root.appendChild(grid);
+    if (slide.chips && slide.chips.length) {
+      var chips = el("div", "gd-chips");
+      slide.chips.forEach(function (chip) { chips.appendChild(el("span", "gd-chip", chip)); });
+      root.appendChild(chips);
+    }
+    root.appendChild(mosaic());
+    return root;
+  }
+
+  function renderSteps(slide) {
+    var root = el("div", "gd-slide");
+    root.appendChild(brand());
+    root.appendChild(el("div", "gd-rule"));
+    root.appendChild(el("div", "gd-kicker", slide.kicker || ""));
+    root.appendChild(el("h2", "gd-h", slide.title || ""));
+    if (slide.lead) root.appendChild(el("p", "gd-steps-lead", slide.lead));
+    var list = el("div", "gd-steps");
+    (slide.steps || []).forEach(function (step) {
+      var row = el("div", "gd-step");
+      row.appendChild(el("div", "gd-step-n", step.n || ""));
+      var body = el("div");
+      body.appendChild(el("h3", "", step.title || ""));
+      if (step.body) body.appendChild(el("p", "", step.body));
+      row.appendChild(body);
+      if (step.href && step.menu) {
+        var a = el("a", "gd-link", step.menu);
+        a.href = step.href;
+        a.title = ui.open || "";
+        row.appendChild(a);
+      } else if (step.menu) {
+        row.appendChild(el("span", "", step.menu));
+      }
+      list.appendChild(row);
+    });
+    root.appendChild(list);
+    root.appendChild(mosaic());
+    return root;
+  }
+
+  function fit() {
+    var rect = stage.getBoundingClientRect();
+    var scale = Math.min(rect.width / 1920, rect.height / 1080);
+    if (!isFinite(scale) || scale <= 0) scale = 1;
+    canvas.style.transform = "scale(" + scale + ")";
+    canvas.style.left = ((rect.width - 1920 * scale) / 2) + "px";
+    canvas.style.top = ((rect.height - 1080 * scale) / 2) + "px";
+  }
+
+  function findIndex(audId, step) {
+    for (var i = 0; i < flat.length; i++) {
+      if (flat[i].aud.id === audId && flat[i].si === step) return i;
+    }
+    for (var j = 0; j < flat.length; j++) {
+      if (flat[j].aud.id === audId) return j;
+    }
+    return 0;
+  }
+
+  function readHash() {
+    var m = (location.hash || "").match(/^#\/([a-z0-9-]+)\/(\d+)$/);
+    if (!m) return findIndex(deck.default_id, 0);
+    return findIndex(m[1], parseInt(m[2], 10) || 0);
+  }
+
+  function paintProgress() {
+    progress.textContent = "";
+    flat.forEach(function (item, i) {
+      var b = el("button", "gd-seg" + (i === index ? " is-on" : ""));
+      b.type = "button";
+      b.title = item.aud.title + " · " + (item.si + 1);
+      b.addEventListener("click", function () { go(i, true); });
+      progress.appendChild(b);
+    });
+    var cur = flat[index];
+    countEl.textContent = cur ? (cur.aud.title + "  " + (cur.si + 1) + "/" + cur.aud.slides.length) : "";
+  }
+
+  function paintToc() {
+    tocList.textContent = "";
+    var sections = deck.sections || [];
+    sections.forEach(function (sec) {
+      var members = audiences.filter(function (a) { return a.section === sec.id; });
+      if (!members.length) return;
+      tocList.appendChild(el("div", "gd-sec", sec.title));
+      members.forEach(function (aud) {
+        var btn = el("button", "gd-toc-item" + (flat[index] && flat[index].aud.id === aud.id ? " is-on" : ""));
+        btn.type = "button";
+        var label = el("span", "", aud.title);
+        btn.appendChild(label);
+        if (aud.mine) btn.appendChild(el("span", "gd-yours", ui.yours || ""));
+        btn.addEventListener("click", function () {
+          go(findIndex(aud.id, 0), true);
+          setToc(false);
+        });
+        tocList.appendChild(btn);
+      });
+    });
+  }
+
+  function go(next, push) {
+    if (!flat.length) return;
+    index = (next + flat.length) % flat.length;
+    var item = flat[index];
+    canvas.textContent = "";
+    var slide = item.slide;
+    var node = slide.type === "cards" ? renderCards(slide) : slide.type === "steps" ? renderSteps(slide) : renderCover(slide);
+    canvas.appendChild(node);
+    paintProgress();
+    paintToc();
+    document.title = item.aud.title + " · " + (ui.guide || "SmartUni");
+    var hash = "#/" + item.aud.id + "/" + item.si;
+    if (push && location.hash !== hash) {
+      history.pushState(null, "", hash);
+    } else if (!push && location.hash !== hash) {
+      history.replaceState(null, "", hash);
+    }
+    fit();
+  }
+
+  function setToc(open) {
+    toc.hidden = !open;
+    tocBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  document.getElementById("guide-prev").addEventListener("click", function () { go(index - 1, true); });
+  document.getElementById("guide-next").addEventListener("click", function () { go(index + 1, true); });
+  tocBtn.addEventListener("click", function () { setToc(toc.hidden); });
+  document.getElementById("guide-toc-close").addEventListener("click", function () { setToc(false); });
+
+  document.addEventListener("keydown", function (ev) {
+    var tag = (ev.target && ev.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (ev.key === "ArrowRight" || ev.key === "PageDown" || ev.key === " ") {
+      ev.preventDefault();
+      go(index + 1, true);
+    } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") {
+      ev.preventDefault();
+      go(index - 1, true);
+    } else if (ev.key === "m" || ev.key === "M" || ev.key === "Escape") {
+      if (ev.key === "Escape" && toc.hidden) return;
+      setToc(ev.key === "Escape" ? false : toc.hidden);
+    }
+  });
+
+  stage.addEventListener("click", function (ev) {
+    if (ev.target.closest("a, button")) return;
+    var rect = stage.getBoundingClientRect();
+    var x = ev.clientX - rect.left;
+    if (x < rect.width * 0.18) go(index - 1, true);
+    else if (x > rect.width * 0.82) go(index + 1, true);
+  });
+
+  window.addEventListener("hashchange", function () { go(readHash(), false); });
+  window.addEventListener("resize", fit);
+  go(readHash(), false);
+})();
+</script>
+{% endblock %}

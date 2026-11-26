@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Báo cáo truyền thông - SmartUni{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Báo cáo truyền thông</h1>
+  </div>
+</div>
+<form method="get" class="ops-toolbar" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+  <label>Kỳ
+    <select name="period" class="form-control">
+      {% for code, label in [('month','Tháng'),('quarter','Quý'),('half','Nửa năm'),('year','Năm')] %}
+      <option value="{{ code }}" {% if period == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Quy kết
+    <select name="attribution" class="form-control">
+      <option value="first" {% if attribution != 'last' %}selected{% endif %}>Nguồn đầu</option>
+      <option value="last" {% if attribution == 'last' %}selected{% endif %}>Nguồn cuối</option>
+    </select>
+  </label>
+  <button class="btn btn-primary btn-sm" type="submit">Xem</button>
+</form>
+{% for section in report.sections or [] %}
+<section class="ops-dash-section" style="margin-bottom:1rem">
+  <h2 class="ops-section-title">{{ section.title }}</h2>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead><tr><th>Chỉ tiêu</th><th>Số liệu</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        {% for row in section.rows or [] %}
+        <tr>
+          <td>{{ row.metric }}</td>
+          <td>{{ row.value }}</td>
+          <td>{{ row.note or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

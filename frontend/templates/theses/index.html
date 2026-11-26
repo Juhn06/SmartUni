@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Thesis - ReadArticles{% endblock %}
+
+{% block content %}
+<div class="page-title-row">
+    <h1 class="page-title">Thesis</h1>
+    <a href="{{ url_for('theses_upload') }}" class="btn btn-primary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload Thesis
+    </a>
+</div>
+<p class="page-desc">Upload and analyze thesis/dissertation PDFs with structured AI review.</p>
+
+<div class="list-search-row">
+    <form method="get" action="{{ url_for('theses_index') }}">
+        <input type="search" name="q" value="{{ search_q or '' }}" placeholder="Search theses by title or summary&hellip;" aria-label="Search theses">
+        {% if request.args.get('per_page') %}<input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">{% endif %}
+        <button type="submit" class="btn btn-primary btn-search">Search</button>
+        {% if search_q %}<a href="{{ url_for('theses_index') }}" class="btn btn-secondary btn-search">Clear</a>{% endif %}
+    </form>
+</div>
+
+{% if theses and session.get('user', {}).get('is_admin') %}
+<div class="batch-bar" id="batch-bar">
+    <label class="batch-select-all">
+        <input type="checkbox" id="select-all"> Select All
+    </label>
+    <span class="batch-count" id="batch-count"></span>
+    <div class="batch-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-rerun" disabled onclick="batchRerun()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            ReRun Selected
+        </button>
+        <button class="btn btn-danger btn-sm" id="btn-delete-all" disabled onclick="batchDelete()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete Selected
+        </button>
+    </div>
+</div>
+{% endif %}
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+<div class="articles-grid">
+    {% for t in theses %}
+    <article class="article-card{% if session.get('user', {}).get('is_admin') %} has-check{% endif %}" data-id="{{ t.id }}">
+        {% if session.get('user', {}).get('is_admin') %}
+        <div class="article-card-check">
+            <input type="checkbox" class="item-check" value="{{ t.id }}">
+        </div>
+        {% endif %}
+        <h3 class="article-card-title">
+            {{ t.get('title', 'Untitled') }}
+            {% if t.get('chat_count', 0) > 0 %}
+            <span class="badge">{{ t.chat_count }} chat{{ 's' if t.chat_count != 1 }}</span>
+            {% endif %}
+        </h3>
+        {% if t.get('source_url') %}
+        <p class="article-card-meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <a href="{{ t.source_url }}" target="_blank" rel="noopener">Source</a>
+        </p>
+        {% endif %}
+        {% if t.get('summary') %}
+        <p class="article-card-summary">{{ t.summary[:180] }}{% if t.summary|length > 180 %}&hellip;{% endif %}</p>
+        {% endif %}
+        <div class="article-card-actions">
+            <a href="{{ url_for('thesis_detail', thesis_id=t.id) }}" class="btn btn-primary btn-sm">View &amp; Chat</a>
+            <form method="post" action="{{ url_for('theses_delete', thesis_id=t.id) }}" class="inline-form article-card-delete" onsubmit="return confirm('Are you sure? This will permanently delete this thesis, its PDF, and all chat history. This cannot be undone.');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </article>
+    {% else %}
+    <div class="articles-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:1rem"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p>No theses yet.</p>
+        <a href="{{ url_for('theses_upload') }}" class="btn btn-primary btn-sm" style="margin-top:0.5rem; color: white">Upload your first thesis</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if pagination %}
+{% include '_pagination.html' with context %}
+{% endif %}
+
+{% if theses %}
+<script>
+(function() {
+    var selectAll = document.getElementById('select-all');
+    var checks = document.querySelectorAll('.item-check');
+    if (!selectAll || !checks.length) return;
+    var btnRerun = document.getElementById('btn-rerun');
+    var btnDelete = document.getElementById('btn-delete-all');
+    var countEl = document.getElementById('batch-count');
+
+    function getSelected() {
+        var ids = [];
+        checks.forEach(function(c) { if (c.checked) ids.push(parseInt(c.value)); });
+        return ids;
+    }
+
+    function updateUI() {
+        var ids = getSelected();
+        var n = ids.length;
+        btnRerun.disabled = n === 0;
+        btnDelete.disabled = n === 0;
+        countEl.textContent = n > 0 ? n + ' selected' : '';
+        checks.forEach(function(c) {
+            var card = c.closest('.article-card');
+            if (c.checked) card.classList.add('article-card-selected');
+            else card.classList.remove('article-card-selected');
+        });
+        selectAll.checked = n === checks.length && n > 0;
+        selectAll.indeterminate = n > 0 && n < checks.length;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checks.forEach(function(c) { c.checked = selectAll.checked; });
+        updateUI();
+    });
+    checks.forEach(function(c) { c.addEventListener('change', updateUI); });
+
+    window.batchRerun = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: Re-running will re-extract text, regenerate summaries & analysis, and rebuild the index for ' + ids.length + ' thesis/theses. This overwrites existing data. Proceed only if you are certain.')) return;
+
+        btnRerun.disabled = true;
+        btnRerun.textContent = 'Processing\u2026';
+        showProcessing({
+            title: 'Re-processing ' + ids.length + ' thesis/theses\u2026',
+            sub: 'Each thesis will be re-extracted, re-analyzed, and re-indexed.',
+            steps: ['Re-extracting text from PDFs', 'Regenerating summaries & analysis', 'Rebuilding search index', 'Finishing up'],
+            stepIntervals: [5000, 15000, 30000]
+        });
+
+        try {
+            var resp = await fetch('/api/theses/rerun', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            hideProcessing();
+            var u = (data.updated || []).length;
+            var e = (data.errors || []).length;
+            alert(u + ' thesis/theses re-processed' + (e > 0 ? ', ' + e + ' error(s)' : '') + '.');
+            location.reload();
+        } catch (err) {
+            hideProcessing();
+            alert('ReRun failed: ' + err.message);
+            btnRerun.disabled = false;
+            btnRerun.textContent = 'ReRun Selected';
+        }
+    };
+
+    window.batchDelete = async function() {
+        var ids = getSelected();
+        if (ids.length === 0) return;
+        if (!confirm('Are you sure?\n\nWARNING: This is a permanent action. ' + ids.length + ' thesis/theses will be deleted along with all PDFs, summaries, and chat history. This CANNOT be undone. Proceed only if you are certain.')) return;
+
+        btnDelete.disabled = true;
+        btnDelete.textContent = 'Deleting\u2026';
+
+        try {
+            var resp = await fetch('/api/theses/batch-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+            });
+            var data = await resp.json();
+            var d = (data.deleted || []).length;
+            var e = (data.errors || []).length;
+            alert(d + ' thesis/theses deleted' + (e > 0 ? ', ' + e + ' error(s)' : '') + '.');
+            location.reload();
+        } catch (err) {
+            alert('Delete failed: ' + err.message);
+            btnDelete.disabled = false;
+            btnDelete.textContent = 'Delete Selected';
+        }
+    };
+})();
+</script>
+{% endif %}
+{% endblock %}

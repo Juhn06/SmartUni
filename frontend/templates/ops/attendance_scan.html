@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Attendance check-in{% else %}Điểm danh QR{% endif %} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+<a href="{{ url_for('ops_home') }}" class="back-link">← {% if is_en %}Home{% else %}Trang chủ{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{% if is_en %}Class attendance{% else %}Điểm danh tại lớp{% endif %}</h1>
+    <p class="page-desc">
+      {% if is_en %}Scan the QR on the classroom screen while logged in with your student account.{% else %}Quét mã QR trên màn hình lớp học khi đã đăng nhập tài khoản học viên.{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="ops-panel" style="max-width:28rem;margin-top:1rem">
+  {% if result %}
+    {% if result.ok %}
+    <p class="badge badge-ok" style="font-size:1rem;padding:0.5rem 0.75rem">{{ result.message }}</p>
+    <p class="page-desc" style="margin-top:0.75rem">
+      {{ result.student_name }} · {% if is_en %}Round{% else %}Lần{% endif %} {{ result.round }}
+      {% if result.session %}<br>{{ result.session.class_name }} · {{ result.session.course_code }} — {{ result.session.lesson_title or result.session.session_label }}{% endif %}
+    </p>
+    {% else %}
+    <p class="badge" style="background:#b00020;color:#fff">{{ result.error or 'Error' }}</p>
+    {% endif %}
+  {% else %}
+    <p class="page-desc">{% if is_en %}No token. Ask the lecturer to show the QR.{% else %}Chưa có mã. Nhờ giảng viên hiện QR trên máy chiếu.{% endif %}</p>
+  {% endif %}
+</div>
+{% endblock %}

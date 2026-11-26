@@ -1,0 +1,85 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+
+# Editor directories and files
+.idea
+.vscode
+.agent
+.hintrc
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS specific
+.DS_Store
+
+# Task files
+tasks.json
+tasks/
+
+# Cursor
+.cursor/
+*.mmd
+
+# taskmaster-ai
+.taskmaster/
+.roo/
+.roomodes
+
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Docker
+.docker/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Allow GitHub Actions / CI (do not ignore .github/)
+# Real business data and runtime data
+nghiepvu/
+backend/db/
+backend/chroma_db/
+backend/uploads/
+/Chuc nang.docx
+/Mau file.docx
+
+# Scratch scripts
+_tmp_*
+backend/_tmp_*
+backend/_diag_*
+__pycache__/
+*.pyc

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="{{ ui_lang or 'vi' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% if kind == 'transcript' %}Bảng điểm{% else %}Báo cáo tiến độ học tập{% endif %}</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; color: #1a1a1a; margin: 24px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    h2 { font-size: 15px; margin: 18px 0 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f4f6f8; }
+    .meta { margin: 0 0 4px; }
+    .muted { color: #555; }
+    .toolbar { margin-bottom: 16px; }
+    @media print { .toolbar { display: none; } }
+  </style>
+</head>
+<body>
+  {% set person = doc.get('learner') or {} %}
+  {% set summary = doc.get('summary') or {} %}
+  {% set exam = doc.get('exam') or {} %}
+  {% set app = doc.get('application') or {} %}
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">In</button>
+  </div>
+  <h1>{% if kind == 'transcript' %}Bảng điểm{% else %}Báo cáo tiến độ học tập{% endif %}</h1>
+  <p class="meta"><strong>{{ person.get('full_name') or '' }}</strong>
+    · {{ person.get('stage_label') or '' }}
+    · {{ person.get('program_code') or '' }}
+    {% if doc.get('class_name') %} · Lớp {{ doc.get('class_name') }}{% endif %}
+  </p>
+  <p class="meta muted">
+    Mã ứng viên {{ person.get('candidate_code') or app.get('cfvg_app_no') or '—' }}
+    · Mã học viên {{ person.get('student_code') or '—' }}
+    · Hồ sơ gốc #{{ person.get('application_id') or '—' }}
+  </p>
+  {% if exam %}
+  <p class="meta muted">
+    Hội đồng {{ exam.get('exam_board') or '—' }}
+    · Lệ phí thi {{ exam.get('fee_status') or '—' }}
+    · Danh sách {{ exam.get('roster_status') or '—' }}
+    · Quyết định {{ app.get('board_decision') or exam.get('board_decision') or '—' }}
+  </p>
+  {% endif %}
+  <p class="meta">
+    Đã học xong {{ summary.get('done') or 0 }}
+    · Đang học {{ summary.get('current') or 0 }}
+    · Chưa học / sắp tới {{ summary.get('upcoming') or 0 }}
+    · Chưa đạt {{ summary.get('failed') or 0 }}
+    {% if summary.get('gpa') is not none %} · Điểm TB cá nhân {{ summary.get('gpa') }}{% endif %}
+    {% if summary.get('class_gpa') is not none %} · Điểm TB lớp {{ summary.get('class_gpa') }}{% endif %}
+  </p>
+  <p class="meta muted">
+    {% if doc.get('edition') == 'official' %}
+    Bảng chính thức: chỉ kết quả đã khóa / đã công bố.
+    {% else %}
+    Bảng theo dõi: gồm cả điểm chưa công bố và các môn chưa học.
+    {% endif %}
+  </p>
+  <h2>{% if kind == 'transcript' %}Kết quả từng môn{% else %}Đối chiếu với chương trình{% endif %}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Kỳ</th>
+        <th>Mã</th>
+        <th>Môn học</th>
+        <th>Tiến độ</th>
+        {% if kind == 'transcript' %}
+        <th>Điểm học tập</th>
+        <th>Điểm thi</th>
+        <th>Điểm môn</th>
+        <th>Điểm danh</th>
+        {% else %}
+        <th>Bài đã xem</th>
+        <th>Phút học</th>
+        <th>GV hướng dẫn</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in doc.get('courses') or [] %}
+      <tr>
+        <td>{{ c.get('semester') or '' }}</td>
+        <td>{{ c.get('course_code') or '' }}</td>
+        <td>{{ c.get('course_name') or '' }}</td>
+        <td>{{ c.get('progress_label') or '' }}</td>
+        {% if kind == 'transcript' %}
+        <td>{{ c.get('study_score') if c.get('study_score') is not none else '' }}</td>
+        <td>{{ c.get('exam_score') if c.get('exam_score') is not none else '' }}</td>
+        <td>{{ c.get('final_score') if c.get('final_score') is not none else '' }}</td>
+        <td>{{ c.get('attendance') or '' }}</td>
+        {% else %}
+        <td>{{ c.get('lessons_viewed') or 0 }}</td>
+        <td>{{ c.get('study_minutes') or 0 }}</td>
+        <td>{{ c.get('advisor') or '' }}</td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="7">Chưa có môn trong chương trình của học viên này.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if kind != 'transcript' %}
+  <h2>Ghi nhận</h2>
+  <p class="meta">Đã học xong: {{ summary.get('done_names') or '—' }}</p>
+  <p class="meta">Đang học: {{ summary.get('current_names') or '—' }}</p>
+  <p class="meta">Chưa học, sắp tới: {{ summary.get('upcoming_names') or '—' }}</p>
+  {% set thesis = doc.get('thesis') or {} %}
+  {% if thesis %}
+  <p class="meta">Chuyên đề / đề án: {{ thesis.get('title') or '—' }} · Hướng dẫn: {{ thesis.get('advisor') or 'Chưa phân công' }}</p>
+  {% endif %}
+  {% endif %}
+</body>
+</html>

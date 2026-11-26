@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Grade{% else %}Chấm bài{% endif %} — {{ sub.display_label }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_practice_hw', hw_id=sub.homework_id) }}" class="back-link">← {% if ui_lang == 'en' %}Back{% else %}Quay lại{% endif %}</a>
+
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ sub.homework_title }}</h1>
+    <p class="page-desc">
+      <code>{{ sub.display_label }}</code> · {{ sub.student_name }} · {% if ui_lang == 'en' %}Variant{% else %}Mã đề{% endif %} <strong>{{ sub.variant_code }}</strong>
+      · {{ sub.status }}{% if sub.submitted_at %} · {{ sub.submitted_at }}{% endif %}
+    </p>
+  </div>
+  {% include 'partials/feedback_btn.html' %}
+</div>
+
+{% if sub.context_text %}
+<details style="margin:1rem 0" open>
+  <summary><strong>{% if ui_lang == 'en' %}Context{% else %}Ngữ cảnh đề{% endif %}</strong></summary>
+  <pre style="white-space:pre-wrap;font-size:0.9rem">{{ sub.context_text }}</pre>
+</details>
+{% endif %}
+
+{% for q in sub.questions %}
+<section style="margin:1.25rem 0;padding-bottom:1rem;border-bottom:1px solid var(--border-color,#ddd)">
+  <h3 style="font-size:1rem;margin:0 0 0.35rem"><code>{{ q.code }}</code> · {{ q.points }} {% if ui_lang == 'en' %}pts{% else %}điểm{% endif %}</h3>
+  <pre style="white-space:pre-wrap;font-size:0.88rem;margin:0 0 0.5rem">{{ q.content }}</pre>
+  <label class="form-label">{% if ui_lang == 'en' %}Answer{% else %}Bài làm{% endif %}</label>
+  <pre class="form-control" style="white-space:pre-wrap;min-height:4rem;background:var(--surface-2,#f6f8fa)">{{ q.answer_text or '—' }}</pre>
+</section>
+{% endfor %}
+
+<div style="margin:1.5rem 0;max-width:24rem">
+  <label class="form-label">{% if ui_lang == 'en' %}Total score{% else %}Điểm tổng{% endif %}</label>
+  <input class="form-control" type="number" step="0.1" id="grade-score" value="{{ sub.score if sub.score is not none else '' }}" />
+  <label class="form-label" style="margin-top:0.75rem">{% if ui_lang == 'en' %}Note{% else %}Nhận xét{% endif %}</label>
+  <textarea class="form-control" id="grade-note" rows="3">{{ sub.grader_note or '' }}</textarea>
+  <button type="button" class="btn btn-primary btn-sm" style="margin-top:0.75rem" id="btn-grade">{% if ui_lang == 'en' %}Save grade{% else %}Lưu điểm{% endif %}</button>
+</div>
+
+<script>
+(function(){
+  var subId = {{ sub.id }};
+  document.getElementById('btn-grade').addEventListener('click', function(){
+    fetch('/api/ops/practice/submissions/' + subId + '/grade', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        score: document.getElementById('grade-score').value,
+        note: document.getElementById('grade-note').value
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.error) alert(d.error); else { alert('{% if ui_lang == "en" %}Saved{% else %}Đã lưu{% endif %}'); location.reload(); }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}SV — {{ data.class.name }} - SmartUni{% endblock %}
+{% block content %}
+<a href="{{ url_for('ops_classes') }}" class="back-link">← {% if ui_lang == 'en' %}Classes{% else %}Lớp học{% endif %}</a>
+<div class="page-title-row">
+  <div>
+    <h1 class="page-title">{{ data.class.name }}</h1>
+    <p class="page-desc">{{ data.class.program_code }} · {{ data.students|length }} {% if ui_lang == 'en' %}students · lifecycle / scholarship / IAE{% else %}học viên · lifecycle / học bổng / IAE{% endif %}</p>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+<div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>{% if ui_lang == 'en' %}Code{% else %}Mã HV{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Name{% else %}Họ tên{% endif %}</th>
+        <th>Email</th>
+        <th>{% if ui_lang == 'en' %}Lifecycle{% else %}TT học tập{% endif %}</th>
+        <th>{% if ui_lang == 'en' %}Scholarship{% else %}Học bổng{% endif %}</th>
+        <th>Partner (IAE)</th>
+        <th>{% if ui_lang == 'en' %}Reserve note{% else %}Ghi chú bảo lưu{% endif %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in data.students %}
+      {% set life = s.lifecycle_status or 'active' %}
+      <tr data-student-id="{{ s.id }}">
+        <td data-label="Mã">{{ s.student_code or '—' }}</td>
+        <td data-label="Họ tên">{{ s.full_name }}</td>
+        <td data-label="Email">{{ s.email or '—' }}</td>
+        <td data-label="Lifecycle"><span class="ops-status">{{ status_labels.get(life, life) }}</span></td>
+        <td data-label="Scholarship">{{ s.scholarship_type or '—' }}</td>
+        <td data-label="Partner">{{ s.partner_enrollment or '—' }}</td>
+        <td data-label="Reserve">{{ s.reserve_note or '—' }}</td>
+        <td data-label="Actions">
+          <button type="button" class="btn btn-secondary btn-sm js-edit-student"
+            data-id="{{ s.id }}"
+            data-name="{{ s.full_name }}"
+            data-lifecycle="{{ life }}"
+            data-scholarship="{{ s.scholarship_type or '' }}"
+            data-partner="{{ s.partner_enrollment or '' }}"
+            data-reserve="{{ s.reserve_note or '' }}">{% if ui_lang == 'en' %}Edit{% else %}Sửa{% endif %}</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="ops-empty">{% if ui_lang == 'en' %}No students in this class yet.{% else %}Lớp chưa có học viên.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="ops-modal-backdrop" id="class-student-modal" hidden>
+  <div class="ops-modal ops-modal--edit" role="dialog" aria-modal="true" aria-labelledby="cs-modal-title">
+    <h2 id="cs-modal-title">{% if ui_lang == 'en' %}Edit student{% else %}Sửa học viên{% endif %}</h2>
+    <form id="cs-modal-form" class="ops-form">
+      <input type="hidden" name="student_id" id="cs-student-id" value="" />
+      <label class="ops-field">
+        <span class="ops-field-label">{% if ui_lang == 'en' %}Academic status{% else %}Trạng thái học tập{% endif %}</span>
+        <select name="lifecycle_status" id="cs-lifecycle" class="form-control ops-select" required>
+          {% set life_opts = (status_options or {}).get('lifecycle_status') or [] %}
+          {% if life_opts %}
+            {% for o in life_opts %}
+            <option value="{{ o.v }}">{{ o.l }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="active">{{ status_labels.get('active', 'Đang học') }}</option>
+            <option value="reserved">{{ status_labels.get('reserved', 'Bảo lưu') }}</option>
+            <option value="on_leave">{{ status_labels.get('on_leave', 'Nghỉ học') }}</option>
+            <option value="withdrawn_program">{{ status_labels.get('withdrawn_program', 'Xóa tên / rút CT') }}</option>
+            <option value="graduated">{{ status_labels.get('graduated', 'Tốt nghiệp') }}</option>
+          {% endif %}
+        </select>
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">{% if ui_lang == 'en' %}Scholarship (Financial){% else %}Học bổng (Financial){% endif %}</span>
+        <select name="scholarship_type" id="cs-scholarship" class="form-control ops-select">
+          <option value="">{% if ui_lang == 'en' %}— Select —{% else %}— Chọn —{% endif %}</option>
+          <option value="none">{% if ui_lang == 'en' %}None{% else %}Không{% endif %}</option>
+          <option value="cfvg">CFVG</option>
+          <option value="partner">{% if ui_lang == 'en' %}Partner{% else %}Đối tác{% endif %}</option>
+          <option value="french_gov">{% if ui_lang == 'en' %}French government{% else %}Chính phủ Pháp{% endif %}</option>
+          <option value="partial">{% if ui_lang == 'en' %}Partial{% else %}Một phần{% endif %}</option>
+          <option value="other">{% if ui_lang == 'en' %}Other{% else %}Khác{% endif %}</option>
+        </select>
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">{% if ui_lang == 'en' %}Partner / IAE enrollment{% else %}Ghi danh đối tác / IAE{% endif %}</span>
+        <input type="text" name="partner_enrollment" id="cs-partner" class="form-control" />
+      </label>
+      <label class="ops-field">
+        <span class="ops-field-label">{% if ui_lang == 'en' %}Deferral / reserve note{% else %}Ghi chú bảo lưu{% endif %}</span>
+        <textarea name="reserve_note" id="cs-reserve" class="form-control" rows="3"></textarea>
+      </label>
+    </form>
+    <div class="ops-modal-actions">
+      <button type="button" class="btn btn-secondary btn-sm" id="cs-modal-cancel">{% if ui_lang == 'en' %}Cancel{% else %}Hủy{% endif %}</button>
+      <button type="button" class="btn btn-primary btn-sm" id="cs-modal-save">{% if ui_lang == 'en' %}Update{% else %}Cập nhật{% endif %}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var modal = document.getElementById('class-student-modal');
+  var title = document.getElementById('cs-modal-title');
+  var lifeSel = document.getElementById('cs-lifecycle');
+  var isEn = {{ (ui_lang == 'en')|tojson }};
+
+  function ensureOption(value){
+    if (!value) return;
+    var found = false;
+    Array.prototype.forEach.call(lifeSel.options, function(opt){
+      if (opt.value === value) found = true;
+    });
+    if (!found) {
+      var opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = value;
+      lifeSel.appendChild(opt);
+    }
+  }
+
+  function openModal(btn){
+    var name = btn.getAttribute('data-name') || '';
+    var life = btn.getAttribute('data-lifecycle') || 'active';
+    ensureOption(life);
+    document.getElementById('cs-student-id').value = btn.getAttribute('data-id') || '';
+    lifeSel.value = life;
+    var sch = btn.getAttribute('data-scholarship') || '';
+    var schSel = document.getElementById('cs-scholarship');
+    if (sch && schSel && !Array.prototype.some.call(schSel.options, function(o){ return o.value === sch; })) {
+      var extra = document.createElement('option');
+      extra.value = sch; extra.textContent = sch; schSel.appendChild(extra);
+    }
+    schSel.value = sch;
+    document.getElementById('cs-partner').value = btn.getAttribute('data-partner') || '';
+    document.getElementById('cs-reserve').value = btn.getAttribute('data-reserve') || '';
+    title.textContent = (isEn ? 'Edit student — ' : 'Sửa học viên — ') + name;
+    modal.hidden = false;
+  }
+
+  function closeModal(){ modal.hidden = true; }
+
+  document.querySelectorAll('.js-edit-student').forEach(function(btn){
+    btn.addEventListener('click', function(){ openModal(btn); });
+  });
+  document.getElementById('cs-modal-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) closeModal();
+  });
+  document.getElementById('cs-modal-save').addEventListener('click', function(){
+    var id = document.getElementById('cs-student-id').value;
+    var lifecycle = (lifeSel.value || '').trim();
+    if (!id) return;
+    if (!lifecycle) {
+      alert(isEn ? 'Please select an academic status.' : 'Vui lòng chọn trạng thái học tập.');
+      return;
+    }
+    fetch('/api/ops/class-students/' + id, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+      body: JSON.stringify({
+        lifecycle_status: lifecycle,
+        scholarship_type: document.getElementById('cs-scholarship').value || '',
+        partner_enrollment: document.getElementById('cs-partner').value || '',
+        reserve_note: document.getElementById('cs-reserve').value || ''
+      })
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) alert(res.d.error || (isEn ? 'Update failed' : 'Không cập nhật được'));
+        else location.reload();
+      }).catch(function(e){ alert(e.message); });
+  });
+})();
+</script>
+{% endblock %}

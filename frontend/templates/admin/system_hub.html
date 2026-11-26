@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{% if ui_lang == 'en' %}Admin system{% else %}Quản trị hệ thống{% endif %} - SmartUni{% endblock %}
+{% block content %}
+{% set is_en = (ui_lang|default('vi') == 'en') %}
+{% set groups = admin_sys_groups if admin_sys_groups is defined else [] %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← {% if is_en %}Dashboard{% else %}Tổng quan{% endif %}</a>
+    <h1 class="page-title">{% if is_en %}System administration{% else %}Quản trị hệ thống{% endif %}</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="admin-hub-stats">
+  <div class="admin-hub-stat">
+    <strong>{{ stats.users|default(0) }}</strong>
+    <span>{% if is_en %}Users{% else %}Người dùng{% endif %}</span>
+  </div>
+  <div class="admin-hub-stat">
+    <strong>{{ stats.departments|default(0) }}</strong>
+    <span>{% if is_en %}Departments{% else %}Bộ phận{% endif %}</span>
+  </div>
+  <div class="admin-hub-stat">
+    <strong>{{ stats.suggestions_open|default(0) }}</strong>
+    <span>{% if is_en %}Open requests{% else %}Yêu cầu chờ{% endif %}</span>
+  </div>
+  <div class="admin-hub-stat">
+    <strong>{{ stats.status_items|default(0) }}</strong>
+    <span>{% if is_en %}Status values{% else %}Giá trị TT{% endif %}</span>
+  </div>
+</div>
+
+<div class="admin-hub-grid">
+  {% for g in groups %}
+  <section class="admin-hub-card" data-group="{{ g.id }}">
+    <header class="admin-hub-card-head">
+      <h2>{{ g.title_en if is_en else g.title }}</h2>
+    </header>
+    <ul class="admin-hub-card-list">
+      {% for it in g['items'] %}
+      <li>
+        <a href="{{ url_for(it.route) }}" class="admin-hub-card-link">
+          <span class="admin-hub-card-link-label">{{ it.label_en if is_en else it.label }}</span>
+          <span class="admin-hub-card-link-go" aria-hidden="true">→</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

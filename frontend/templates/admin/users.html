@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% from "partials/ops_icons.html" import svg %}
+
+{% block title %}Quản lý người dùng - Admin - SmartUni{% endblock %}
+
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Quản lý người dùng</h1>
+  </div>
+  <div class="page-title-actions">
+    <button type="button" class="btn btn-secondary btn-sm" id="admin-print-list">In</button>
+    <button type="button" class="btn btn-secondary btn-sm" id="admin-excel-list">Xuất Excel</button>
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<div class="admin-page-toolbar">
+  <input type="search" id="admin-user-filter" class="form-control admin-page-search" placeholder="Tìm họ tên / login…" aria-label="Tìm người dùng">
+  <span class="admin-page-toolbar-meta" id="admin-user-count"></span>
+</div>
+
+<div class="pagination-bar" id="admin-user-pager">
+  <button type="button" class="btn btn-primary btn-sm pagination-add" id="admin-add-user">+ Thêm mới</button>
+  <div id="admin-user-pager-nav"></div>
+</div>
+
+<div class="admin-users-section admin-panel">
+  <table class="admin-users-table ops-table">
+    <thead>
+      <tr>
+        <th>Họ tên</th>
+        <th>Login</th>
+        <th>Bộ phận</th>
+        <th>Admin</th>
+        <th>Khóa</th>
+        <th>Rà soát AI</th>
+        <th class="ops-th-actions">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr data-id="{{ u.id }}"
+          data-name="{{ u.name.split('—')[0].strip() }}"
+          data-email="{{ u.email }}"
+          data-depts="{% for d in u.departments or [] %}{{ d.id }}{% if not loop.last %},{% endif %}{% endfor %}">
+        <td>{{ u.name.split('—')[0].strip() }}</td>
+        <td><code>{{ u.email }}</code></td>
+        <td class="dept-cell">
+          {% if u.departments %}
+            {% for d in u.departments %}{{ d.name }}{% if not loop.last %}; {% endif %}{% endfor %}
+          {% else %}
+            <span class="admin-users-empty">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <label class="admin-toggle">
+            <input type="checkbox" class="toggle-admin" data-id="{{ u.id }}" {% if u.is_admin %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>
+          <label class="admin-toggle">
+            <input type="checkbox" class="toggle-locked" data-id="{{ u.id }}" {% if u.is_locked %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>
+          {% if u.qa_label %}
+            <span class="ops-status" title="{{ u.qa_flags }} {{ u.qa_suggestions }}">{{ u.qa_label }}</span>
+            {% if u.qa_flags %}<div class="ops-field-hint">{{ u.qa_flags }}</div>{% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="admin-actions ops-row-actions">
+          <div class="ops-row-actions-inner">
+          <button type="button" class="ops-icon-btn btn-depts" data-id="{{ u.id }}" title="Bộ phận" aria-label="Bộ phận">{{ svg('users') }}</button>
+          <button type="button" class="ops-icon-btn btn-perms" data-id="{{ u.id }}" title="Phân quyền" aria-label="Phân quyền">{{ svg('clipboard') }}</button>
+          <button type="button" class="ops-icon-btn btn-reset" data-id="{{ u.id }}" title="Reset mật khẩu" aria-label="Reset mật khẩu">{{ svg('update') }}</button>
+          <button type="button" class="ops-icon-btn ops-icon-btn--danger btn-del-user" data-id="{{ u.id }}" title="Xóa" aria-label="Xóa">{{ svg('delete') }}</button>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="admin-users-empty">Không có người dùng.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="pagination-bar">
+  <button type="button" class="btn btn-primary btn-sm pagination-add" id="admin-add-user-bottom">+ Thêm mới</button>
+  <div id="admin-user-pager-nav-bottom"></div>
+</div>
+
+<div class="ops-modal-backdrop" id="admin-modal" hidden>
+  <div class="ops-modal" role="dialog" aria-modal="true">
+    <h2 id="admin-modal-title">—</h2>
+    <p class="page-desc" id="admin-modal-desc"></p>
+    <div id="admin-modal-body"></div>
+    <div class="ops-modal-actions">
+      <button type="button" class="btn btn-secondary" id="admin-modal-cancel">Hủy</button>
+      <button type="button" class="btn btn-primary" id="admin-modal-save">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.admin-users-section { margin-top: 1rem; overflow-x: auto; }
+.admin-users-table { width: 100%; border-collapse: collapse; }
+.admin-users-table th, .admin-users-table td {
+  padding: 0.5rem 0.75rem; text-align: left;
+  border-bottom: 1px solid var(--border-color, #e0e0e0); vertical-align: middle;
+}
+.admin-users-table th { font-weight: 600; }
+.admin-users-empty { color: #666; font-style: italic; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.admin-toggle { display: inline-flex; align-items: center; cursor: pointer; }
+.admin-toggle input { display: none; }
+.toggle-slider {
+  width: 36px; height: 18px; background: #ccc; border-radius: 18px;
+  position: relative; transition: background 0.2s;
+}
+.toggle-slider::after {
+  content: ''; position: absolute; width: 14px; height: 14px; background: #fff;
+  border-radius: 50%; top: 2px; left: 2px; transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.admin-toggle input:checked + .toggle-slider { background: #4caf50; }
+.admin-toggle input:checked + .toggle-slider::after { transform: translateX(18px); }
+.admin-check-list { max-height: 320px; overflow: auto; display: grid; gap: 0.35rem; }
+.admin-check-list label {
+  display: flex; gap: 0.5rem; align-items: flex-start;
+  padding: 0.35rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem;
+}
+.admin-check-group {
+  margin: 0.75rem 0 0.25rem; font-size: 0.8rem; font-weight: 600;
+  color: var(--text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.03em;
+}
+.admin-modal-form .form-group { margin-bottom: 0.75rem; }
+.admin-modal-form label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+.admin-modal-form input[type="password"] {
+  width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--border, #cbd5e1);
+  border-radius: 6px;
+}
+.admin-perm-hint { font-size: 0.85rem; color: var(--text-muted, #64748b); margin-bottom: 0.75rem; }
+.admin-perm-hint code { font-size: 0.8rem; }
+</style>
+
+<script>
+(function(){
+  var DEPARTMENTS = {{ departments|tojson }};
+  var modal = document.getElementById('admin-modal');
+  var titleEl = document.getElementById('admin-modal-title');
+  var descEl = document.getElementById('admin-modal-desc');
+  var bodyEl = document.getElementById('admin-modal-body');
+  var saveBtn = document.getElementById('admin-modal-save');
+  var cancelBtn = document.getElementById('admin-modal-cancel');
+  var saveHandler = null;
+
+  var PER_PAGE = 20;
+  var PAGE = 1;
+  var SIZES = [10, 20, 50, 100, 200];
+
+  function exportTableCsv(table, filename){
+    if (!table) return;
+    var rows = [];
+    table.querySelectorAll('tr').forEach(function(tr){
+      if (tr.hidden) return;
+      var cells = [];
+      tr.querySelectorAll('th,td').forEach(function(td){
+        cells.push('"' + String(td.innerText || '').replace(/"/g, '""').trim() + '"');
+      });
+      if (cells.length) rows.push(cells.join(','));
+    });
+    var blob = new Blob(['\ufeff' + rows.join('\n')], {type: 'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename || 'export.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function applyUserFilter(){
+    var inp = document.getElementById('admin-user-filter');
+    var q = ((inp && inp.value) || '').trim().toLowerCase();
+    var all = Array.prototype.slice.call(document.querySelectorAll('.admin-users-table tbody tr[data-id]'));
+    var matched = all.filter(function(tr){
+      var blob = ((tr.dataset.name || '') + ' ' + (tr.dataset.email || '') + ' ' + (tr.textContent || '')).toLowerCase();
+      return !q || blob.indexOf(q) >= 0;
+    });
+    var total = matched.length;
+    var pages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if (PAGE > pages) PAGE = pages;
+    var start = (PAGE - 1) * PER_PAGE;
+    var end = start + PER_PAGE;
+    all.forEach(function(tr){ tr.hidden = true; });
+    matched.forEach(function(tr, i){ tr.hidden = !(i >= start && i < end); });
+    var meta = document.getElementById('admin-user-count');
+    if (meta) meta.textContent = (total ? (start + 1) : 0) + '–' + Math.min(end, total) + ' / ' + total;
+    ['admin-user-pager-nav', 'admin-user-pager-nav-bottom'].forEach(function(navId){
+    var pager = document.getElementById(navId);
+    if (pager) {
+      var html = '<div class="pagination-per-page"><label>Hiển thị</label><select class="pagination-select admin-user-per-page">';
+      SIZES.forEach(function(n){
+        html += '<option value="'+n+'"'+(n===PER_PAGE?' selected':'')+'>'+n+'</option>';
+      });
+      html += '</select><span class="pagination-per-page-label">dòng / trang</span></div>';
+      html += '<nav class="pagination-nav">';
+      html += '<button type="button" class="pagination-btn" data-p="'+(PAGE-1)+'"'+(PAGE<=1?' disabled':'')+'>Trước</button>';
+      html += '<span class="pagination-info">'+PAGE+' / '+pages+'</span>';
+      html += '<button type="button" class="pagination-btn" data-p="'+(PAGE+1)+'"'+(PAGE>=pages?' disabled':'')+'>Sau</button>';
+      html += '</nav>';
+      pager.innerHTML = html;
+      var sel = pager.querySelector('.admin-user-per-page');
+      if (sel) sel.addEventListener('change', function(){ PER_PAGE = parseInt(sel.value,10)||20; PAGE = 1; applyUserFilter(); });
+      pager.querySelectorAll('button[data-p]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var p = parseInt(btn.getAttribute('data-p'),10);
+          if (p >= 1 && p <= pages) { PAGE = p; applyUserFilter(); }
+        });
+      });
+    }
+    });
+  }
+  var userFilter = document.getElementById('admin-user-filter');
+  if (userFilter) {
+    userFilter.addEventListener('input', applyUserFilter);
+    applyUserFilter();
+  }
+
+  function closeModal(){
+    modal.hidden = true;
+    saveHandler = null;
+    bodyEl.innerHTML = '';
+  }
+  function openModal(title, desc, html, onSave){
+    titleEl.textContent = title;
+    descEl.textContent = desc || '';
+    bodyEl.innerHTML = html;
+    saveHandler = onSave;
+    modal.hidden = false;
+  }
+  cancelBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
+  saveBtn.addEventListener('click', function(){
+    if (typeof saveHandler === 'function') saveHandler();
+  });
+
+  function patchUser(id, payload, cbFail){
+    fetch('/api/users/' + id, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if (!res.ok || res.d.error) {
+          alert(res.d.error || 'Lỗi cập nhật');
+          if (cbFail) cbFail();
+        }
+      }).catch(function(e){ alert('Failed: ' + e.message); if (cbFail) cbFail(); });
+  }
+
+  document.querySelectorAll('.toggle-admin').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var val = cb.checked;
+      patchUser(cb.dataset.id, {is_admin: val}, function(){ cb.checked = !val; });
+    });
+  });
+  document.querySelectorAll('.toggle-locked').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var val = cb.checked;
+      if (val && !confirm('Khóa tài khoản này? Người dùng sẽ không đăng nhập được.')) {
+        cb.checked = false; return;
+      }
+      patchUser(cb.dataset.id, {is_locked: val}, function(){ cb.checked = !val; });
+    });
+  });
+
+  document.querySelectorAll('.btn-reset').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tr = btn.closest('tr');
+      var id = btn.dataset.id;
+      var name = tr.dataset.name;
+      openModal(
+        'Reset mật khẩu',
+        'Đặt mật khẩu mới cho ' + name + ' (' + tr.dataset.email + ').',
+        '<form class="admin-modal-form" onsubmit="return false;">' +
+          '<div class="form-group"><label for="npw">Mật khẩu mới</label>' +
+          '<input type="password" id="npw" minlength="4" required autocomplete="new-password"></div>' +
+          '<div class="form-group"><label for="cpw">Xác nhận mật khẩu mới</label>' +
+          '<input type="password" id="cpw" minlength="4" required autocomplete="new-password"></div>' +
+          '<p class="admin-perm-hint">Gợi ý tạm: <code>123!</code></p>' +
+        '</form>',
+        function(){
+          var np = document.getElementById('npw').value;
+          var cp = document.getElementById('cpw').value;
+          if (!np || np.length < 4) { alert('Mật khẩu tối thiểu 4 ký tự.'); return; }
+          if (np !== cp) { alert('Xác nhận mật khẩu không khớp.'); return; }
+          fetch('/api/admin/users/' + id + '/reset-password', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+            body: JSON.stringify({new_password: np})
+          }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+            .then(function(res){
+              if (!res.ok || res.d.error) { alert(res.d.error || 'Không reset được.'); return; }
+              alert('Đã reset mật khẩu cho ' + name + '.');
+              closeModal();
+            }).catch(function(e){ alert(e.message); });
+        }
+      );
+      setTimeout(function(){ var el = document.getElementById('npw'); if (el) el.focus(); }, 50);
+    });
+  });
+
+  document.querySelectorAll('.btn-depts').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tr = btn.closest('tr');
+      var id = btn.dataset.id;
+      var selected = (tr.dataset.depts || '').split(',').filter(Boolean).map(Number);
+      var html = '<div class="admin-check-list">';
+      DEPARTMENTS.forEach(function(d){
+        var checked = selected.indexOf(d.id) >= 0 ? ' checked' : '';
+        html += '<label><input type="checkbox" name="dept" value="' + d.id + '"' + checked + '>' +
+          '<span>' + d.name + '</span></label>';
+      });
+      html += '</div>';
+      openModal(
+        'Gán bộ phận',
+        tr.dataset.name + ' — quyền chức năng theo bộ phận sẽ áp dụng sau khi lưu.',
+        html,
+        function(){
+          var ids = Array.from(bodyEl.querySelectorAll('input[name=dept]:checked')).map(function(el){
+            return parseInt(el.value, 10);
+          });
+          fetch('/api/admin/users/' + id + '/departments', {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+            body: JSON.stringify({department_ids: ids})
+          }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+            .then(function(res){
+              if (!res.ok || res.d.error) { alert(res.d.error || 'Không lưu được.'); return; }
+              tr.dataset.depts = ids.join(',');
+              var names = DEPARTMENTS.filter(function(d){ return ids.indexOf(d.id) >= 0; })
+                .map(function(d){ return d.name; });
+              tr.querySelector('.dept-cell').innerHTML = names.length
+                ? names.join('; ')
+                : '<span class="admin-users-empty">—</span>';
+              alert('Đã cập nhật bộ phận.');
+              closeModal();
+            }).catch(function(e){ alert(e.message); });
+        }
+      );
+    });
+  });
+
+  document.querySelectorAll('.btn-perms').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tr = btn.closest('tr');
+      var id = btn.dataset.id;
+      openModal('Phân quyền chức năng', 'Đang tải…', '<p>Loading…</p>', null);
+      saveBtn.disabled = true;
+      fetch('/api/admin/users/' + id + '/permissions', {
+        headers: {'X-Requested-With':'XMLHttpRequest'}
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          saveBtn.disabled = false;
+          if (!res.ok || res.d.error) {
+            bodyEl.innerHTML = '<p>' + (res.d.error || 'Lỗi tải phân quyền') + '</p>';
+            return;
+          }
+          var catalog = res.d.catalog || [];
+          var groups = {};
+          catalog.forEach(function(p){
+            if (!groups[p.group]) groups[p.group] = [];
+            groups[p.group].push(p);
+          });
+          var html = '<p class="admin-perm-hint">Tick = quyền <strong>trực tiếp</strong> gán cho user (bổ sung ngoài quyền bộ phận). ' +
+            'Ô đã hiệu lực từ bộ phận/admin được đánh dấu <em>(đang có)</em>.</p><div class="admin-check-list">';
+          Object.keys(groups).forEach(function(g){
+            html += '<div class="admin-check-group">' + g + '</div>';
+            groups[g].forEach(function(p){
+              var checked = p.direct ? ' checked' : '';
+              var mark = (p.effective && !p.direct) ? ' <small>(đang có)</small>' : '';
+              html += '<label><input type="checkbox" name="perm" value="' + p.code + '"' + checked + '>' +
+                '<span><strong>' + p.label + '</strong> <code>' + p.code + '</code>' + mark + '</span></label>';
+            });
+          });
+          html += '</div>';
+          descEl.textContent = tr.dataset.name + ' (' + tr.dataset.email + ')';
+          bodyEl.innerHTML = html;
+          saveHandler = function(){
+            var codes = Array.from(bodyEl.querySelectorAll('input[name=perm]:checked')).map(function(el){
+              return el.value;
+            });
+            fetch('/api/admin/users/' + id + '/permissions', {
+              method: 'PUT',
+              headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+              body: JSON.stringify({permissions: codes})
+            }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+              .then(function(res2){
+                if (!res2.ok || res2.d.error) { alert(res2.d.error || 'Không lưu được.'); return; }
+                alert('Đã lưu phân quyền chức năng.');
+                closeModal();
+              }).catch(function(e){ alert(e.message); });
+          };
+        }).catch(function(e){
+          saveBtn.disabled = false;
+          bodyEl.innerHTML = '<p>' + e.message + '</p>';
+        });
+    });
+  });
+
+  document.querySelectorAll('#admin-add-user, #admin-add-user-bottom').forEach(function(addBtn){
+  addBtn.addEventListener('click', function(){
+    openModal('Thêm người dùng', 'Tạo tài khoản mới (mật khẩu tạm).',
+      '<form class="admin-modal-form">' +
+        '<div class="form-group"><label>Họ tên</label><input class="form-control" id="nu-name" required></div>' +
+        '<div class="form-group"><label>Login / email</label><input class="form-control" id="nu-email" required></div>' +
+        '<div class="form-group"><label>Mật khẩu</label><input class="form-control" id="nu-pass" type="password" value="123!" required></div>' +
+      '</form>',
+      function(){
+        var name = (document.getElementById('nu-name').value || '').trim();
+        var email = (document.getElementById('nu-email').value || '').trim();
+        var password = (document.getElementById('nu-pass').value || '').trim();
+        if (!name || !email || !password) { alert('Điền họ tên, login và mật khẩu.'); return; }
+        fetch('/api/users', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+          body: JSON.stringify({name: name, email: email, password: password})
+        }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+          .then(function(res){
+            if (!res.ok || res.d.error) { alert(res.d.error || 'Không tạo được.'); return; }
+            location.reload();
+          }).catch(function(e){ alert(e.message); });
+      }
+    );
+  });
+  });
+  var printBtn = document.getElementById('admin-print-list');
+  if (printBtn) printBtn.addEventListener('click', function(){ window.print(); });
+  var excelBtn = document.getElementById('admin-excel-list');
+  if (excelBtn) excelBtn.addEventListener('click', function(){
+    exportTableCsv(document.querySelector('.admin-users-table'), 'users.csv');
+  });
+  document.querySelectorAll('.btn-del-user').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (!confirm('Xóa người dùng này?')) return;
+      fetch('/api/users/' + btn.dataset.id, {method:'DELETE', headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+        .then(function(res){
+          if (!res.ok || res.d.error) { alert(res.d.error || 'Không xóa được.'); return; }
+          var tr = btn.closest('tr');
+          if (tr) tr.remove();
+          applyUserFilter();
+        }).catch(function(e){ alert(e.message); });
+    });
+  });
+})();
+</script>
+{% endblock %}

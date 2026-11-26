@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Học liệu & Syllabus - SmartUni{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Học liệu & Syllabus</h1>
+  </div>
+  <div class="page-title-actions">
+    {% include 'partials/feedback_btn.html' %}
+  </div>
+</div>
+
+<form method="get" class="ops-search-form ops-toolbar">
+  <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Tìm theo mã HP, tên môn, tiêu đề tài liệu…" />
+  <button class="btn btn-secondary btn-sm" type="submit">Tìm</button>
+</form>
+
+<div class="ops-summary-grid">
+  <div class="ops-stat"><span class="ops-stat-val">{{ library.stats.courses }}</span><span class="ops-stat-lbl">Học phần</span></div>
+  <div class="ops-stat"><span class="ops-stat-val">{{ library.stats.files }}</span><span class="ops-stat-lbl">Tài liệu đã release</span></div>
+</div>
+
+{% for c in library.courses %}
+<section class="ops-panel ops-library-course">
+  <h2 class="ops-section-title">{{ c.program_code }} · {{ c.code }} — {{ c.name }}</h2>
+  <p class="page-desc">{{ c.version_code }}</p>
+  {% if c.syllabus_note %}
+  <div class="ops-syllabus-block">
+    <strong>Đề cương</strong>
+    <p>{{ c.syllabus_note }}</p>
+  </div>
+  {% endif %}
+  {% if c.learning_outcomes %}
+  <div class="ops-syllabus-block">
+    <strong>Chuẩn đầu ra</strong>
+    <pre class="ops-pre">{{ c.learning_outcomes }}</pre>
+  </div>
+  {% endif %}
+
+  <h3 class="ops-subsection">Buổi học</h3>
+  <ul class="ops-session-list">
+    {% for s in c.sessions %}
+    <li>
+      <strong>Buổi {{ s.session_no }}</strong>
+      <span class="ops-guide-meta">{{ status_labels.get(s.session_type, s.session_type) }}</span>
+      — {{ s.title }}
+      {% if s.content_outline %}<p>{{ s.content_outline }}</p>{% endif %}
+      {% if s.requirements %}<p><em>{{ L('Yêu cầu', 'Requirements') }}:</em> {{ s.requirements }}</p>{% endif %}
+    </li>
+    {% else %}
+    <li class="ops-empty">Chưa có lịch buổi.</li>
+    {% endfor %}
+  </ul>
+
+  <h3 class="ops-subsection">Tài liệu tải xuống</h3>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr><th>Tài liệu</th><th>Loại</th><th>Buổi</th><th>File</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for m in c.materials %}
+        <tr>
+          <td data-label="Tài liệu">
+            <strong>{{ m.title }}</strong>
+            {% if m.description %}<div class="page-desc">{{ m.description }}</div>{% endif %}
+          </td>
+          <td data-label="Loại">{{ status_labels.get(m.material_type, m.material_type) }}</td>
+          <td data-label="Buổi">{% if m.session_no %}{{ m.session_no }}{% else %}—{% endif %}</td>
+          <td data-label="File">{{ m.original_filename or '—' }}</td>
+          <td data-label="Thao tác">
+            {% if m.can_download %}
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('ops_material_preview', material_id=m.id) }}?as_student=1">Xem trước</a>
+            <a class="btn btn-primary btn-sm" href="/api/ops/materials/{{ m.id }}/file?as_student=1">Tải xuống</a>
+            {% else %}
+            <span class="ops-status">Chưa có file</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="ops-empty">Chưa có tài liệu được release.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<p class="ops-empty">Không có học phần / tài liệu phù hợp{{ ' với từ khóa «' + q + '»' if q else '' }}.</p>
+{% endfor %}
+{% endblock %}
