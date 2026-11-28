@@ -421,6 +421,7 @@
           ${!mineNote ? '<button class="btn btn-primary btn-sm" data-act="claim">Tôi tiếp nhận</button>' : ""}
           <select class="form-control" id="req-assign" style="width:auto;min-width:180px"><option value="">Giao cho chuyên viên...</option>${people}</select>
           ${crmLink}
+          ${r.application_id ? `<span class="cb-badge ok">Đã có hồ sơ ứng tuyển #${r.application_id}</span>` : '<button class="btn btn-primary btn-sm" data-act="apply">Tạo hồ sơ ứng tuyển</button>'}
         </div>
       </div>
       <div class="cb-thread" style="background:#fff">
@@ -444,6 +445,17 @@
           <button class="btn btn-primary btn-sm" type="submit" data-status="">Lưu ghi chú</button>
         </div>
       </form>`;
+    d.querySelector('[data-act="apply"]')?.addEventListener("click", async () => {
+      const cccd = prompt("Số căn cước công dân của ứng viên (12 số):");
+      if (!cccd) return;
+      const programs = r.program || prompt("Chương trình ứng tuyển (MBA, MMS hoặc MSCM):");
+      if (!programs) return;
+      try {
+        const out = await api(`/requests/${id}/application`, { method: "POST", body: JSON.stringify({ cccd, programs }) });
+        toast(`Đã lập hồ sơ ứng tuyển ${out.applications.map(a => "#" + a.id + " " + a.program_code).join(", ")}, yêu cầu chuyển sang Đã nộp hồ sơ`);
+        openRequest(id); loadRequests();
+      } catch (e) { toast(e.message); }
+    });
     d.querySelector('[data-act="claim"]')?.addEventListener("click", async () => {
       try { await api(`/requests/${id}`, { method: "POST", body: JSON.stringify({ claim: true }) }); toast("Bạn đã tiếp nhận yêu cầu"); openRequest(id); loadRequests(); }
       catch (e) { toast(e.message); }

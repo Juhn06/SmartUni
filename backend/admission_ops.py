@@ -608,8 +608,14 @@ def create_candidate_applications(conn, data: dict) -> dict:
     except Exception:
         pass
     conn.commit()
+    from admission_bot import link_applications_to_lead
+
+    lead = link_applications_to_lead(
+        conn, phone=shared["phone"], email=shared["email"], applications=apps, actor=str(data.get("actor") or "")
+    )
     return {
         "ok": True,
+        "lead_linked": lead,
         "round_id": round_id,
         "cccd": cccd_raw,
         "full_name": full_name,

@@ -6612,20 +6612,16 @@ def ops_attendance_qr_rotate(session_id):
 @app.route("/ops/attendance/scan", methods=["POST"])
 def ops_attendance_scan():
     data = request.get_json(silent=True) or {}
-    email = (
-        data.get("student_email")
-        or request.headers.get("X-Student-Email")
-        or ""
-    ).strip()
     with get_db() as conn:
         from lesson_attendance import scan_qr_checkin
 
+        actor = _resolve_ops_actor(conn)
         try:
             return jsonify(
                 scan_qr_checkin(
                     conn,
                     token=data.get("token") or "",
-                    student_email=email,
+                    user_id=actor.get("user_id"),
                     student_name=data.get("student_name") or "",
                 )
             )

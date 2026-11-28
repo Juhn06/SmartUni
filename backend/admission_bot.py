@@ -353,6 +353,10 @@ def ensure_bot_tables(cur) -> None:
             cur.execute(f"ALTER TABLE bot_faqs ADD COLUMN {column}")
         except Exception:
             pass
+    try:
+        cur.execute("ALTER TABLE consult_requests ADD COLUMN application_id INTEGER")
+    except Exception:
+        pass
 
 
 def get_settings(conn) -> dict:
@@ -2048,6 +2052,53 @@ def create_request(
     }
 
 
+def _digits(value) -> str:
+    return re.sub(r"\D", "", str(value or ""))
+
+
+def link_applications_to_lead(conn, *, phone: str, email: str, applications: list[dict], actor: str = "") -> dict:
+    if not applications or not (phone or email):
+        return {"requests": 0, "profiles": 0}
+    cur = conn.cursor()
+    ensure_bot_tables(cur)
+    phone_digits = _digits(phone)
+    email = (email or "").strip().lower()
+    first = applications[0]["id"]
+    label = ", ".join(f"#{a['id']} ({a.get('program_code') or ''})" for a in applications)
+    now = _now()
+    matched_requests = [
+        r for r in cur.execute("SELECT id, phone, email, status FROM consult_requests").fetchall()
+        if (phone_digits and _digits(r[1]) == phone_digits) or (email and (r[2] or "").lower() == email)
+    ]
+    for req_id, _p, _e, status in matched_requests:
+        cur.execute(
+            "UPDATE consult_requests SET application_id = ?, status = CASE WHEN status = 'closed' THEN status ELSE 'converted' END, "
+            "updated_at = ? WHERE id = ?",
+            (first, now, req_id),
+        )
+    profiles = []
+    try:
+        from crm_ops import ensure_crm_tables, log_daily_update
+
+        ensure_crm_tables(cur)
+        profiles = [
+            r[0] for r in cur.execute("SELECT id, phone, email FROM crm_source_profiles").fetchall()
+            if (phone_digits and _digits(r[1]) == phone_digits) or (email and (r[2] or "").lower() == email)
+        ]
+        for pid in profiles:
+            cur.execute(
+                "UPDATE crm_source_profiles SET application_id = ?, care_status = 'handed_ts', person_status = 'applicant' WHERE id = ?",
+                (first, pid),
+            )
+        conn.commit()
+        for pid in profiles:
+            log_daily_update(conn, pid, {"note": f"Đã lập hồ sơ ứng tuyển {label}.", "channel": "system"}, actor=actor or "tuyen_sinh")
+    except Exception as e:
+        print(f"[BOT] link lead failed: {e}")
+    conn.commit()
+    return {"requests": len(matched_requests), "profiles": len(profiles)}
+
+
 def submit_contact(conn, *, session_key: str, data: dict, client_ip: str = "") -> dict:
     session_key = (session_key or "").strip()[:64]
     if session_key:
@@ -2576,6 +2627,38 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
             return jsonify({"messages": [], "status": "new"})
         with get_db() as conn:
             return jsonify(poll_messages(conn, session_key, request.args.get("after", 0, type=int)))
+
+    @app.route("/ops/chatbot/requests/<int:req_id>/application", methods=["POST"])
+    def bot_request_application(req_id):
+        data = request.get_json(silent=True) or {}
+        with get_db() as conn:
+            actor, problem = staff(conn)
+            if problem:
+                return problem
+            if not (actor.get("is_admin") or "admissions.applications" in (actor.get("permission_codes") or [])):
+                return err("Bạn cần quyền lập hồ sơ ứng tuyển (admissions.applications).", 403)
+            req = conn.execute("SELECT * FROM consult_requests WHERE id = ?", (req_id,)).fetchone()
+            if not req:
+                return err("Không tìm thấy yêu cầu tư vấn.", 404)
+            programs = data.get("programs") or data.get("program_code") or req["program"]
+            if not programs:
+                return err("Chọn chương trình cho hồ sơ ứng tuyển.")
+            from admission_ops import create_candidate_applications
+
+            try:
+                result = create_candidate_applications(conn, {
+                    "full_name": (data.get("full_name") or req["full_name"] or "").strip(),
+                    "cccd": data.get("cccd") or "",
+                    "email": req["email"] or "",
+                    "phone": req["phone"] or "",
+                    "programs": programs,
+                    "round_id": data.get("round_id"),
+                    "notes": f"Lập từ yêu cầu tư vấn #{req_id}.",
+                    "actor": actor_name(actor),
+                })
+            except ValueError as e:
+                return err(str(e))
+            return jsonify(result), 201
 
     @app.route("/ops/chatbot/stats", methods=["GET"])
     def bot_stats():

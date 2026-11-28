@@ -320,9 +320,9 @@ def save_marks(
             (touch_r1 and int(r1 or 0) != int(existing[1] or 0))
             or (touch_r2 and int(r2 or 0) != int(existing[2] or 0))
         )
-        if source == "qr" and existing:
+        if source == "qr" and existing and ((touch_r1 and existing[1]) or (touch_r2 and existing[2])):
             continue
-        if changed and not (reason or str(item.get("reason") or "").strip()):
+        if changed and source != "qr" and not (reason or str(item.get("reason") or "").strip()):
             raise ValueError("Sửa điểm danh đã có cần ghi lý do")
         if existing:
             cur.execute(
@@ -443,11 +443,28 @@ def rotate_qr_token(
     }
 
 
+def _student_in_class(conn, class_id: int, user_id: int):
+    from e2e_pipeline import resolve_student_identity
+
+    cur = conn.cursor()
+    row = cur.execute(
+        "SELECT id, full_name FROM class_students WHERE class_id = ? AND portal_user_id = ?", (class_id, user_id)
+    ).fetchone()
+    if row:
+        return row
+    student = (resolve_student_identity(conn, user_id=user_id) or {}).get("student") or {}
+    if student.get("id"):
+        return cur.execute(
+            "SELECT id, full_name FROM class_students WHERE class_id = ? AND id = ?", (class_id, student["id"])
+        ).fetchone()
+    return None
+
+
 def scan_qr_checkin(
     conn,
     *,
     token: str,
-    student_email: str,
+    user_id: int | None,
     student_name: str = "",
 ) -> dict:
     cur = conn.cursor()
@@ -455,8 +472,7 @@ def scan_qr_checkin(
     token = (token or "").strip()
     if not token:
         raise ValueError("Thiếu mã QR")
-    email = (student_email or "").strip().lower()
-    if not email:
+    if not user_id:
         raise ValueError("Cần đăng nhập tài khoản học viên")
     th = _hash_token(token)
     row = cur.execute(
@@ -480,29 +496,21 @@ def scan_qr_checkin(
         raise ValueError("Điểm danh lần 1 đã đóng")
     if round_no == 2 and not sess["round2_open"]:
         raise ValueError("Điểm danh lần 2 đã đóng")
-    st = cur.execute(
-        "SELECT id, full_name FROM class_students "
-        "WHERE class_id=? AND lower(IFNULL(email,''))=?",
-        (sess["class_id"], email),
-    ).fetchone()
+    st = _student_in_class(conn, sess["class_id"], int(user_id))
     if not st:
-        raise ValueError(
-            "Email của bạn không có trong danh sách lớp này — chỉ học viên tại lớp mới điểm danh được"
-        )
+        raise ValueError("Tài khoản của bạn không có trong danh sách lớp này — chỉ học viên của lớp mới điểm danh được")
     # already marked this round?
     existing = cur.execute(
         "SELECT id, present, present_after_break FROM attendance_marks "
         "WHERE attendance_session_id=? AND student_id=?",
         (session_id, st[0]),
     ).fetchone()
-    already = False
-    if existing:
-        already = True
+    already = bool(existing) and bool(existing[1] if round_no == 1 else existing[2])
     if already:
         return {
             "ok": True,
             "already": True,
-            "message": "Đã có điểm danh cho buổi này. QR chỉ ghi nhận một lần, không thay điểm danh đã có.",
+            "message": f"Bạn đã điểm danh lần {round_no} của buổi này rồi.",
             "round": round_no,
             "session": sess,
             "student_name": st[1],
