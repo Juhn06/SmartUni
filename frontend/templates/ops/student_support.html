@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block title %}Hỗ trợ học viên và UniBot - SmartUni{% endblock %}
+{% block extra_head %}
+<style>
+.ss { display: grid; gap: 16px; }
+.ss .form-control { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: var(--text); }
+.ss .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 82, 140, .12); }
+.ss textarea.form-control { resize: vertical; line-height: 1.45; }
+.ss-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.ss-tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer; color: var(--text-muted); font-weight: 500; }
+.ss-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.ss-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.ss-panel { display: none; }
+.ss-panel.active { display: grid; gap: 16px; }
+.ss-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ss-toolbar .form-control { width: auto; min-width: 160px; }
+.ss-intro { color: var(--text-muted); font-size: 14px; margin: 0; }
+.ss-split { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 16px; min-height: 520px; }
+.ss-list { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; overflow-y: auto; max-height: 72vh; }
+.ss-item { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: grid; gap: 4px; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; font: inherit; color: inherit; }
+.ss-item:hover, .ss-item.active { background: var(--accent-light); }
+.ss-item .top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.ss-item .name { font-weight: 600; }
+.ss-item .meta { font-size: 12px; color: var(--text-muted); }
+.ss-item .q { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eef2f7; color: var(--text-muted); white-space: nowrap; }
+.ss-badge.new { background: #fde2e1; color: #b42318; }
+.ss-badge.in_progress { background: #fff1d6; color: #9a5b00; }
+.ss-badge.answered { background: #dcf5ea; color: #0b7a55; }
+.ss-detail { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; max-height: 72vh; }
+.ss-detail-head { padding: 14px 16px; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
+.ss-detail-head .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ss-thread { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
+.ss-msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.ss-msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+.ss-msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--border); }
+.ss-msg.staff { align-self: flex-start; background: var(--accent-light); border: 1px solid #9cc7e6; }
+.ss-msg.focus { box-shadow: 0 0 0 3px #f2b705; }
+.ss-msg .info { font-size: 11px; color: var(--text-muted); margin-top: 4px; white-space: normal; }
+.ss-msg.user .info { color: rgba(255,255,255,.78); }
+.ss-reply { display: grid; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+.ss-reply .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.ss-empty { color: var(--text-muted); text-align: center; padding: 40px 16px; }
+.ss-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.ss-card h3 { margin: 0 0 12px; font-size: 15px; }
+.ss-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.ss-form { display: grid; gap: 10px; }
+.ss-form label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; }
+.ss-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ss-table th, .ss-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ss-table th { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+.ss-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ss-muted { color: var(--text-muted); font-size: 13px; }
+.ss-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--neu-navy); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; display: none; z-index: 9999; }
+.ss-toast.on { display: block; }
+@media (max-width: 900px) { .ss-split { grid-template-columns: 1fr; } }
+.ss-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-title-row">
+  <div class="page-title-main">
+    <a href="{{ url_for('ops_home') }}" class="back-link">← Tổng quan</a>
+    <h1 class="page-title">Hỗ trợ học viên và UniBot</h1>
+  </div>
+</div>
+
+<div class="ss">
+  <p class="ss-intro">Học viên hỏi trợ lý UniBot trên cổng học viên. Bot tự trả lời điểm, học phí, lịch và tiến trình từ dữ liệu của chính học viên, trả lời quy chế từ kho kiến thức học vụ. Câu bot chưa trả lời được chuyển về đây theo chương trình; câu trả lời của bạn hiện ngay trong khung chat của học viên.</p>
+  <div class="ss-tabs" role="tablist">
+    <button class="ss-tab active" data-tab="requests" type="button">Câu hỏi cần trả lời <span class="ss-count" id="count-open" hidden></span></button>
+    <button class="ss-tab" data-tab="kb" type="button">Kho kiến thức học vụ</button>
+    <button class="ss-tab" data-tab="faq" type="button">FAQ học viên</button>
+    <button class="ss-tab" data-tab="test" type="button">Chat thử</button>
+  </div>
+
+  <section class="ss-panel active" data-panel="requests">
+    <div class="ss-toolbar">
+      <select class="form-control" id="req-status" aria-label="Lọc trạng thái">
+        <option value="">Tất cả trạng thái</option>
+        <option value="new">Mới</option>
+        <option value="in_progress">Đang xử lý</option>
+        <option value="answered">Đã trả lời</option>
+        <option value="closed">Đóng</option>
+      </select>
+      <input class="form-control" id="req-q" placeholder="Tìm tên, mã học viên, câu hỏi" aria-label="Tìm kiếm">
+      <button class="btn btn-secondary btn-sm" type="button" id="req-reload">Tải lại</button>
+      <span class="ss-muted" id="req-scope"></span>
+    </div>
+    <div class="ss-split">
+      <div class="ss-list" id="req-list"></div>
+      <div class="ss-detail" id="req-detail"><div class="ss-empty">Chọn một câu hỏi để xem hội thoại và trả lời</div></div>
+    </div>
+  </section>
+
+  <section class="ss-panel" data-panel="kb">
+    <div class="ss-grid2">
+      <div class="ss-card">
+        <h3>Tải tài liệu học vụ</h3>
+        <form class="ss-form" id="upload-form">
+          <label>Tệp (PDF, DOCX, XLSX, TXT, MD)<input class="form-control" type="file" name="files" multiple required></label>
+          <label>Chương trình
+            <select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select>
+          </label>
+          <div class="ss-dates"><label>Hiệu lực từ<input class="form-control" type="date" name="effective_from"></label><label>Đến hết ngày<input class="form-control" type="date" name="effective_to"></label></div>
+          <button class="btn btn-primary btn-sm" type="submit">Tải lên</button>
+        </form>
+      </div>
+      <div class="ss-card">
+        <h3>Thêm nội dung trực tiếp</h3>
+        <form class="ss-form" id="doc-form">
+          <label>Tiêu đề<input class="form-control" name="title" required></label>
+          <label>Nội dung<textarea class="form-control" name="content" rows="5" required></textarea></label>
+          <label>Chương trình
+            <select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select>
+          </label>
+          <div class="ss-dates"><label>Hiệu lực từ<input class="form-control" type="date" name="effective_from"></label><label>Đến hết ngày<input class="form-control" type="date" name="effective_to"></label></div>
+          <button class="btn btn-primary btn-sm" type="submit">Lưu vào kho</button>
+        </form>
+      </div>
+    </div>
+    <p class="ss-muted" id="review-note"></p>
+    <p class="ss-muted">Chỉ đưa quy chế, thủ tục, hướng dẫn chung. Quyết định riêng của từng học viên (bảo lưu, học bổng, miễn môn, điểm) nhập ở module nghiệp vụ tương ứng, bot đọc trực tiếp từ đó. Không tải danh sách học viên: bộ lọc tự ẩn số điện thoại, email, số giấy tờ và từ chối tệp dạng danh sách cá nhân. Bot chỉ trích số liệu có trong tài liệu.</p>
+    <div class="ss-card"><table class="ss-table"><thead><tr><th>Tài liệu</th><th>Chương trình</th><th>Hiệu lực</th><th>Duyệt</th><th>Trạng thái</th><th></th></tr></thead><tbody id="doc-rows"></tbody></table></div>
+  </section>
+
+  <section class="ss-panel" data-panel="faq">
+    <div class="ss-card">
+      <h3>Thêm câu hỏi thường gặp</h3>
+      <form class="ss-form" id="faq-form">
+        <label>Câu hỏi<input class="form-control" name="question" required></label>
+        <label>Cách hỏi khác (mỗi dòng một cách, giúp bot nhận ra cùng một câu hỏi)<textarea class="form-control" name="variants" rows="3" placeholder="Bảng điểm nằm ở mục nào?&#10;Tra cứu điểm thế nào?"></textarea></label>
+        <label>Câu trả lời<textarea class="form-control" name="answer" rows="3" required></textarea></label>
+        <button class="btn btn-primary btn-sm" type="submit">Lưu FAQ</button>
+      </form>
+    </div>
+    <div class="ss-card">
+      <div class="ss-toolbar" style="justify-content: space-between">
+        <h3 style="margin:0">Gợi ý câu hỏi mới</h3>
+        <button class="btn btn-secondary btn-sm" type="button" id="suggest-btn">Sinh gợi ý từ tài liệu và câu trả lời của cán bộ</button>
+      </div>
+      <p class="ss-muted">Gợi ý lấy từ các mục trong tài liệu học vụ và từ câu cán bộ đã trả lời học viên. Kiểm tra nội dung rồi bấm Thêm để bot dùng.</p>
+      <div id="suggest-list"></div>
+    </div>
+    <div class="ss-card"><table class="ss-table"><thead><tr><th>Câu hỏi</th><th>Trả lời</th><th>Lượt dùng</th><th>Duyệt</th><th></th></tr></thead><tbody id="faq-rows"></tbody></table></div>
+  </section>
+
+  <section class="ss-panel" data-panel="test">
+    <div class="ss-card">
+      <h3>Thử câu hỏi với kho kiến thức học vụ</h3>
+      <form class="ss-form" id="test-form">
+        <label>Hỏi với tư cách học viên (tài khoản đăng nhập, để trống nếu chỉ thử kho kiến thức)<input class="form-control" name="student_login" placeholder="Ví dụ: E2eMba"></label>
+        <label>Câu hỏi<input class="form-control" name="question" placeholder="Ví dụ: Kỳ này tôi có bao nhiêu môn?" required></label>
+        <button class="btn btn-primary btn-sm" type="submit">Hỏi thử</button>
+      </form>
+      <p class="ss-muted">Nhập tài khoản học viên để xem bot trả lời học viên đó thế nào; thử ở đây không lưu tin nhắn và không tạo yêu cầu hỗ trợ.</p>
+      <div id="test-out"></div>
+    </div>
+  </section>
+</div>
+<div class="ss-toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  const BASE = "/api/ops/student-support";
+  let current = null;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2600); }
+  function fmt(ts) { if (!ts) return ""; const d = new Date(ts.replace(" ", "T")); return isNaN(d) ? ts : d.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }); }
+  async function api(path, opts) {
+    opts = opts || {};
+    const headers = Object.assign({ "X-Requested-With": "XMLHttpRequest" }, opts.body && !(opts.body instanceof FormData) ? { "Content-Type": "application/json" } : {});
+    const res = await fetch(BASE + path, Object.assign({}, opts, { headers }));
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || "Lỗi máy chủ");
+    return data;
+  }
+
+  document.querySelectorAll(".ss-tab").forEach(b => b.addEventListener("click", () => openTab(b.dataset.tab)));
+  function openTab(name) {
+    document.querySelectorAll(".ss-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".ss-panel").forEach(p => p.classList.toggle("active", p.dataset.panel === name));
+    ({ requests: loadRequests, kb: loadDocs, faq: loadFaqs, test: () => {} })[name]();
+  }
+
+  async function loadRequests() {
+    const p = new URLSearchParams();
+    const st = document.getElementById("req-status").value; if (st) p.set("status", st);
+    const q = document.getElementById("req-q").value.trim(); if (q) p.set("q", q);
+    const list = document.getElementById("req-list");
+    try {
+      const data = await api("/requests?" + p.toString());
+      document.getElementById("req-scope").textContent = "Phụ trách: " + data.departments.map(d => d.label).join(", ");
+      const c = document.getElementById("count-open"); c.hidden = !data.open_count; c.textContent = data.open_count;
+      list.innerHTML = data.rows.length ? data.rows.map(r => `
+        <button type="button" class="ss-item${current === r.id ? " active" : ""}" data-id="${r.id}">
+          <span class="top"><span class="name">${esc(r.full_name || "Học viên")}</span><span class="ss-badge ${esc(r.status)}">${esc(r.status_label)}</span></span>
+          <span class="meta">${esc([r.student_code, r.program_code, r.class_name].filter(Boolean).join(" · "))} · ${fmt(r.created_at)}</span>
+          <span class="q">${esc(r.question)}</span>
+        </button>`).join("") : '<div class="ss-empty">Chưa có câu hỏi nào</div>';
+      list.querySelectorAll(".ss-item").forEach(el => el.addEventListener("click", () => openRequest(+el.dataset.id)));
+    } catch (e) { list.innerHTML = `<div class="ss-empty">${esc(e.message)}</div>`; }
+  }
+
+  async function openRequest(id) {
+    current = id;
+    document.querySelectorAll(".ss-item").forEach(el => el.classList.toggle("active", +el.dataset.id === id));
+    const box = document.getElementById("req-detail");
+    try {
+      const r = await api("/requests/" + id);
+      const thread = r.conversation.map(m => `
+        <div class="ss-msg ${m.role === "user" ? "user" : m.role === "staff" ? "staff" : "bot"}${m.request_id === r.id && m.role !== "staff" ? " focus" : ""}">${esc(m.content)}
+          <div class="info">${m.role === "staff" ? esc(m.author || "Cán bộ") + " · " : m.role === "bot" ? "UniBot · " : ""}${fmt(m.created_at)}</div></div>`).join("");
+      box.innerHTML = `
+        <div class="ss-detail-head">
+          <div class="row"><b>${esc(r.full_name || "Học viên")}</b><span class="ss-badge ${esc(r.status)}">${esc(r.status_label)}</span><span class="ss-muted">${esc(r.department_label)}</span></div>
+          <div class="ss-muted">${esc([r.student_code && "Mã " + r.student_code, r.program_code, r.class_name && "Lớp " + r.class_name].filter(Boolean).join(" · "))}</div>
+          <div><b>Câu hỏi:</b> ${esc(r.question)}</div>
+          ${r.handled_by ? `<div class="ss-muted">Người xử lý: ${esc(r.handled_by)}</div>` : ""}
+        </div>
+        <div class="ss-thread">${thread || '<div class="ss-empty">Không có tin nhắn</div>'}</div>
+        <form class="ss-reply" id="reply-form">
+          <label class="ss-muted" for="reply-text">Trả lời học viên (hiện ngay trong khung chat UniBot của học viên)</label>
+          <textarea class="form-control" id="reply-text" rows="3" placeholder="Nhập câu trả lời"></textarea>
+          <label class="ss-muted"><input type="checkbox" id="reply-faq"${r.faq_id ? " disabled" : ""}> ${r.faq_id ? "Câu hỏi này đã được lưu vào FAQ" : "Lưu câu hỏi và câu trả lời vào FAQ để lần sau bot tự trả lời"}</label>
+          <div class="actions">
+            <button class="btn btn-secondary btn-sm" type="submit" data-status="in_progress">Đánh dấu đang xử lý</button>
+            <button class="btn btn-secondary btn-sm" type="submit" data-status="closed">Đóng</button>
+            <button class="btn btn-primary btn-sm" type="submit" data-status="">Gửi trả lời</button>
+          </div>
+        </form>`;
+      const th = box.querySelector(".ss-thread"); th.scrollTop = th.scrollHeight;
+      box.querySelector("#reply-form").addEventListener("submit", async ev => {
+        ev.preventDefault();
+        const status = ev.submitter ? ev.submitter.dataset.status : "";
+        const reply = box.querySelector("#reply-text").value.trim();
+        if (!status && !reply) { toast("Nhập câu trả lời trước khi gửi"); return; }
+        try {
+          const payload = { reply, status, save_faq: !!(reply && box.querySelector("#reply-faq").checked) };
+          await api("/requests/" + id, { method: "POST", body: JSON.stringify(payload) });
+          toast(reply ? "Đã gửi trả lời cho học viên" : "Đã cập nhật trạng thái");
+          await loadRequests();
+          openRequest(id);
+        } catch (e) { toast(e.message); }
+      });
+    } catch (e) { box.innerHTML = `<div class="ss-empty">${esc(e.message)}</div>`; }
+  }
+
+  let me = null;
+  const REVIEW = { approved: ["answered", "Đã duyệt"], pending: ["new", "Chờ duyệt"], rejected: ["closed", "Bị trả lại"] };
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function vnDate(v) { return v.split("-").reverse().join("/"); }
+  function effective(d) {
+    const span = [d.effective_from ? "từ " + vnDate(d.effective_from) : "", d.effective_to ? "đến " + vnDate(d.effective_to) : ""].filter(Boolean).join(" ") || "Không giới hạn";
+    const state = d.effective_to && d.effective_to < today() ? " (hết hiệu lực)" : d.effective_from && d.effective_from > today() ? " (chưa tới ngày)" : "";
+    return span + state;
+  }
+  function liveForBot(d) {
+    return d.status === "active" && d.review_status === "approved" && (!d.effective_from || d.effective_from <= today()) && (!d.effective_to || d.effective_to >= today());
+  }
+  async function ensureMe() {
+    if (me) return me;
+    me = await api("/me");
+    document.getElementById("review-note").textContent = me.can_approve
+      ? "Bạn có quyền duyệt: tài liệu và FAQ bạn lưu được dùng ngay, của bộ phận chương trình cần bạn duyệt trước khi bot dùng."
+      : "Tài liệu và FAQ bạn lưu ở trạng thái Chờ duyệt. Bot chỉ dùng sau khi Ban giám đốc, Trợ lý BGĐ hoặc Admin duyệt, tài liệu chỉ dùng trong thời gian hiệu lực.";
+    document.querySelectorAll('select[name="program_code"]').forEach(sel => {
+      Array.from(sel.options).forEach(o => { if (o.value && !me.programs.includes(o.value)) o.remove(); });
+    });
+    return me;
+  }
+  function reviewCell(x) {
+    const r = REVIEW[x.review_status || "approved"] || REVIEW.pending;
+    return `<span class="ss-badge ${r[0]}">${r[1]}</span>${x.review_note ? `<div class="ss-muted">${esc(x.review_note)}</div>` : ""}`;
+  }
+  function reviewButtons(x) {
+    if (!me || !me.can_approve) return "";
+    const st = x.review_status || "approved";
+    return (st !== "approved" ? '<button class="btn btn-primary btn-sm" type="button" data-act="approve">Duyệt</button>' : "")
+      + (st === "pending" ? '<button class="btn btn-secondary btn-sm" type="button" data-act="reject">Trả lại</button>' : "");
+  }
+  async function review(path, act) {
+    if (act === "approve") {
+      await api(path + "/review", { method: "POST", body: JSON.stringify({ action: "approve" }) });
+      toast("Đã duyệt, bot bắt đầu dùng");
+      return true;
+    }
+    const note = prompt("Lý do trả lại để bộ phận chương trình sửa:");
+    if (!note) return false;
+    await api(path + "/review", { method: "POST", body: JSON.stringify({ action: "reject", note }) });
+    toast("Đã trả lại");
+    return true;
+  }
+  async function loadDocs() {
+    const body = document.getElementById("doc-rows");
+    try {
+      await ensureMe();
+      const rows = await api("/docs");
+      body.innerHTML = rows.length ? rows.map(d => `
+        <tr data-id="${d.id}">
+          <td><b>${esc(d.title)}</b><div class="ss-muted">${esc(d.file_name || "Nhập trực tiếp")} · ${fmt(d.updated_at)}</div></td>
+          <td>${esc(d.program_code || "Chung")}</td>
+          <td>${esc(effective(d))}</td>
+          <td><span class="ss-badge ${(REVIEW[d.review_status] || REVIEW.pending)[0]}">${(REVIEW[d.review_status] || REVIEW.pending)[1]}</span>${d.reviewed_by && d.review_status !== "pending" ? `<div class="ss-muted">${esc(d.reviewed_by)}</div>` : ""}${d.review_note ? `<div class="ss-muted">${esc(d.review_note)}</div>` : ""}</td>
+          <td><span class="ss-badge ${liveForBot(d) ? "answered" : ""}">${liveForBot(d) ? "Bot đang dùng" : d.status === "active" ? "Bot chưa dùng" : "Tạm tắt"}</span></td>
+          <td><div class="ss-actions">${me && me.can_approve && d.review_status !== "approved" ? '<button class="btn btn-primary btn-sm" type="button" data-act="approve">Duyệt</button>' : ""}${me && me.can_approve && d.review_status === "pending" ? '<button class="btn btn-secondary btn-sm" type="button" data-act="reject">Trả lại</button>' : ""}<button class="btn btn-secondary btn-sm" type="button" data-act="toggle" data-on="${d.status === "active" ? 0 : 1}">${d.status === "active" ? "Tắt" : "Bật"}</button><button class="btn btn-danger btn-sm" type="button" data-act="delete">Xóa</button></div></td>
+        </tr>`).join("") : '<tr><td colspan="6" class="ss-empty">Chưa có tài liệu</td></tr>';
+      body.querySelectorAll("button[data-act]").forEach(b => b.addEventListener("click", async () => {
+        const id = b.closest("tr").dataset.id;
+        try {
+          if (b.dataset.act === "delete") {
+            if (!confirm("Xóa tài liệu này khỏi kho kiến thức học vụ?")) return;
+            await api("/docs/" + id, { method: "DELETE" });
+          } else if (b.dataset.act === "approve" || b.dataset.act === "reject") {
+            if (!await review("/docs/" + id, b.dataset.act)) return;
+          } else {
+            await api("/docs/" + id, { method: "PUT", body: JSON.stringify({ status: b.dataset.on === "1" ? "active" : "inactive" }) });
+          }
+          loadDocs();
+        } catch (e) { toast(e.message); }
+      }));
+    } catch (e) { body.innerHTML = `<tr><td colspan="6" class="ss-empty">${esc(e.message)}</td></tr>`; }
+  }
+
+  document.getElementById("upload-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try {
+      const out = await api("/docs/upload", { method: "POST", body: new FormData(ev.target) });
+      const pending = out.imported.filter(d => d.review_status === "pending").length;
+      toast(`Đã nạp ${out.imported.length} tệp` + (pending ? `, ${pending} tệp chờ duyệt` : "") + (out.failed.length ? `, lỗi ${out.failed.length}: ${out.failed.map(f => f.error).join("; ")}` : ""));
+      ev.target.reset();
+      loadDocs();
+    } catch (e) { toast(e.message); }
+  });
+  document.getElementById("doc-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try {
+      const saved = await api("/docs", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(ev.target))) });
+      toast(saved.review_status === "pending" ? "Đã lưu, chờ duyệt trước khi bot dùng" : "Đã lưu vào kho kiến thức");
+      ev.target.reset();
+      loadDocs();
+    } catch (e) { toast(e.message); }
+  });
+
+  async function loadFaqs() {
+    const body = document.getElementById("faq-rows");
+    try {
+      await ensureMe();
+      const rows = await api("/faqs");
+      body.innerHTML = rows.length ? rows.map(f => `
+        <tr data-id="${f.id}"><td><b>${esc(f.question)}</b>${f.variants ? `<div class="ss-muted">+ ${f.variants.split("\n").length} cách hỏi khác: ${esc(f.variants.split("\n").join(" · "))}</div>` : ""}</td><td>${esc(f.answer)}</td><td>${f.hits || 0}</td><td>${reviewCell(f)}</td>
+        <td><div class="ss-actions">${reviewButtons(f)}<button class="btn btn-danger btn-sm" type="button" data-act="delete">Xóa</button></div></td></tr>`).join("") : '<tr><td colspan="5" class="ss-empty">Chưa có FAQ</td></tr>';
+      body.querySelectorAll("button[data-act]").forEach(b => b.addEventListener("click", async () => {
+        const id = b.closest("tr").dataset.id;
+        try {
+          if (b.dataset.act === "delete") {
+            if (!confirm("Xóa câu hỏi này?")) return;
+            await api("/faqs/" + id, { method: "DELETE" });
+          } else if (!await review("/faqs/" + id, b.dataset.act)) {
+            return;
+          }
+          loadFaqs();
+        } catch (e) { toast(e.message); }
+      }));
+    } catch (e) { body.innerHTML = `<tr><td colspan="5" class="ss-empty">${esc(e.message)}</td></tr>`; }
+  }
+  document.getElementById("faq-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try {
+      const saved = await api("/faqs", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(ev.target))) });
+      toast(saved.review_status === "pending" ? "Đã lưu FAQ, chờ duyệt trước khi bot dùng" : "Đã lưu FAQ");
+      ev.target.reset();
+      loadFaqs();
+    } catch (e) { toast(e.message); }
+  });
+
+  let suggestions = [];
+  function renderSuggestions() {
+    const box = document.getElementById("suggest-list");
+    box.innerHTML = suggestions.length ? `<table class="ss-table"><thead><tr><th>Câu hỏi</th><th>Trả lời</th><th>Nguồn</th><th></th></tr></thead><tbody>` + suggestions.map((s, i) => `
+      <tr><td><b>${esc(s.question)}</b>${s.variants.length ? `<div class="ss-muted">${esc(s.variants.join(" · "))}</div>` : ""}</td>
+      <td>${esc(s.answer)}</td><td class="ss-muted">${esc(s.source)}</td>
+      <td><button class="btn btn-primary btn-sm" type="button" data-i="${i}">Thêm</button></td></tr>`).join("") + "</tbody></table>"
+      : '<div class="ss-empty">Không còn gợi ý mới</div>';
+    box.querySelectorAll("button[data-i]").forEach(b => b.addEventListener("click", async () => {
+      const s = suggestions[+b.dataset.i];
+      try {
+        await api("/faqs", { method: "POST", body: JSON.stringify({ question: s.question, answer: s.answer, variants: s.variants, request_id: s.request_id }) });
+        suggestions.splice(+b.dataset.i, 1);
+        renderSuggestions();
+        loadFaqs();
+        toast("Đã thêm vào FAQ");
+      } catch (e) { toast(e.message); }
+    }));
+  }
+  document.getElementById("suggest-btn").addEventListener("click", async () => {
+    try { suggestions = await api("/faqs/suggest"); renderSuggestions(); } catch (e) { toast(e.message); }
+  });
+
+  const MODES = { faq: "Khớp FAQ", extractive: "Trích từ tài liệu", llm: "AI tạo từ tài liệu", smart: "AI đọc hồ sơ và tài liệu", personal: "Quy tắc tính từ dữ liệu", handoff: "Chuyển cán bộ", fallback: "Chưa trả lời được, chuyển cán bộ", greeting: "Chào hỏi", smalltalk: "Giao tiếp" };
+  const INTENTS = { grades: "điểm", fees: "học phí", schedule: "lịch", progress: "tiến trình" };
+  document.getElementById("test-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const out = document.getElementById("test-out");
+    try {
+      const r = await api("/test", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(ev.target))) });
+      out.innerHTML = (r.seconds != null ? `<p class="ss-muted">Thời gian: ${r.seconds} giây</p>` : "")
+        + (r.personal_intents.length ? `<p class="ss-muted">Bot nhận ra câu hỏi về dữ liệu riêng: ${r.personal_intents.map(i => INTENTS[i] || i).join(", ")}. Với học viên đăng nhập, bot trả lời từ dữ liệu của họ.</p>` : "")
+        + `<p><span class="ss-badge ${r.answered ? "answered" : "new"}">${esc(MODES[r.mode] || r.mode)}</span></p>`
+        + `<div class="ss-msg bot" style="max-width:100%">${esc(r.text)}</div>`
+        + (r.hits.length ? `<table class="ss-table" style="margin-top:12px"><thead><tr><th>Nguồn khớp nhất</th><th>Loại</th><th>Độ phủ</th></tr></thead><tbody>${r.hits.map(h => `<tr><td>${esc(h.title)}</td><td>${h.kind === "faq" ? "FAQ" : "Tài liệu"}</td><td>${Math.round((h.coverage || 0) * 100)}%</td></tr>`).join("")}</tbody></table>` : "");
+    } catch (e) { out.innerHTML = `<div class="ss-empty">${esc(e.message)}</div>`; }
+  });
+
+  document.getElementById("req-status").addEventListener("change", loadRequests);
+  document.getElementById("req-reload").addEventListener("click", loadRequests);
+  let qTimer = null;
+  document.getElementById("req-q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(loadRequests, 300); });
+  loadRequests();
+  setInterval(() => { if (document.querySelector('.ss-tab.active').dataset.tab === "requests") loadRequests(); }, 30000);
+})();
+</script>
+{% endblock %}

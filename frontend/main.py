@@ -1064,6 +1064,10 @@ def require_login():
         if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": "Session expired. Please log in again.", "login_required": True}), 401
         return redirect(url_for("login", next=request.url))
+    if session.get("must_change_password") and request.endpoint not in ("change_password", "logout", "static", "set_language"):
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.path.startswith("/api/"):
+            return jsonify({"error": "Bạn cần đổi mật khẩu trước.", "must_change_password": True}), 403
+        return redirect(url_for("change_password"))
 
 
 def _api_error(resp, fallback="Something went wrong. Please try again later."):
@@ -1156,6 +1160,16 @@ def login():
                     }
                 )
                 _rebuild_session_nav(preferred)
+                if data.get("must_change_password"):
+                    session["must_change_password"] = True
+                    flash(
+                        "Please set a new password before using the portal."
+                        if preferred == "en" else "Bạn cần đặt mật khẩu mới trước khi dùng cổng thông tin."
+                    )
+                    resp_force = redirect(url_for("change_password"))
+                    resp_force.set_cookie("smartuni_lang", preferred, max_age=86400 * 365)
+                    return resp_force
+                session.pop("must_change_password", None)
                 _flash_t("login_ok")
                 next_url = request.args.get("next") or url_for("ops_home")
                 resp_redir = redirect(next_url)
@@ -1268,6 +1282,7 @@ def change_password():
             )
             data = resp.json() if resp.content else {}
             if resp.status_code == 200:
+                session.pop("must_change_password", None)
                 _flash_t("pwd_ok")
                 return redirect(url_for("ops_home"))
             err = data.get("error") or (
@@ -2224,6 +2239,7 @@ def api_admin_reset_password(user_id):
         resp = requests.post(
             f"{USERS_URL}/{user_id}/admin-reset-password",
             json=request.get_json(silent=True) or {},
+            headers=_user_scopes_header(),
             timeout=8,
         )
         return jsonify(resp.json() if resp.text else {}), resp.status_code
@@ -8090,6 +8106,10 @@ def api_projects_chat(project_id):
 from admission_bot_routes import register_admission_bot
 
 register_admission_bot(app, API_BASE, _api_proxy, _user_has_perm, _is_exec_viewer, _user_scopes_header)
+
+from student_bot_routes import register_student_bot
+
+register_student_bot(app, API_BASE, _api_proxy, _user_has_perm, _is_exec_viewer, _user_scopes_header)
 
 
 if __name__ == "__main__":

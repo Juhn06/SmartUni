@@ -1,5 +1,14 @@
 [
   {
+    "question": "Trung tâm có những chương trình thạc sĩ nào?",
+    "answer": "Trung tâm tuyển sinh ba chương trình thạc sĩ: MBA (Thạc sĩ Quản trị kinh doanh, cho người làm hoặc chuẩn bị làm quản lý), MMS (Master in Marketing and Sales, về marketing và bán hàng) và MSCM (Master Supply Chain Management, về quản lý chuỗi cung ứng).",
+    "variants": [
+      "Có những chương trình nào?",
+      "Trung tâm đào tạo ngành gì?",
+      "Danh sách các chương trình thạc sĩ"
+    ]
+  },
+  {
     "question": "Một năm có mấy đợt tuyển sinh MBA?",
     "answer": "Chương trình MBA tổ chức 2 đợt tuyển sinh mỗi năm: đợt tháng 5 và đợt tháng 8. Lịch thi viết và phỏng vấn cụ thể của từng đợt được gửi qua email sau khi bạn nộp hồ sơ.",
     "program_code": "MBA"
@@ -33,5 +42,163 @@
     "question": "MSCM là chương trình gì?",
     "answer": "MSCM là Master Supply Chain Management, chương trình thạc sĩ Quản lý chuỗi cung ứng, phù hợp với người làm logistics, mua hàng, sản xuất, vận hành.",
     "program_code": "MSCM"
+  },
+  {
+    "question": "MBA là chương trình gì?",
+    "answer": "MBA là chương trình Thạc sĩ Quản trị kinh doanh liên kết với trường đối tác quốc tế, dành cho người đang làm quản lý hoặc chuẩn bị lên vị trí quản lý. Học phần tiêu biểu: Leadership, Corporate Finance, Business Game, sau đó học viên làm luận văn gắn với bài toán thực tế của doanh nghiệp.",
+    "variants": [
+      "Giới thiệu về chương trình MBA",
+      "Chương trình MBA học những gì?",
+      "MBA phù hợp với ai?"
+    ]
+  },
+  {
+    "question": "Hồ sơ dự tuyển cần chuẩn bị những gì?",
+    "answer": "Hồ sơ gồm: phiếu đăng ký dự tuyển, CV, bản sao bằng tốt nghiệp đại học và bảng điểm, chứng chỉ tiếng Anh còn hiệu lực, bản sao căn cước công dân, ảnh chân dung; với MBA thêm xác nhận kinh nghiệm làm việc hoặc thư giới thiệu nếu có. Trung tâm gửi checklist để bạn đối chiếu và hướng dẫn bổ sung giấy tờ còn thiếu.",
+    "variants": [
+      "Hồ sơ cần chuẩn bị gì?",
+      "Cần nộp những giấy tờ gì?",
+      "Nộp hồ sơ gồm những gì?"
+    ]
+  },
+  {
+    "question": "Điều kiện tiếng Anh đầu vào là gì?",
+    "answer": "Bạn cần chứng chỉ tiếng Anh đáp ứng điều kiện đầu vào theo quy định của trường đại học chủ quản. Trung tâm chấp nhận IELTS, TOEIC, TOEFL; mức điểm tối thiểu được công bố trong thông báo tuyển sinh từng đợt. Bạn đăng ký nhận tư vấn để chuyên viên báo mức điểm áp dụng cho đợt bạn dự tuyển.",
+    "variants": [
+      "Cần IELTS bao nhiêu?",
+      "Yêu cầu tiếng Anh thế nào?",
+      "Chứng chỉ tiếng Anh nào được chấp nhận?"
+    ]
+  },
+  {
+    "question": "Chưa có chứng chỉ tiếng Anh có nộp hồ sơ được không?",
+    "answer": "Bạn vẫn nên đăng ký nhận tư vấn. Chuyên viên tuyển sinh sẽ hướng dẫn lộ trình chuẩn bị chứng chỉ tiếng Anh và thời hạn bổ sung chứng chỉ vào hồ sơ cho đợt tuyển sinh phù hợp.",
+    "variants": [
+      "Chưa có IELTS thì sao?",
+      "Không có bằng tiếng Anh có dự tuyển được không?"
+    ]
+  },
+  {
+    "question": "Học trái ngành có dự tuyển được không?",
+    "answer": "Được. Người đã tốt nghiệp đại học ở ngành khác vẫn có thể dự tuyển. Kinh nghiệm làm việc liên quan là một lợi thế khi phỏng vấn; chuyên viên tuyển sinh sẽ tư vấn chương trình phù hợp với nền tảng của bạn.",
+    "variants": [
+      "Khác ngành có học được không?",
+      "Tốt nghiệp ngành kỹ thuật có học MBA được không?"
+    ]
+  },
+  {
+    "question": "Có cần kinh nghiệm làm việc không?",
+    "answer": "Chương trình MBA ưu tiên người có kinh nghiệm làm việc, nhất là kinh nghiệm quản lý. Với MMS và MSCM, kinh nghiệm trong lĩnh vực liên quan là lợi thế. Yêu cầu cụ thể về số năm kinh nghiệm (nếu có) được nêu trong thông báo tuyển sinh từng đợt.",
+    "variants": [
+      "Mới ra trường có học được không?",
+      "Yêu cầu bao nhiêu năm kinh nghiệm?"
+    ]
+  },
+  {
+    "question": "Chương trình học trong bao lâu?",
+    "answer": "Mỗi chương trình gồm hai học kỳ học phần và giai đoạn làm luận văn tốt nghiệp, tổng thời gian khoảng 18 đến 24 tháng tùy tiến độ của học viên.",
+    "variants": [
+      "Học mất bao lâu?",
+      "Thời gian đào tạo là bao lâu?",
+      "Mấy năm thì tốt nghiệp?"
+    ]
+  },
+  {
+    "question": "Lịch học vào thời gian nào?",
+    "answer": "Lớp học bố trí ngoài giờ hành chính, chủ yếu buổi tối trong tuần và cuối tuần, phù hợp với người đang đi làm. Lịch học từng học kỳ được thông báo cho học viên chậm nhất 7 ngày trước khi học kỳ bắt đầu.",
+    "variants": [
+      "Học vào buổi nào?",
+      "Có học cuối tuần không?",
+      "Vừa đi làm vừa học được không?"
+    ]
+  },
+  {
+    "question": "Có học trực tuyến không?",
+    "answer": "Chương trình chủ yếu học trực tiếp; một số buổi học và hoạt động có thể tổ chức trực tuyến. Học liệu, bài giảng và lịch học được cập nhật trên cổng học viên.",
+    "variants": [
+      "Có học online không?",
+      "Học từ xa được không?"
+    ]
+  },
+  {
+    "question": "Chương trình giảng dạy bằng ngôn ngữ nào?",
+    "answer": "Ngôn ngữ giảng dạy chủ yếu là tiếng Anh, có trợ giảng hỗ trợ học viên.",
+    "variants": [
+      "Học bằng tiếng Anh hay tiếng Việt?",
+      "Giảng viên dạy bằng tiếng gì?"
+    ]
+  },
+  {
+    "question": "Tốt nghiệp nhận bằng gì?",
+    "answer": "Học viên hoàn thành các học phần và bảo vệ thành công luận văn được xét tốt nghiệp, nhận văn bằng thạc sĩ theo chương trình liên kết với trường đối tác.",
+    "variants": [
+      "Bằng do ai cấp?",
+      "Học xong được cấp bằng gì?"
+    ]
+  },
+  {
+    "question": "Thi viết đầu vào thi những gì?",
+    "answer": "Ứng viên có hồ sơ hợp lệ nhận phiếu báo thi có số báo danh qua email. Bài thi viết đánh giá khả năng phân tích, lập luận và trình bày về các vấn đề quản trị, kinh doanh, chấm theo thang điểm 20.",
+    "variants": [
+      "Thi tuyển gồm những gì?",
+      "Bài thi viết như thế nào?"
+    ]
+  },
+  {
+    "question": "Phỏng vấn tuyển sinh hỏi những gì?",
+    "answer": "Mỗi ứng viên phỏng vấn khoảng 20 phút với hội đồng gồm đại diện trung tâm, trường đối tác và cựu học viên. Nội dung xoay quanh kinh nghiệm làm việc, mục tiêu nghề nghiệp, động lực học tập và khả năng trao đổi bằng tiếng Anh, chấm theo thang 20.",
+    "variants": [
+      "Phỏng vấn kéo dài bao lâu?",
+      "Cần chuẩn bị gì cho buổi phỏng vấn?"
+    ]
+  },
+  {
+    "question": "Khi nào biết kết quả trúng tuyển?",
+    "answer": "Hội đồng xét duyệt trúng tuyển thường diễn ra từ tháng 8 đến tháng 9. Kết quả được trung tâm gửi tới từng ứng viên qua email sau khi hội đồng lập danh sách trúng tuyển.",
+    "variants": [
+      "Bao giờ có kết quả?",
+      "Kết quả xét tuyển thông báo khi nào?"
+    ]
+  },
+  {
+    "question": "Có học bổng không?",
+    "answer": "Có. Học viên có cơ hội nhận học bổng của trung tâm, của trường đối tác hoặc học bổng chính phủ nước đối tác, toàn phần hoặc một phần học phí. Mức và điều kiện xét học bổng thay đổi theo chương trình và từng năm; chuyên viên tuyển sinh tư vấn cụ thể khi bạn đăng ký nhận tư vấn.",
+    "variants": [
+      "Có chính sách học bổng không?",
+      "Điều kiện nhận học bổng là gì?"
+    ]
+  },
+  {
+    "question": "Học phí đóng làm mấy đợt?",
+    "answer": "Học phí được chia thành nhiều đợt, thường theo học kỳ; sau khi trúng tuyển ứng viên nộp phí ghi danh trước khi nhập học. Lịch đóng cụ thể của khóa hiện tại được chuyên viên tuyển sinh gửi khi bạn đăng ký nhận tư vấn.",
+    "variants": [
+      "Có được đóng học phí nhiều lần không?",
+      "Học phí có trả góp không?"
+    ]
+  },
+  {
+    "question": "Nên chọn MBA, MMS hay MSCM?",
+    "answer": "Muốn phát triển năng lực quản lý và điều hành chung thì chọn MBA; làm hoặc muốn chuyên sâu marketing, bán hàng, thương hiệu thì chọn MMS; làm hoặc muốn chuyên sâu logistics, mua hàng, vận hành thì chọn MSCM. Chuyên viên tuyển sinh sẽ tư vấn lộ trình phù hợp với kinh nghiệm của bạn.",
+    "variants": [
+      "MBA khác MMS thế nào?",
+      "Tôi làm logistics nên học chương trình nào?",
+      "So sánh các chương trình"
+    ]
+  },
+  {
+    "question": "Có chương trình trao đổi quốc tế không?",
+    "answer": "Có. Học viên có thể tham gia trao đổi với trường đối tác theo hình thức trao đổi bằng kép hoặc trao đổi một học kỳ. Trung tâm hỗ trợ thủ tục visa, nhập cảnh, tiếp nhận và làm quen.",
+    "variants": [
+      "Có được đi học nước ngoài không?",
+      "Trao đổi sinh viên với trường đối tác thế nào?"
+    ]
+  },
+  {
+    "question": "Làm sao để được tư vấn trực tiếp?",
+    "answer": "Bạn đăng ký nhận tư vấn ngay trong khung chat hoặc form trên trang giới thiệu, để lại số điện thoại hoặc email. Yêu cầu được giao cho một chuyên viên tuyển sinh phụ trách riêng, chuyên viên sẽ liên hệ bạn trong giờ làm việc.",
+    "variants": [
+      "Đăng ký tư vấn ở đâu?",
+      "Tôi muốn được tư vấn"
+    ]
   }
 ]

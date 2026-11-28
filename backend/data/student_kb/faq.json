@@ -1,0 +1,246 @@
+[
+  {
+    "question": "Xem điểm ở đâu?",
+    "answer": "Điểm từng môn, điểm thành phần và điểm trung bình tích lũy nằm ở mục Bảng điểm & tiến độ trên cổng học viên. Bạn cũng có thể hỏi UniBot \"điểm môn <tên môn>\" để xem nhanh điểm một môn.",
+    "variants": [
+      "Bảng điểm nằm ở mục nào?",
+      "Làm sao để xem kết quả học tập?",
+      "Tra cứu điểm thế nào?",
+      "Muốn xem điểm thi thì vào đâu?"
+    ]
+  },
+  {
+    "question": "Khi nào có điểm môn học?",
+    "answer": "Điểm một môn chỉ hiện sau khi giảng viên công bố. Trước đó, môn đó hiển thị là chưa công bố trong Bảng điểm & tiến độ.",
+    "variants": [
+      "Bao giờ có điểm?",
+      "Sao chưa thấy điểm môn vừa thi?",
+      "Điểm chưa công bố là sao?",
+      "Lúc nào điểm được cập nhật?"
+    ]
+  },
+  {
+    "question": "Điểm tổng kết môn gồm những phần nào?",
+    "answer": "Bảng điểm hiển thị điểm quá trình, điểm thi và điểm tổng kết của từng môn, kèm tỷ lệ chuyên cần. Cách quy đổi cụ thể của từng môn nằm trong đề cương môn học ở mục Học liệu và Syllabus.",
+    "variants": [
+      "Điểm môn được tính từ những gì?",
+      "Điểm quá trình và điểm thi là gì?",
+      "Cách tính điểm tổng kết?"
+    ]
+  },
+  {
+    "question": "Muốn phúc khảo điểm thì làm sao?",
+    "answer": "Yêu cầu phúc khảo được xử lý theo từng trường hợp. Bạn gửi yêu cầu cho bộ phận chương trình (nhắn \"gặp cán bộ\" trong khung chat) để được hướng dẫn hồ sơ và thời hạn cụ thể.",
+    "variants": [
+      "Thủ tục phúc khảo bài thi?",
+      "Không đồng ý với điểm thì làm gì?",
+      "Xin chấm lại bài thi được không?"
+    ]
+  },
+  {
+    "question": "Muốn bảo lưu thì làm sao?",
+    "answer": "Các yêu cầu bảo lưu, học lại hoặc gia hạn được xử lý theo từng trường hợp. Bạn gửi yêu cầu cho bộ phận chương trình để được hướng dẫn hồ sơ và thời hạn cụ thể. Khi quay lại học, mục Họp hỗ trợ trở lại có lịch họp để bạn bắt kịp khóa học.",
+    "variants": [
+      "Thủ tục bảo lưu kết quả học tập?",
+      "Tôi muốn tạm nghỉ học một thời gian",
+      "Xin nghỉ học có được không?",
+      "Học lại môn thế nào?"
+    ]
+  },
+  {
+    "question": "Xem học phí ở đâu?",
+    "answer": "Mục Nghĩa vụ phí của tôi liệt kê từng khoản phí: số phải đóng, đã đóng, còn lại và hạn đóng. Bạn cũng có thể hỏi UniBot \"tôi còn khoản phí nào chưa đóng\" hoặc \"học phí kỳ 1 của tôi\".",
+    "variants": [
+      "Tra cứu công nợ học phí ở đâu?",
+      "Kiểm tra các khoản phí phải nộp thế nào?",
+      "Mục nào xem tiền học?"
+    ]
+  },
+  {
+    "question": "Đóng học phí xong thì gửi minh chứng thế nào?",
+    "answer": "Vào mục Nghĩa vụ phí của tôi, chọn đúng khoản phí đã chuyển khoản và tải minh chứng lên. Bộ phận Kế toán đối chiếu rồi mới cập nhật trạng thái đã thu; việc tải minh chứng không tự xác nhận khoản phí đã đóng.",
+    "variants": [
+      "Gửi biên lai chuyển khoản ở đâu?",
+      "Upload minh chứng nộp tiền",
+      "Chuyển khoản rồi sao vẫn báo chưa đóng?",
+      "Bao lâu thì khoản phí được xác nhận?"
+    ]
+  },
+  {
+    "question": "Học phí có chia nhiều đợt không?",
+    "answer": "Học phí được ghi nhận thành từng khoản theo kỳ, mỗi khoản có hạn đóng riêng, hiển thị trong mục Nghĩa vụ phí của tôi. Hỏi UniBot \"khoản phí tiếp theo của tôi\" để xem khoản và hạn gần nhất.",
+    "variants": [
+      "Có được đóng học phí theo kỳ không?",
+      "Học phí chia mấy lần?",
+      "Payment plan học phí"
+    ]
+  },
+  {
+    "question": "Xem lịch thi ở đâu?",
+    "answer": "Lịch thi các môn của lớp và lịch phỏng vấn tuyển sinh nằm ở mục Lịch học / Lịch PV. Bạn cũng có thể hỏi UniBot \"lịch thi sắp tới của tôi\" hoặc \"lịch thi môn <tên môn>\".",
+    "variants": [
+      "Lịch thi cuối kỳ xem ở đâu?",
+      "Phòng thi ở đâu?",
+      "Khi nào có lịch thi?",
+      "Tra lịch học thế nào?"
+    ]
+  },
+  {
+    "question": "Xem học liệu ở đâu?",
+    "answer": "Mục Học liệu và Syllabus chứa đề cương và nội dung từng buổi của các môn; bạn tìm kiếm và tải các tài liệu đã được phát hành cho lớp.",
+    "variants": [
+      "Tải slide bài giảng ở đâu?",
+      "Đề cương môn học ở mục nào?",
+      "Lấy tài liệu môn học thế nào?",
+      "Syllabus ở đâu?"
+    ]
+  },
+  {
+    "question": "Hỏi giảng viên về bài học thế nào?",
+    "answer": "Trong mục Bài học và thảo luận, mở bài học rồi gửi Câu hỏi, Góp ý hoặc Bàn luận ngay dưới bài. Giảng viên trả lời trong phần thảo luận của bài đó.",
+    "variants": [
+      "Gửi câu hỏi cho giảng viên ở đâu?",
+      "Thảo luận bài học thế nào?",
+      "Muốn hỏi thầy cô về bài giảng"
+    ]
+  },
+  {
+    "question": "Hệ thống có ghi nhận thời gian học không?",
+    "answer": "Có. Khi bạn xem bài trong mục Bài học và thảo luận, hệ thống ghi nhận thời gian học. Mục Thời gian hoàn thành chủ đề dùng dữ liệu này để ước lượng số phút còn lại cho từng chủ đề.",
+    "variants": [
+      "Thời gian xem bài có được tính không?",
+      "Ước lượng thời gian học còn lại",
+      "Còn bao lâu nữa thì học xong chủ đề?"
+    ]
+  },
+  {
+    "question": "Có công cụ lập kế hoạch học không?",
+    "answer": "Có. Mục Cố vấn kế hoạch học đề xuất kế hoạch ôn tập theo mục tiêu và tiến độ của bạn; mục Lịch học cá nhân xếp lịch tự học theo ngày hoặc tuần; mục Đề xuất mục tiêu cá nhân gợi ý mục tiêu bạn chưa đạt.",
+    "variants": [
+      "Gợi ý lịch ôn tập",
+      "Lập kế hoạch học tập ở đâu?",
+      "Tôi nên ôn tập thế nào?",
+      "Lịch tự học cá nhân"
+    ]
+  },
+  {
+    "question": "Đăng nhập Canvas thế nào?",
+    "answer": "Mục Canvas — Học viên cho biết trạng thái ghi danh lớp trên Canvas và hướng dẫn đăng nhập. Nếu bạn chưa được ghi danh, nhắn \"gặp cán bộ\" để bộ phận chương trình kiểm tra.",
+    "variants": [
+      "Không vào được Canvas",
+      "Tài khoản Canvas của tôi",
+      "Hướng dẫn dùng Canvas"
+    ]
+  },
+  {
+    "question": "Cập nhật thông tin cá nhân ở đâu?",
+    "answer": "Mục Hồ sơ của tôi cho phép cập nhật thông tin liên hệ và xem các giấy tờ đã nộp.",
+    "variants": [
+      "Đổi số điện thoại, email liên hệ",
+      "Sửa hồ sơ cá nhân thế nào?",
+      "Xem giấy tờ tôi đã nộp"
+    ]
+  },
+  {
+    "question": "Mã học viên của tôi xem ở đâu?",
+    "answer": "Mã học viên được cấp khi bạn nhập học chính thức và hiển thị ở mục Hồ sơ của tôi và Kết quả của tôi. Bạn cũng có thể hỏi UniBot \"mã học viên của tôi\".",
+    "variants": [
+      "Tôi học lớp nào?",
+      "Tra mã sinh viên",
+      "Mã học viên là gì?"
+    ]
+  },
+  {
+    "question": "Ai hỗ trợ học viên khi có vấn đề học vụ?",
+    "answer": "Học viên MBA được bộ phận Chương trình MBA hỗ trợ; học viên MMS và MSCM được bộ phận Chương trình Master Chuyên ngành hỗ trợ. Nhắn \"gặp cán bộ\" trong khung chat để chuyển câu hỏi tới bộ phận phụ trách.",
+    "variants": [
+      "Liên hệ giáo vụ thế nào?",
+      "Muốn gặp người hỗ trợ",
+      "Phòng nào phụ trách học viên?",
+      "Hỏi ai khi gặp vấn đề?"
+    ]
+  },
+  {
+    "question": "Cần vắng mặt một buổi học thì làm gì?",
+    "answer": "Mỗi buổi học có điểm danh và tỷ lệ chuyên cần hiển thị trong Bảng điểm & tiến độ. Nếu cần vắng mặt, bạn báo trước cho bộ phận chương trình.",
+    "variants": [
+      "Xin nghỉ một buổi học",
+      "Nghỉ học có bị trừ điểm không?",
+      "Vắng mặt buổi học",
+      "Điểm danh được tính thế nào?"
+    ]
+  },
+  {
+    "question": "Sau khi trúng tuyển cần làm gì?",
+    "answer": "Sau khi có kết quả trúng tuyển, bạn đóng phí ghi danh theo hướng dẫn, sau đó được ghi nhận nhập học chính thức, được cấp mã học viên và xếp vào lớp của chương trình. Các bước này hiển thị ở mục Kết quả của tôi.",
+    "variants": [
+      "Trúng tuyển rồi thì làm thủ tục gì?",
+      "Các bước nhập học",
+      "Khi nào được xếp lớp?"
+    ]
+  },
+  {
+    "question": "Luận văn tốt nghiệp thực hiện khi nào?",
+    "answer": "Học viên thực hiện chuyên đề hoặc luận văn tốt nghiệp sau khi hoàn thành các môn học. Trạng thái luận văn, điểm và ngày bảo vệ hiển thị ở mục Kết quả của tôi; hỏi UniBot \"luận văn của tôi\" để xem nhanh.",
+    "variants": [
+      "Khi nào làm chuyên đề tốt nghiệp?",
+      "Bảo vệ luận văn lúc nào?",
+      "Đăng ký đề tài luận văn"
+    ]
+  },
+  {
+    "question": "Điều kiện xét tốt nghiệp là gì?",
+    "answer": "Học viên hoàn thành các môn học, các bài thi và luận văn được xét tốt nghiệp. Hỏi UniBot \"tôi tốt nghiệp chưa\" để xem trạng thái của bạn; chi tiết tiêu chí từng chương trình bạn hỏi bộ phận chương trình.",
+    "variants": [
+      "Cần gì để được tốt nghiệp?",
+      "Xét tốt nghiệp thế nào?",
+      "Khi nào được nhận bằng?"
+    ]
+  },
+  {
+    "question": "Tốt nghiệp xong có được tham gia mạng lưới cựu học viên không?",
+    "answer": "Có. Sau khi tốt nghiệp, học viên được chuyển sang mạng lưới cựu học viên của trung tâm.",
+    "variants": [
+      "Cựu học viên được gì?",
+      "Alumni là gì?",
+      "Mạng lưới alumni"
+    ]
+  },
+  {
+    "question": "Đổi ngôn ngữ giao diện thế nào?",
+    "answer": "Cổng học viên có tiếng Việt và tiếng Anh, chuyển bằng nút cờ ở góc trên bên phải màn hình.",
+    "variants": [
+      "Chuyển sang tiếng Anh",
+      "Change language to English",
+      "Giao diện tiếng Anh"
+    ]
+  },
+  {
+    "question": "UniBot có xem được dữ liệu của người khác không?",
+    "answer": "Không. UniBot chỉ đọc điểm, học phí, lịch và tiến trình của chính tài khoản đang đăng nhập. Câu hỏi chuyển cho cán bộ chỉ bộ phận phụ trách chương trình của bạn xem được.",
+    "variants": [
+      "Dữ liệu của tôi có an toàn không?",
+      "Bot có lưu thông tin cá nhân không?",
+      "Ai đọc được tin nhắn của tôi?"
+    ]
+  },
+  {
+    "question": "UniBot trả lời được những gì?",
+    "answer": "UniBot trả lời điểm từng môn, học phí, lịch thi, lịch học, tiến trình học tập của bạn, cùng quy chế và hướng dẫn sử dụng cổng học viên. Câu nào chưa có trong tài liệu, bot chuyển cho cán bộ chương trình trả lời ngay trong khung chat.",
+    "variants": [
+      "Bot giúp được gì?",
+      "Hỏi bot những gì?",
+      "Hướng dẫn dùng UniBot"
+    ]
+  },
+  {
+    "question": "Thôi học hoặc dừng học giữa khóa thì học phí xử lý thế nào?",
+    "answer": "Việc thôi học hay dừng học giữa khóa và cách xử lý các khoản học phí đã đóng hoặc chưa đóng được bộ phận chương trình xem xét theo từng trường hợp, căn cứ quy định của trung tâm. Bạn nhắn \"gặp cán bộ\" để cán bộ chương trình hướng dẫn thủ tục và trả lời cụ thể cho hồ sơ của bạn. Nếu chỉ cần tạm dừng một thời gian, bạn có thể tìm hiểu thủ tục bảo lưu.",
+    "variants": [
+      "Nghỉ học giữa chừng có phải đóng nốt học phí không?",
+      "Không học tiếp nữa thì học phí đã đóng có được hoàn không?",
+      "Bỏ học giữa khóa thì các đợt học phí còn lại tính sao?",
+      "Rút khỏi chương trình thì học phí thế nào?"
+    ]
+  }
+]

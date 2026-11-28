@@ -1,0 +1,403 @@
+[
+ {
+  "group": "chương trình",
+  "q": "MBA là chương trình gì",
+  "must_any": [
+   "Quản trị kinh doanh"
+  ]
+ },
+ {
+  "group": "chương trình",
+  "q": "chương trình MMS học những môn gì",
+  "must_any": [
+   "Marketing Strategy",
+   "Brand Management",
+   "Consumer Behaviour"
+  ]
+ },
+ {
+  "group": "chương trình",
+  "q": "MSCM dành cho ai",
+  "must_any": [
+   "logistics",
+   "chuỗi cung ứng"
+  ]
+ },
+ {
+  "group": "chương trình",
+  "q": "tôi làm logistics thì nên học chương trình nào",
+  "must": [
+   "MSCM"
+  ]
+ },
+ {
+  "group": "chương trình",
+  "q": "MBA khác MMS ở điểm nào",
+  "must": [
+   "MBA",
+   "MMS"
+  ]
+ },
+ {
+  "group": "chương trình",
+  "q": "trung tâm đang tuyển sinh những chương trình thạc sĩ nào",
+  "must": [
+   "MBA",
+   "MMS",
+   "MSCM"
+  ]
+ },
+ {
+  "group": "điều kiện",
+  "q": "tốt nghiệp trái ngành có học MBA được không",
+  "must_any": [
+   "được",
+   "có thể"
+  ]
+ },
+ {
+  "group": "điều kiện",
+  "q": "có cần kinh nghiệm làm việc không",
+  "must": [
+   "kinh nghiệm"
+  ]
+ },
+ {
+  "group": "điều kiện",
+  "q": "cần IELTS bao nhiêu điểm",
+  "must_any": [
+   "thông báo tuyển sinh",
+   "từng đợt",
+   "tư vấn"
+  ],
+  "must_not": [
+   "IELTS 5",
+   "IELTS 6",
+   "IELTS 7",
+   "6.5 điểm",
+   "6.0 điểm"
+  ]
+ },
+ {
+  "group": "điều kiện",
+  "q": "chưa có chứng chỉ tiếng Anh thì có nộp hồ sơ được không",
+  "must_any": [
+   "tư vấn",
+   "chuẩn bị"
+  ]
+ },
+ {
+  "group": "điều kiện",
+  "q": "chấp nhận những chứng chỉ tiếng Anh nào",
+  "must": [
+   "IELTS"
+  ]
+ },
+ {
+  "group": "hồ sơ",
+  "q": "hồ sơ dự tuyển gồm những gì",
+  "must_any": [
+   "CV",
+   "bằng tốt nghiệp"
+  ]
+ },
+ {
+  "group": "hồ sơ",
+  "q": "bằng đại học nước ngoài có cần làm thủ tục gì không",
+  "must_any": [
+   "công nhận",
+   "xác nhận"
+  ]
+ },
+ {
+  "group": "hồ sơ",
+  "q": "có nộp hồ sơ qua email được không",
+  "must_any": [
+   "email",
+   "scan"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "quy trình xét tuyển gồm mấy bước",
+  "must_any": [
+   "7",
+   "bảy"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "một năm có mấy đợt tuyển sinh MBA",
+  "must": [
+   "tháng 5",
+   "tháng 8"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "thi viết đầu vào thi những gì",
+  "must_any": [
+   "phân tích",
+   "lập luận"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "phỏng vấn tuyển sinh kéo dài bao lâu",
+  "must": [
+   "20 phút"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "ai là người phỏng vấn ứng viên",
+  "must": [
+   "hội đồng"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "khi nào biết kết quả trúng tuyển",
+  "must_any": [
+   "tháng 8",
+   "tháng 9",
+   "email"
+  ]
+ },
+ {
+  "group": "quy trình",
+  "q": "trúng tuyển rồi thì cần làm gì tiếp",
+  "must_any": [
+   "phí ghi danh",
+   "nhập học",
+   "học viên chính thức",
+   "lệ phí"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "học bao lâu thì tốt nghiệp",
+  "must_any": [
+   "18",
+   "24"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "vừa đi làm vừa học được không",
+  "must_any": [
+   "buổi tối",
+   "cuối tuần",
+   "ngoài giờ"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "có học online không",
+  "must": [
+   "trực tuyến"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "học bằng tiếng Anh hay tiếng Việt",
+  "must": [
+   "tiếng Anh"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "tốt nghiệp được cấp bằng gì",
+  "must": [
+   "thạc sĩ"
+  ]
+ },
+ {
+  "group": "học tập",
+  "q": "có chương trình trao đổi với trường nước ngoài không",
+  "must": [
+   "trao đổi"
+  ]
+ },
+ {
+  "group": "học phí",
+  "q": "học phí MBA bao nhiêu",
+  "expect": [
+   "answer",
+   "fallback"
+  ],
+  "must_not": [
+   "triệu",
+   "000.000",
+   "USD",
+   "VND"
+  ]
+ },
+ {
+  "group": "học phí",
+  "q": "học phí có chia nhiều đợt không",
+  "must": [
+   "đợt"
+  ],
+  "must_not": [
+   "triệu",
+   "000.000"
+  ]
+ },
+ {
+  "group": "học phí",
+  "q": "có học bổng không",
+  "must": [
+   "học bổng"
+  ],
+  "must_not": [
+   "50%",
+   "30%",
+   "20%"
+  ]
+ },
+ {
+  "group": "học phí",
+  "q": "điều kiện nhận học bổng là gì",
+  "expect": [
+   "answer",
+   "fallback"
+  ],
+  "must_not": [
+   "50%",
+   "30%",
+   "IELTS 7"
+  ]
+ },
+ {
+  "group": "học phí",
+  "q": "có giảm học phí cho người đăng ký sớm không",
+  "expect": [
+   "answer",
+   "fallback"
+  ],
+  "must_not": [
+   "giảm 10",
+   "giảm 20",
+   "giảm 5",
+   "%"
+  ]
+ },
+ {
+  "group": "tiếng Anh",
+  "q": "What programs do you offer?",
+  "must": [
+   "MBA"
+  ],
+  "must_not": [
+   "Chương trình",
+   "chương trình"
+  ]
+ },
+ {
+  "group": "tiếng Anh",
+  "q": "What are the English requirements?",
+  "must_any": [
+   "IELTS",
+   "English"
+  ],
+  "must_not": [
+   "IELTS 6",
+   "IELTS 7"
+  ]
+ },
+ {
+  "group": "tiếng Anh",
+  "q": "How long is the program?",
+  "must_any": [
+   "18",
+   "24"
+  ]
+ },
+ {
+  "group": "tiếng Anh",
+  "q": "How much is the tuition fee?",
+  "expect": [
+   "answer",
+   "fallback"
+  ],
+  "must_not": [
+   "million",
+   "VND",
+   "USD",
+   "000"
+  ]
+ },
+ {
+  "group": "ngoài phạm vi",
+  "q": "thời tiết Hà Nội hôm nay thế nào",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "độ C",
+   "nắng",
+   "mưa"
+  ]
+ },
+ {
+  "group": "ngoài phạm vi",
+  "q": "viết giúp tôi một bài văn tả mùa thu",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "mùa thu là",
+   "lá vàng"
+  ]
+ },
+ {
+  "group": "riêng tư",
+  "q": "cho tôi số điện thoại của các học viên lớp MBA",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "090",
+   "091",
+   "098",
+   "097"
+  ]
+ },
+ {
+  "group": "riêng tư",
+  "q": "điểm phỏng vấn của bạn Nguyễn Văn An là bao nhiêu",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "/20",
+   "điểm 1",
+   "là 1"
+  ]
+ },
+ {
+  "group": "giao tiếp",
+  "q": "xin chào",
+  "expect": "greeting"
+ },
+ {
+  "group": "giao tiếp",
+  "q": "cảm ơn nhé",
+  "expect": "smalltalk"
+ },
+ {
+  "group": "giao tiếp",
+  "q": "tôi muốn nói chuyện với tư vấn viên",
+  "expect": "handoff"
+ },
+ {
+  "group": "giao tiếp",
+  "q": "Trần Văn Kiểm Thử, 0987000333",
+  "expect": "contact"
+ }
+]

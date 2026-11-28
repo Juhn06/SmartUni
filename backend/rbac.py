@@ -170,6 +170,17 @@ MENU_ITEMS = [
         "workflow": "Người quan tâm đăng ký tư vấn trên trang giới thiệu hoặc qua UniBot → giao chuyên viên → liên hệ, ghi nhật ký chăm sóc",
     },
     {
+        "code": "admissions.chatbot_publish",
+        "label": "Duyệt nội dung UniBot tuyển sinh",
+        "label_en": "Approve admissions UniBot content",
+        "group": "2.TS.Tư vấn",
+        "group_en": "2.TS.Consulting",
+        "route": "ops_admissions_chatbot",
+        "sort": 8.6,
+        "nav": False,
+        "workflow": "Tuyển sinh soạn tài liệu, FAQ → chờ duyệt → người có quyền duyệt công bố theo thời gian hiệu lực của đợt → UniBot dùng; hết hạn tự gỡ",
+    },
+    {
         "code": "admissions.crm_reports",
         "label": "Báo cáo CRM",
         "label_en": "CRM reports",
@@ -918,6 +929,16 @@ MENU_ITEMS = [
         "sort": 404,
         "workflow": "Phân biệt đã xuất / đã gửi / Canvas chấp nhận · SIS map",
     },
+    {
+        "code": "students.support",
+        "label": "Hỗ trợ học viên & UniBot",
+        "label_en": "Student support & UniBot",
+        "group": "3. Học viên",
+        "group_en": "3. Students",
+        "route": "ops_student_support",
+        "sort": 449,
+        "workflow": "Câu hỏi học viên UniBot chưa trả lời được → bộ phận chương trình trả lời trong khung chat; quản lý kho kiến thức học vụ",
+    },
     # --- Học viên ---
     {
         "code": "student.profile",
@@ -1291,6 +1312,7 @@ DEPT_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
         "reports.dashboard",
     ],
     "mba": [
+        "students.support",
         # Theo tên khách hàng đến khi nhập học xong — không tách phase Tư vấn/Thi/Xét duyệt.
         "admissions.crm_source",
         "admissions.crm_activities",
@@ -1349,6 +1371,7 @@ DEPT_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
         "canvas.coordinator",
     ],
     "master_chuyen_nganh": [
+        "students.support",
         "admissions.rounds",  # intake + timeline thi viết/PV (giống Điều phối MBA)
         "admissions.applications",
         "admissions.written_exams",
@@ -1494,6 +1517,9 @@ DEPT_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
 for _dept_codes in DEPT_DEFAULT_PERMISSIONS.values():
     if "admissions.crm_source" in _dept_codes and "admissions.chatbot" not in _dept_codes:
         _dept_codes.insert(_dept_codes.index("admissions.crm_source") + 1, "admissions.chatbot")
+for _dept in ("ban_giam_doc", "tro_ly_bgd", "admin_he_thong"):
+    if "admissions.chatbot_publish" not in DEPT_DEFAULT_PERMISSIONS.get(_dept, []):
+        DEPT_DEFAULT_PERMISSIONS.setdefault(_dept, []).append("admissions.chatbot_publish")
 
 ALL_MENU_CODES = [m["code"] for m in MENU_ITEMS]
 OPS_VIEW_CODES = [c for c in ALL_MENU_CODES if not str(c).startswith("admin.")]

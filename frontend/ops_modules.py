@@ -2404,6 +2404,15 @@ OPS_MODULES = {
         "edit_path": "crm-activities",
         "workflow": "Tên sự kiện · thời gian · chương trình · chi tiết chăm sóc",
     },
+    "students.support": {
+        "title": "Hỗ trợ học viên & UniBot",
+        "desc": (
+            "Trả lời câu hỏi học viên mà trợ lý UniBot chưa trả lời được, theo chương trình phụ trách; "
+            "quản lý kho kiến thức học vụ của bot."
+        ),
+        "endpoint": "ops_student_support",
+        "mode": "manage",
+    },
     "admissions.chatbot": {
         "title": "Yêu cầu tư vấn & chatbot",
         "desc": (

@@ -106,8 +106,8 @@
     <button class="cb-tab" data-tab="overview" type="button">Tổng quan</button>
     <button class="cb-tab" data-tab="convs" type="button">Hội thoại bot <span class="cb-count" id="count-waiting" hidden></span></button>
     <button class="cb-tab" data-tab="gaps" type="button">Câu chưa trả lời <span class="cb-count" id="count-gaps" hidden></span></button>
-    <button class="cb-tab" data-tab="kb" type="button">Kho kiến thức</button>
-    <button class="cb-tab" data-tab="faq" type="button">FAQ</button>
+    <button class="cb-tab" data-tab="kb" type="button">Kho kiến thức <span class="cb-count" id="count-kb" hidden></span></button>
+    <button class="cb-tab" data-tab="faq" type="button">FAQ <span class="cb-count" id="count-faq" hidden></span></button>
     <button class="cb-tab" data-tab="test" type="button">Chat thử</button>
     <button class="cb-tab" data-tab="settings" type="button">Cấu hình</button>
   </div>
@@ -188,6 +188,7 @@
   </section>
 
   <section class="cb-panel" data-panel="kb">
+    <div class="cb-note publish-note"></div>
     <div class="cb-grid2">
       <div class="cb-card">
         <h3>Tải tài liệu lên</h3>
@@ -197,7 +198,11 @@
             <label>Chương trình<select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
             <label>Tiêu đề (khi tải 1 tệp)<input class="form-control" name="title"></label>
           </div>
-          <div><button class="btn btn-primary btn-sm" type="submit">Tải lên và học</button></div>
+          <div class="row">
+            <label>Hiệu lực từ ngày<input class="form-control" type="date" name="effective_from"></label>
+            <label>Đến hết ngày<input class="form-control" type="date" name="effective_to"></label>
+          </div>
+          <div><button class="btn btn-primary btn-sm" type="submit">Tải lên</button></div>
           <div class="cb-muted" id="upload-result"></div>
         </form>
       </div>
@@ -209,6 +214,10 @@
             <label>Chương trình<select class="form-control" name="program_code"><option value="">Chung</option><option>MBA</option><option>MMS</option><option>MSCM</option></select></label>
           </div>
           <label>Nội dung<textarea class="form-control" name="content" rows="6" required placeholder="Dán thông báo tuyển sinh, mô tả chương trình, học phí..."></textarea></label>
+          <div class="row">
+            <label>Hiệu lực từ ngày<input class="form-control" type="date" name="effective_from"></label>
+            <label>Đến hết ngày<input class="form-control" type="date" name="effective_to"></label>
+          </div>
           <div><button class="btn btn-primary btn-sm" type="submit">Lưu vào kho</button></div>
         </form>
       </div>
@@ -216,13 +225,14 @@
     <div class="cb-card">
       <h3>Tài liệu trong kho <span class="cb-muted" id="kb-summary"></span></h3>
       <div class="ops-table-wrap"><table class="ops-table">
-        <thead><tr><th>Tiêu đề</th><th>Chương trình</th><th>Nguồn</th><th>Đoạn</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr></thead>
+        <thead><tr><th>Tiêu đề</th><th>Chương trình</th><th>Hiệu lực</th><th>Duyệt</th><th>Bot</th><th>Cập nhật</th><th></th></tr></thead>
         <tbody id="doc-rows"></tbody>
       </table></div>
     </div>
   </section>
 
   <section class="cb-panel" data-panel="faq">
+    <div class="cb-note publish-note"></div>
     <div class="cb-card">
       <h3 id="faq-form-title">Thêm câu hỏi thường gặp</h3>
       <form class="cb-form" id="faq-form">
@@ -237,7 +247,7 @@
     </div>
     <div class="cb-card">
       <div class="ops-table-wrap"><table class="ops-table">
-        <thead><tr><th>Câu hỏi</th><th>Câu trả lời</th><th>Chương trình</th><th>Lượt dùng</th><th>Trạng thái</th><th></th></tr></thead>
+        <thead><tr><th>Câu hỏi</th><th>Câu trả lời</th><th>Chương trình</th><th>Lượt dùng</th><th>Duyệt</th><th>Bot</th><th></th></tr></thead>
         <tbody id="faq-rows"></tbody>
       </table></div>
     </div>
@@ -527,6 +537,51 @@
   ["conv-q"].forEach(id => document.getElementById(id).addEventListener("input", debounce(loadConvs, 350)));
   ["conv-level", "conv-status", "conv-waiting"].forEach(id => document.getElementById(id).addEventListener("change", loadConvs));
   document.getElementById("conv-reload").addEventListener("click", loadConvs);
+  let me = null;
+  const REVIEW = { approved: ["ok", "Đã duyệt"], pending: ["high", "Chờ duyệt"], rejected: ["human", "Bị trả lại"] };
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function vnDate(v) { return v.split("-").reverse().join("/"); }
+  function effective(d) {
+    const span = [d.effective_from ? "từ " + vnDate(d.effective_from) : "", d.effective_to ? "đến " + vnDate(d.effective_to) : ""].filter(Boolean).join(" ") || "Không giới hạn";
+    const state = d.effective_to && d.effective_to < today() ? " (hết hiệu lực)" : d.effective_from && d.effective_from > today() ? " (chưa tới ngày)" : "";
+    return span + state;
+  }
+  function docLive(d) {
+    return d.status === "active" && (d.review_status || "approved") === "approved" && (!d.effective_from || d.effective_from <= today()) && (!d.effective_to || d.effective_to >= today());
+  }
+  function reviewCell(x) {
+    const r = REVIEW[x.review_status || "approved"] || REVIEW.pending;
+    return `<span class="cb-badge ${r[0]}">${r[1]}</span>${x.reviewed_by && x.review_status !== "pending" ? `<br><span class="cb-muted">${esc(x.reviewed_by)}</span>` : ""}${x.review_note ? `<br><span class="cb-muted">${esc(x.review_note)}</span>` : ""}`;
+  }
+  function reviewButtons(x) {
+    if (!me || !me.can_publish) return "";
+    const st = x.review_status || "approved";
+    return (st !== "approved" ? '<button class="btn btn-primary btn-sm" data-act="approve">Duyệt</button>' : "")
+      + (st === "pending" ? '<button class="btn btn-secondary btn-sm" data-act="reject">Trả lại</button>' : "");
+  }
+  async function review(path, act) {
+    if (act === "approve") {
+      await api(path + "/review", { method: "POST", body: JSON.stringify({ action: "approve" }) });
+      toast("Đã duyệt, UniBot bắt đầu dùng trong thời gian hiệu lực");
+      return true;
+    }
+    const note = prompt("Lý do trả lại để bộ phận tuyển sinh sửa:");
+    if (!note) return false;
+    await api(path + "/review", { method: "POST", body: JSON.stringify({ action: "reject", note }) });
+    toast("Đã trả lại");
+    return true;
+  }
+  async function loadMe() {
+    me = await api("/me");
+    const note = me.can_publish
+      ? "Bạn có quyền duyệt: nội dung bạn lưu được công bố ngay; nội dung do cán bộ tuyển sinh soạn cần bạn duyệt trước khi UniBot dùng."
+      : "Nội dung bạn tải lên hoặc soạn ở trạng thái Chờ duyệt. UniBot chỉ dùng sau khi người có quyền duyệt công bố, và chỉ trong thời gian hiệu lực của đợt tuyển sinh.";
+    document.querySelectorAll(".publish-note").forEach(el => { el.textContent = note; });
+    setCount("count-kb", me.can_publish ? me.pending.docs : 0);
+    setCount("count-faq", me.can_publish ? me.pending.faqs : 0);
+    return me;
+  }
+
   function debounce(fn, ms) { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; }
 
   async function loadGaps() {
@@ -544,31 +599,34 @@
     tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
       const body = b.dataset.act === "dismiss" ? { dismiss: true } : { question: tr.querySelector("[name=question]").value, answer: tr.querySelector("[name=answer]").value };
       if (!body.dismiss && !body.answer.trim()) { toast("Nhập câu trả lời trước khi lưu"); return; }
-      try { await api(`/gaps/${tr.dataset.id}/resolve`, { method: "POST", body: JSON.stringify(body) }); toast(body.dismiss ? "Đã bỏ qua" : "Đã thêm vào FAQ, bot sẽ trả lời được câu này"); loadGaps(); loadStats(); }
+      try { await api(`/gaps/${tr.dataset.id}/resolve`, { method: "POST", body: JSON.stringify(body) }); toast(body.dismiss ? "Đã bỏ qua" : (me && me.can_publish ? "Đã thêm vào FAQ, bot trả lời được câu này" : "Đã lưu FAQ, chờ duyệt trước khi bot dùng")); loadGaps(); loadStats(); loadMe(); }
       catch (e) { toast(e.message); }
     })));
   }
 
   async function loadDocs() {
+    await loadMe();
     const rows = await api("/docs");
-    const chunks = rows.filter(r => r.status === "active").reduce((a, r) => a + (r.chunk_count || 0), 0);
-    document.getElementById("kb-summary").textContent = `(${rows.length} tài liệu, ${chunks} đoạn đang dùng)`;
+    const live = rows.filter(docLive);
+    const chunks = live.reduce((a, r) => a + (r.chunk_count || 0), 0);
+    document.getElementById("kb-summary").textContent = `(${rows.length} tài liệu, bot đang dùng ${live.length} tài liệu, ${chunks} đoạn)`;
     const tb = document.getElementById("doc-rows");
     if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" class="cb-empty">Kho trống. Tải tài liệu tuyển sinh lên để bot bắt đầu trả lời.</td></tr>'; return; }
     tb.innerHTML = rows.map(d => `
       <tr data-id="${d.id}">
         <td><b>${esc(d.title)}</b>${d.file_name ? "<br><span class='cb-muted'>" + esc(d.file_name) + "</span>" : ""}</td>
         <td>${esc(d.program_code || "Chung")}</td>
-        <td>${d.source_type === "file" ? "Tệp" : "Nhập tay"}</td>
-        <td>${d.chunk_count}</td>
-        <td>${d.status === "active" ? '<span class="cb-badge ok">Đang dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
+        <td>${esc(effective(d))}</td>
+        <td>${reviewCell(d)}</td>
+        <td>${docLive(d) ? '<span class="cb-badge ok">Đang dùng</span>' : d.status === "active" ? '<span class="cb-badge">Chưa dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
         <td>${fmt(d.updated_at)}</td>
-        <td><div class="cb-actions"><button class="btn btn-secondary btn-sm" data-act="toggle">${d.status === "active" ? "Tắt" : "Bật"}</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
+        <td><div class="cb-actions">${reviewButtons(d)}<button class="btn btn-secondary btn-sm" data-act="toggle">${d.status === "active" ? "Tắt" : "Bật"}</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
       </tr>`).join("");
     tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
       const id = tr.dataset.id;
       try {
         if (b.dataset.act === "delete") { if (!confirm("Xóa tài liệu này khỏi kho kiến thức?")) return; await api(`/docs/${id}`, { method: "DELETE" }); }
+        else if (b.dataset.act === "approve" || b.dataset.act === "reject") { if (!await review(`/docs/${id}`, b.dataset.act)) return; }
         else { const on = b.textContent.trim() === "Bật"; await api(`/docs/${id}`, { method: "PUT", body: JSON.stringify({ status: on ? "active" : "inactive" }) }); }
         loadDocs();
       } catch (e) { toast(e.message); }
@@ -582,7 +640,8 @@
     try {
       const data = await api("/docs/upload", { method: "POST", body: new FormData(ev.target) });
       const hidden = data.imported.reduce((a, d) => a + (d.hidden_personal || 0), 0);
-      out.textContent = `Đã học ${data.imported.length} tệp` + (hidden ? `, đã tự ẩn ${hidden} thông tin cá nhân` : "") + (data.failed.length ? `; không nạp: ${data.failed.map(f => f.file + " (" + f.error + ")").join("; ")}` : "");
+      const waiting = data.imported.filter(d => d.review_status === "pending").length;
+      out.textContent = `Đã nạp ${data.imported.length} tệp` + (waiting ? `, ${waiting} tệp chờ duyệt trước khi bot dùng` : "") + (hidden ? `, đã tự ẩn ${hidden} thông tin cá nhân` : "") + (data.failed.length ? `; không nạp: ${data.failed.map(f => f.file + " (" + f.error + ")").join("; ")}` : "");
       ev.target.reset();
       loadDocs();
     } catch (e) { out.textContent = e.message; }
@@ -591,19 +650,21 @@
   document.getElementById("text-form").addEventListener("submit", async ev => {
     ev.preventDefault();
     const f = Object.fromEntries(new FormData(ev.target));
-    try { await api("/docs", { method: "POST", body: JSON.stringify(f) }); ev.target.reset(); toast("Đã thêm vào kho kiến thức"); loadDocs(); }
+    try { const saved = await api("/docs", { method: "POST", body: JSON.stringify(f) }); ev.target.reset(); toast(saved.review_status === "pending" ? "Đã lưu, chờ duyệt trước khi bot dùng" : "Đã thêm vào kho kiến thức"); loadDocs(); }
     catch (e) { toast(e.message); }
   });
 
   async function loadFaqs() {
+    await loadMe();
     const rows = await api("/faqs");
     const tb = document.getElementById("faq-rows");
-    if (!rows.length) { tb.innerHTML = '<tr><td colspan="6" class="cb-empty">Chưa có FAQ</td></tr>'; return; }
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" class="cb-empty">Chưa có FAQ</td></tr>'; return; }
     tb.innerHTML = rows.map(f => `
       <tr data-id="${f.id}">
         <td><b>${esc(f.question)}</b></td><td>${esc(f.answer)}</td><td>${esc(f.program_code || "Chung")}</td><td>${f.hits}</td>
-        <td>${f.status === "active" ? '<span class="cb-badge ok">Đang dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
-        <td><div class="cb-actions"><button class="btn btn-secondary btn-sm" data-act="edit">Sửa</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
+        <td>${reviewCell(f)}</td>
+        <td>${f.status === "active" && (f.review_status || "approved") === "approved" ? '<span class="cb-badge ok">Đang dùng</span>' : f.status === "active" ? '<span class="cb-badge">Chưa dùng</span>' : '<span class="cb-badge">Tạm tắt</span>'}</td>
+        <td><div class="cb-actions">${reviewButtons(f)}<button class="btn btn-secondary btn-sm" data-act="edit">Sửa</button><button class="btn btn-danger btn-sm" data-act="delete">Xóa</button></div></td>
       </tr>`).join("");
     tb.querySelectorAll("tr[data-id]").forEach(tr => tr.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
       const f = rows.find(r => r.id === +tr.dataset.id);
@@ -613,6 +674,10 @@
         document.getElementById("faq-form-title").textContent = "Sửa câu hỏi thường gặp";
         document.getElementById("faq-cancel").hidden = false;
         form.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (b.dataset.act === "approve" || b.dataset.act === "reject") {
+        try { if (await review(`/faqs/${f.id}`, b.dataset.act)) loadFaqs(); } catch (e) { toast(e.message); }
         return;
       }
       if (!confirm("Xóa FAQ này?")) return;
@@ -631,9 +696,8 @@
     ev.preventDefault();
     const f = Object.fromEntries(new FormData(ev.target));
     try {
-      if (f.id) await api(`/faqs/${f.id}`, { method: "PUT", body: JSON.stringify(f) });
-      else await api("/faqs", { method: "POST", body: JSON.stringify(f) });
-      resetFaqForm(); toast("Đã lưu FAQ"); loadFaqs();
+      const saved = f.id ? await api(`/faqs/${f.id}`, { method: "PUT", body: JSON.stringify(f) }) : await api("/faqs", { method: "POST", body: JSON.stringify(f) });
+      resetFaqForm(); toast(saved.review_status === "pending" ? "Đã lưu FAQ, chờ duyệt trước khi bot dùng" : "Đã lưu FAQ"); loadFaqs();
     } catch (e) { toast(e.message); }
   });
 
@@ -692,6 +756,7 @@
 
   const start = (location.hash || "#requests").slice(1);
   loadStats().catch(e => toast(e.message));
+  loadMe().catch(() => {});
   openTab(["requests", "overview", "convs", "gaps", "kb", "faq", "test", "settings"].includes(start) ? start : "requests");
 })();
 </script>

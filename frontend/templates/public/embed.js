@@ -10,9 +10,7 @@
     "#sub-launch{position:relative;width:64px;height:64px;border-radius:50%;border:0;padding:0;background:transparent;cursor:pointer;box-shadow:0 10px 28px rgba(0,40,80,.35);transition:transform .2s ease}",
     "#sub-launch:hover{transform:translateY(-2px) scale(1.04)}",
     "#sub-launch svg{width:64px;height:64px;display:block;border-radius:50%}",
-    "#sub-launch .sub-x{position:absolute;inset:0;border-radius:50%;background:#00528c;display:none;align-items:center;justify-content:center}",
-    "#sub-launch .sub-x svg{width:26px;height:26px}",
-    "#sub-root.open #sub-launch .sub-x{display:flex}",
+    "#sub-root.open #sub-launch{display:none}",
     "#sub-launch .sub-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(0,82,140,.45);animation:sub-pulse 2.4s ease-out infinite;pointer-events:none}",
     "#sub-root.open #sub-launch .sub-ring,#sub-root.engaged #sub-launch .sub-ring{display:none}",
     "@keyframes sub-pulse{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.35);opacity:0}}",
@@ -23,11 +21,11 @@
     "#sub-teaser.show{opacity:1;transform:none;pointer-events:auto}",
     "#sub-teaser button{position:absolute;top:6px;right:6px;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:#5b6577;cursor:pointer;font-size:15px;line-height:22px;padding:0}",
     "#sub-teaser button:hover{background:#eef2f7}",
-    "#sub-panel{position:absolute;right:0;bottom:80px;width:390px;height:640px;max-width:calc(100vw - 24px);max-height:calc(100vh - 120px);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 20px 60px rgba(0,30,60,.3);opacity:0;transform:translateY(16px) scale(.96);transform-origin:bottom right;pointer-events:none;transition:opacity .22s ease,transform .22s ease}",
+    "#sub-panel{position:absolute;right:0;bottom:0;width:390px;height:640px;max-width:calc(100vw - 24px);max-height:calc(100vh - 40px);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 20px 60px rgba(0,30,60,.3);opacity:0;transform:translateY(16px) scale(.96);transform-origin:bottom right;pointer-events:none;transition:opacity .22s ease,transform .22s ease}",
     "#sub-root.open #sub-panel{opacity:1;transform:none;pointer-events:auto}",
     "#sub-panel iframe{width:100%;height:100%;border:0;display:block}",
     "#sub-root.open #sub-teaser{display:none}",
-    "@media (max-width:520px){ #sub-root{right:14px;bottom:14px} #sub-panel{position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;border-radius:0} #sub-root.open #sub-launch{display:none} #sub-teaser{max-width:210px}}"
+    "@media (max-width:520px){ #sub-root{right:14px;bottom:14px} #sub-panel{position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;border-radius:0} #sub-teaser{max-width:210px}}"
   ].join("");
   var style = document.createElement("style");
   style.textContent = css;
@@ -40,7 +38,6 @@
     '<div id="sub-teaser" role="button" tabindex="0"><button type="button" aria-label="Ẩn lời chào">&times;</button><b></b><span></span></div>' +
     '<button id="sub-launch" type="button" aria-label="Mở ' + NAME.replace(/"/g, "&quot;") + '">' +
     '<span class="sub-ring"></span>' + MASCOT +
-    '<span class="sub-x"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>' +
     '<span id="sub-badge">1</span></button>';
   var panel = root.querySelector("#sub-panel");
   var teaser = root.querySelector("#sub-teaser");
@@ -80,6 +77,7 @@
   function close() {
     root.classList.remove("open");
     launch.setAttribute("aria-expanded", "false");
+    launch.focus({ preventScroll: true });
   }
   function toggle() { root.classList.contains("open") ? close() : open(); }
   function ask(text) { open(); post({ type: "ask", text: String(text || "") }); }

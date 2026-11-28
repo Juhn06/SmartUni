@@ -1,0 +1,264 @@
+[
+  {
+    "q": "kì này tôi có bao nhiêu môn học",
+    "expect": "personal",
+    "must": [
+      "MBA103"
+    ]
+  },
+  {
+    "q": "học kỳ 1 tôi học những môn gì",
+    "expect": "personal",
+    "must": [
+      "MBA101",
+      "MBA102"
+    ],
+    "must_not": [
+      "MBA103"
+    ]
+  },
+  {
+    "q": "tôi đã học xong mấy môn rồi",
+    "expect": "personal"
+  },
+  {
+    "q": "điểm kỳ 1 của tôi",
+    "expect": "personal",
+    "must": [
+      "16.4"
+    ],
+    "must_not": [
+      "MBA103"
+    ]
+  },
+  {
+    "q": "điểm trung bình của tôi là bao nhiêu",
+    "expect": "answer",
+    "must": [
+      "15.97"
+    ]
+  },
+  {
+    "q": "tổng học phí cả khóa của tôi là bao nhiêu",
+    "expect": "personal",
+    "must": [
+      "95.000.000"
+    ]
+  },
+  {
+    "q": "tôi đã đóng được bao nhiêu tiền rồi",
+    "expect": "personal",
+    "must": [
+      "15.000.000"
+    ],
+    "must_not": [
+      "đã đóng đủ học kỳ 1",
+      "kỳ 1 đã đóng"
+    ]
+  },
+  {
+    "q": "tôi còn phải học bao nhiêu môn nữa",
+    "expect": "personal"
+  },
+  {
+    "q": "ai hướng dẫn luận văn của tôi",
+    "expect": "personal",
+    "must": [
+      "Lâm Quang Đức"
+    ]
+  },
+  {
+    "q": "điểm môn leadership",
+    "expect": "personal"
+  },
+  {
+    "q": "Leadership tôi được mấy điểm?",
+    "expect": "personal"
+  },
+  {
+    "q": "điểm các môn của tôi",
+    "expect": "personal"
+  },
+  {
+    "q": "môn nào tôi có điểm cao nhất",
+    "expect": "personal"
+  },
+  {
+    "q": "học phí kỳ 1 của tôi",
+    "expect": "personal"
+  },
+  {
+    "q": "tôi còn khoản phí nào chưa đóng",
+    "expect": "personal"
+  },
+  {
+    "q": "lịch thi môn corporate finance",
+    "expect": "personal"
+  },
+  {
+    "q": "luận văn của tôi",
+    "expect": "personal"
+  },
+  {
+    "q": "tôi tốt nghiệp chưa",
+    "expect": "personal"
+  },
+  {
+    "q": "xem điểm ở đâu",
+    "expect": "faq"
+  },
+  {
+    "q": "tải slide bài giảng ở đâu",
+    "expect": "faq"
+  },
+  {
+    "q": "muốn bảo lưu thì làm sao",
+    "expect": "faq"
+  },
+  {
+    "q": "chuyển khoản rồi sao vẫn báo chưa đóng",
+    "expect": "faq"
+  },
+  {
+    "q": "Nếu tôi muốn nghỉ học nửa năm rồi quay lại thì sao?",
+    "expect": "answer"
+  },
+  {
+    "q": "Đóng học phí qua chuyển khoản xong thì báo cho trung tâm thế nào?",
+    "expect": "answer"
+  },
+  {
+    "q": "gặp cán bộ",
+    "expect": "handoff"
+  },
+  {
+    "q": "bãi gửi xe mở đến mấy giờ",
+    "expect": [
+      "fallback",
+      "llm",
+      "smart"
+    ]
+  },
+  {
+    "q": "thời tiết hôm nay thế nào",
+    "expect": [
+      "fallback",
+      "llm",
+      "smart"
+    ]
+  },
+  {
+    "q": "điểm kỳ này của tôi",
+    "expect": "personal"
+  },
+  {
+    "q": "kỳ sau tôi học môn gì",
+    "expect": "personal"
+  },
+  {
+    "q": "ngày bảo vệ luận văn của tôi",
+    "expect": "personal",
+    "must": [
+      "09:00",
+      "P.Defense 2"
+    ]
+  },
+  {
+    "q": "môn Business Game thuộc học kỳ mấy",
+    "expect": "answer",
+    "must": [
+      "2"
+    ]
+  },
+  {
+    "q": "so với kỳ 1 thì điểm kỳ 2 của tôi thế nào",
+    "expect": "answer",
+    "must": [
+      "16.4",
+      "15.1"
+    ],
+    "must_not": [
+      "tích lũy"
+    ]
+  },
+  {
+    "q": "tôi được điểm thi viết đầu vào bao nhiêu",
+    "expect": "answer",
+    "must": [
+      "14.5"
+    ]
+  },
+  {
+    "q": "những ai ngồi hội đồng chấm luận văn cho tôi",
+    "expect": "answer",
+    "must": [
+      "Trịnh Minh Sơn"
+    ]
+  },
+  {
+    "q": "môn nào tôi đi học ít buổi nhất",
+    "expect": "answer",
+    "must_any": [
+      "100%"
+    ]
+  },
+  {
+    "q": "tôi đi được bao nhiêu phần lộ trình rồi",
+    "expect": "answer",
+    "must_any": [
+      "14/14",
+      "tất cả",
+      "14 giai đoạn"
+    ]
+  },
+  {
+    "q": "nếu tôi dừng học giữa chừng thì khoản học phí kỳ 2 thế nào",
+    "expect": "answer",
+    "must_any": [
+      "bộ phận chương trình",
+      "cán bộ",
+      "từng trường hợp"
+    ],
+    "must_not": [
+      "120",
+      "hoàn lại"
+    ]
+  },
+  {
+    "q": "năm tới học phí có điều chỉnh không",
+    "expect": [
+      "fallback",
+      "llm",
+      "smart"
+    ],
+    "must_not": [
+      "tăng 5",
+      "tăng 10",
+      "120"
+    ]
+  },
+  {
+    "q": "Which courses am I taking this term?",
+    "expect": "answer",
+    "must_any": [
+      "MBA103",
+      "Business Game"
+    ]
+  },
+  {
+    "q": "hát cho tôi một bài đi",
+    "expect": [
+      "fallback",
+      "llm",
+      "smart"
+    ]
+  },
+  {
+    "q": "What do I still owe?",
+    "expect": "answer",
+    "must_any": [
+      "40,000,000",
+      "40.000.000"
+    ]
+  }
+]

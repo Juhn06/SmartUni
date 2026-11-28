@@ -83,3 +83,7 @@ backend/_tmp_*
 backend/_diag_*
 __pycache__/
 *.pyc
+
+training/data/
+training/*.gguf
+training/unibot-lora*.zip

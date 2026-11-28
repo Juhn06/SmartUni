@@ -5,202 +5,279 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tuyển sinh thạc sĩ MBA, MMS, MSCM - {{ config.site_name }}</title>
 <meta name="description" content="Tuyển sinh thạc sĩ MBA, Marketing and Sales, Quản lý chuỗi cung ứng. Đăng ký để chuyên viên tuyển sinh tư vấn lộ trình học, học phí và học bổng.">
-<meta name="theme-color" content="#00528c">
+<meta name="theme-color" content="#08243b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<link rel="preload" as="image" href="{{ url_for('static', filename='img/landing/hero.jpg') }}">
 <style>
 :root {
   --ink: #0b2a45;
+  --navy: #08243b;
   --blue: #00528c;
   --blue-deep: #003f6d;
   --paper: #f4f7fb;
   --white: #ffffff;
   --rule: #cfdceb;
+  --rule-soft: #e3ebf4;
   --muted: #55657a;
   --sun: #f2b705;
-  --sun-soft: #fff4cc;
-  --ok: #0b7a55;
+  --sun-hover: #ffc929;
+  --tint: #e8f2fa;
   --band-1: #dceaf6;
-  --band-2: #b8d4ec;
-  --max: 1180px;
+  --band-2: #9cc3e4;
+  --max: 1440px;
+  --gutter: clamp(20px, 4.5vw, 72px);
+  --section: clamp(64px, 7.5vw, 120px);
+  --header-h: 76px;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { margin: 0; font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); font-size: 16px; line-height: 1.6; }
 a { color: var(--blue); }
+a:hover { color: var(--blue-deep); }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 6px; }
 [hidden] { display: none !important; }
-.wrap { max-width: var(--max); margin: 0 auto; padding: 0 28px; }
+img { display: block; max-width: 100%; }
+.wrap { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+.h2 { margin: 0 0 12px; font-size: clamp(30px, 3vw, 48px); line-height: 1.15; letter-spacing: -.02em; font-weight: 800; }
+.intro { margin: 0 0 clamp(32px, 3vw, 48px); color: var(--muted); font-size: clamp(16px, 1.15vw, 19px); max-width: 62ch; }
 
-.top { background: var(--white); border-bottom: 1px solid var(--rule); position: sticky; top: 0; z-index: 50; }
-.top .wrap { display: flex; align-items: center; gap: 24px; height: 68px; }
-.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); min-width: 0; }
-.brand-mark { width: 40px; height: 40px; border-radius: 12px; background: var(--blue); display: grid; place-items: center; flex: none; }
+.pill { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 15px; white-space: nowrap; border: 0; cursor: pointer; }
+.pill-sun { background: var(--sun); color: var(--navy); }
+.pill-sun:hover { background: var(--sun-hover); color: var(--navy); }
+.pill-ghost { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55); color: #fff; font-weight: 600; }
+.pill-ghost:hover { box-shadow: inset 0 0 0 1.5px #fff; color: #fff; }
+.pill-blue { background: var(--blue); color: #fff; }
+.pill-blue:hover { background: var(--blue-deep); color: #fff; }
+
+.hero { color: #fff; min-height: min(100vh, 1000px); display: flex; flex-direction: column; padding-top: var(--header-h); padding-bottom: clamp(32px, 4vw, 56px); background: linear-gradient(100deg, rgba(8,36,59,.94) 0%, rgba(8,36,59,.82) 42%, rgba(0,63,109,.35) 75%, rgba(0,63,109,.15) 100%), url("{{ url_for('static', filename='img/landing/hero.jpg') }}") center 35% / cover no-repeat var(--navy); }
+.hero > .wrap { width: 100%; }
+.site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 60; transition: background-color .25s ease, box-shadow .25s ease; }
+.site-header.solid { background: rgba(8,36,59,.96); box-shadow: 0 8px 24px -12px rgba(0,0,0,.45); }
+.top { display: flex; align-items: center; gap: clamp(20px, 3vw, 48px); height: var(--header-h); }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; min-width: 0; }
+.brand:hover { color: #fff; }
+.brand-mark { width: 42px; height: 42px; border-radius: 12px; background: var(--sun); display: grid; place-items: center; flex: none; }
 .brand-mark svg { width: 24px; height: 24px; }
-.brand-name { font-weight: 700; font-size: 15px; line-height: 1.25; }
-.menu { display: flex; gap: 22px; margin-left: auto; }
-.menu a { color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 500; }
-.menu a:hover { color: var(--blue); }
-.top-actions { display: flex; gap: 10px; align-items: center; }
-.pill { display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 14.5px; white-space: nowrap; border: 0; cursor: pointer; }
-.pill-solid { background: var(--blue); color: #fff; }
-.pill-solid:hover { background: var(--blue-deep); }
-.pill-line { box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--ink); background: transparent; }
-.pill-line:hover { box-shadow: inset 0 0 0 1.5px var(--blue); color: var(--blue); }
+.brand-name { font-weight: 700; font-size: 16px; line-height: 1.2; max-width: 14ch; }
+.menu { display: flex; gap: clamp(20px, 2.4vw, 40px); margin-left: auto; }
+.menu a { color: rgba(255,255,255,.86); text-decoration: none; font-size: 15.5px; font-weight: 500; padding: 8px 0; }
+.menu a:hover { color: #fff; }
+.top-actions { display: flex; gap: 10px; }
 
-.hero { padding: 56px 0 40px; }
-.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: start; }
-.deadline { display: inline-flex; align-items: center; gap: 10px; background: var(--sun-soft); color: var(--ink); border-radius: 999px; padding: 6px 14px 6px 6px; font-size: 14px; font-weight: 600; margin-bottom: 22px; }
-.deadline b { background: var(--sun); border-radius: 999px; padding: 2px 10px; font-weight: 800; }
-.hero h1 { font-size: clamp(38px, 5.2vw, 64px); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 0 0 20px; max-width: 12ch; }
-.hero .lead { font-size: 18.5px; color: var(--muted); margin: 0 0 28px; max-width: 50ch; }
-.gets { list-style: none; margin: 0 0 32px; padding: 0; display: grid; gap: 14px; max-width: 54ch; }
-.gets li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
-.gets svg { width: 28px; height: 28px; }
-.gets b { display: block; }
-.gets span { color: var(--muted); font-size: 15px; }
-.hero-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 14.5px; color: var(--muted); }
-.hero-meta strong { display: block; color: var(--ink); font-size: 15.5px; }
+.hero-main { flex: 1; display: flex; flex-wrap: wrap; gap: clamp(40px, 6vw, 120px); align-items: center; justify-content: space-between; padding-top: clamp(32px, 4vw, 64px); padding-bottom: clamp(32px, 4vw, 56px); }
+.hero-copy { flex: 1 1 540px; min-width: 0; max-width: 760px; }
+.deadline { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: 5px 16px 5px 5px; font-size: 14.5px; font-weight: 600; margin-bottom: 26px; }
+.deadline b { background: var(--sun); color: var(--navy); border-radius: 999px; padding: 3px 12px; font-weight: 800; }
+.hero h1 { margin: 0 0 24px; font-size: clamp(42px, 5.2vw, 88px); line-height: 1.04; letter-spacing: -.03em; font-weight: 800; max-width: 11ch; }
+.lead { margin: 0 0 36px; font-size: clamp(17px, 1.35vw, 21px); color: rgba(255,255,255,.84); max-width: 50ch; }
+.gets { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; max-width: 600px; }
+.gets li { display: flex; gap: 14px; align-items: flex-start; }
+.gets .dot { flex: none; width: 34px; height: 34px; border-radius: 50%; background: rgba(242,183,5,.18); display: grid; place-items: center; }
+.gets .dot svg { width: 18px; height: 18px; }
+.gets b { display: block; font-size: 16.5px; }
+.gets span { font-size: 15px; color: rgba(255,255,255,.74); }
 
-.form-card { background: var(--white); border-radius: 22px; padding: 28px; box-shadow: 0 1px 0 var(--rule), 0 24px 60px -24px rgba(11, 42, 69, .35); border: 1px solid var(--rule); position: relative; }
-.form-card h2 { margin: 0 0 4px; font-size: 24px; line-height: 1.25; letter-spacing: -.01em; }
-.form-card .sub { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
+.form-card { flex: 0 1 460px; min-width: min(100%, 360px); background: var(--white); color: var(--ink); border-radius: 24px; padding: 30px; box-shadow: 0 30px 70px -20px rgba(0,0,0,.45); }
+.form-card h2 { margin: 0; font-size: 25px; line-height: 1.25; letter-spacing: -.01em; }
+.form-card .sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
 .f { display: grid; gap: 14px; }
 .f label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
-.f input, .f select, .f textarea { width: 100%; height: 46px; border: 1.5px solid var(--rule); border-radius: 12px; padding: 0 14px; background: #fbfcfe; font-size: 15px; font-weight: 400; }
-.f textarea { height: auto; min-height: 76px; padding: 10px 14px; resize: vertical; }
-.f input:focus, .f select:focus, .f textarea:focus { outline: none; border-color: var(--blue); background: #fff; box-shadow: 0 0 0 4px rgba(0, 82, 140, .12); }
-.f .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.f input, .f select, .f textarea { width: 100%; height: 46px; border: 1.5px solid var(--rule); border-radius: 12px; padding: 0 14px; background: #fbfcfe; font-size: 15px; font-weight: 400; color: var(--ink); }
+.f textarea { height: auto; min-height: 72px; padding: 10px 14px; resize: vertical; }
+.f input:focus, .f select:focus, .f textarea:focus { outline: none; border-color: var(--blue); background: #fff; box-shadow: 0 0 0 4px rgba(0,82,140,.14); }
+.f .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pick-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 .programs-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.programs-pick label { display: block; position: relative; }
 .programs-pick input { position: absolute; opacity: 0; pointer-events: none; }
-.programs-pick span { display: grid; place-items: center; height: 42px; border-radius: 10px; border: 1.5px solid var(--rule); font-weight: 700; font-size: 14px; cursor: pointer; background: #fbfcfe; }
+.programs-pick span { display: grid; place-items: center; height: 44px; padding: 0 4px; border-radius: 11px; border: 1.5px solid var(--rule); background: #fbfcfe; font-weight: 700; font-size: 14px; white-space: nowrap; cursor: pointer; }
+.programs-pick .none { font-size: 13px; font-weight: 600; }
 .programs-pick input:checked + span { border-color: var(--blue); background: var(--blue); color: #fff; }
 .programs-pick input:focus-visible + span { outline: 3px solid var(--sun); outline-offset: 2px; }
 .event-chip { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--band-1); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
 .event-chip button { background: none; border: 0; color: var(--blue); font-weight: 600; cursor: pointer; padding: 0; }
-.consent { display: flex !important; grid-template-columns: none !important; gap: 10px; align-items: flex-start; font-weight: 400 !important; font-size: 13.5px !important; color: var(--muted); }
-.consent input { width: 18px !important; height: 18px !important; margin: 2px 0 0; flex: none; }
-.submit { height: 52px; border: 0; border-radius: 14px; background: var(--blue); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; }
+.f .consent { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 13.5px; color: var(--muted); }
+.f .consent input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; }
+.submit { height: 54px; border: 0; border-radius: 14px; background: var(--blue); color: #fff; font-weight: 700; font-size: 16.5px; cursor: pointer; }
 .submit:hover { background: var(--blue-deep); }
 .submit:disabled { opacity: .6; cursor: default; }
 .form-error { color: #b42318; font-size: 14px; min-height: 1.2em; margin: 0; }
 .trust { margin: 14px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
-.done { text-align: left; }
 .done .tick { width: 56px; height: 56px; border-radius: 50%; background: #dcf5ea; display: grid; place-items: center; margin-bottom: 16px; }
 .done .tick svg { width: 30px; height: 30px; }
 .done h2 { margin-bottom: 8px; }
 .done p { color: var(--muted); margin: 0 0 12px; }
-.done ol { margin: 0 0 18px; padding-left: 20px; color: var(--ink); }
+.done ol { margin: 0 0 18px; padding-left: 20px; }
 .done li { margin: 4px 0; }
 
-.year { padding: 8px 0 64px; }
-.year h2 { font-size: 22px; margin: 0 0 4px; }
-.year .phase { color: var(--muted); margin: 0; }
-.year-scroll { overflow-x: auto; padding: 40px 2px 6px; }
-.year-grid { position: relative; min-width: 760px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: 8px; }
-.m { font-size: 13px; color: var(--muted); padding: 0 0 8px 8px; border-left: 1px solid var(--rule); }
+.hero-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 18px; overflow: hidden; }
+.hero-meta > div { padding: 18px 24px; border-left: 1px solid rgba(255,255,255,.18); }
+.hero-meta > div:first-child { border-left: 0; }
+.hero-meta span { display: block; font-size: 13.5px; color: rgba(255,255,255,.7); }
+.hero-meta strong { display: block; font-size: clamp(16px, 1.25vw, 20px); font-weight: 700; }
+
+.year { padding: var(--section) 0; }
+.year-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
+.year-head .h2 { margin-bottom: 6px; }
+.year-head .phase { margin: 0; color: var(--muted); font-size: clamp(16px, 1.15vw, 19px); }
+.year-head .note { margin: 0; max-width: 380px; color: var(--muted); font-size: 15px; padding-left: 16px; border-left: 3px solid var(--sun); }
+.year-card { overflow-x: auto; background: var(--white); border: 1px solid var(--rule); border-radius: 24px; padding: 52px clamp(20px, 2.5vw, 40px) 32px; }
+.year-grid { position: relative; min-width: 820px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: 10px; }
+.m { font-size: 13px; color: var(--muted); white-space: nowrap; padding: 0 0 8px 8px; border-left: 1px solid var(--rule); }
 .m.y { color: var(--ink); font-weight: 700; }
-.band { height: 46px; border-radius: 10px; padding: 0 14px; display: flex; align-items: center; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.band { height: 52px; border-radius: 12px; padding: 0 16px; display: flex; align-items: center; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .b1 { background: var(--band-1); }
 .b2 { background: var(--band-2); }
-.b3 { background: var(--ink); color: #fff; }
-.pin { height: 34px; display: flex; align-items: center; justify-content: center; }
-.pin span { font-size: 13px; font-weight: 600; color: var(--blue); background: var(--white); border: 1.5px solid var(--blue); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.b3 { background: var(--navy); color: #fff; font-size: 14px; padding: 0 14px; }
+.pin { display: flex; justify-content: center; }
+.pin span { border: 1.5px solid var(--blue); color: var(--blue); background: var(--white); border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .today { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--sun); pointer-events: none; z-index: 2; }
-.today b { position: absolute; top: -32px; left: -1px; transform: translateX(-50%); background: var(--sun); color: var(--ink); font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
-.year-note { font-size: 14px; color: var(--muted); margin: 14px 0 0; }
+.today b { position: absolute; top: -34px; left: 0; transform: translateX(-50%); background: var(--sun); color: var(--navy); font-size: 13px; font-weight: 800; padding: 3px 12px; border-radius: 999px; white-space: nowrap; }
 
-section.block { padding: 72px 0; border-top: 1px solid var(--rule); }
-section.block h2.t { font-size: clamp(28px, 3.2vw, 38px); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 10px; font-weight: 800; max-width: 22ch; }
-section.block .intro { color: var(--muted); margin: 0 0 40px; max-width: 60ch; font-size: 17px; }
+.why { background: var(--white); border-top: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); }
+.why .wrap { padding-top: var(--section); padding-bottom: var(--section); display: flex; flex-wrap: wrap; gap: clamp(40px, 6vw, 112px); align-items: center; }
+.mosaic { flex: 1 1 480px; min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: clamp(200px, 17vw, 300px) clamp(170px, 14vw, 250px); gap: clamp(12px, 1.2vw, 20px); }
+.mosaic img { width: 100%; height: 100%; object-fit: cover; border-radius: 22px; }
+.mosaic .big { grid-column: 1 / span 3; grid-row: 1 / span 2; }
+.mosaic .small { grid-column: 4 / span 2; grid-row: 1; }
+.mosaic .stat { grid-column: 4 / span 2; grid-row: 2; border-radius: 22px; background: var(--sun); color: var(--navy); padding: 22px; display: flex; flex-direction: column; justify-content: flex-end; }
+.mosaic .stat b { font-size: clamp(40px, 4vw, 64px); font-weight: 800; line-height: 1; }
+.mosaic .stat span { font-weight: 700; font-size: 15px; line-height: 1.35; }
+.why-copy { flex: 1 1 480px; min-width: 0; }
+.why-copy .h2 { max-width: 18ch; margin-bottom: 12px; }
+.why-copy .intro { margin-bottom: 30px; }
+.reasons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 2.6vw, 40px) clamp(28px, 3vw, 48px); }
+.reasons .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--tint); display: grid; place-items: center; margin-bottom: 12px; }
+.reasons .ic svg { width: 24px; height: 24px; }
+.reasons h3 { margin: 0 0 4px; font-size: 18px; }
+.reasons p { margin: 0; color: var(--muted); font-size: 15px; }
 
-.why { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; }
-.why > div { padding: 22px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 44px 1fr; gap: 16px; }
-.why svg { width: 44px; height: 44px; }
-.why h3 { margin: 0 0 4px; font-size: 18px; }
-.why p { margin: 0; color: var(--muted); }
-
-.programs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.program { padding: 4px 32px 8px; border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
-.program:first-child { border-left: 0; padding-left: 0; }
-.program .code { font-size: 64px; line-height: 1; font-weight: 800; letter-spacing: -.04em; color: var(--blue); }
-.program h3 { margin: 0; font-size: 18px; line-height: 1.35; }
-.program p { margin: 0; color: var(--muted); }
-.program .for { font-size: 14.5px; color: var(--ink); background: var(--band-1); border-radius: 10px; padding: 10px 12px; flex: 1; }
-.program .for b { display: block; font-size: 13px; color: var(--muted); font-weight: 600; }
+.programs-sec { padding: var(--section) 0; }
+.sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 0 48px; flex-wrap: wrap; }
+.sec-head .intro { max-width: 52ch; }
+.programs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(20px, 2vw, 32px); }
+.program { background: var(--white); border: 1px solid var(--rule); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; }
+.program-head { padding: clamp(28px, 2.6vw, 40px) clamp(24px, 2.4vw, 36px); background: var(--blue); color: #fff; }
+.program-head.sun { background: var(--sun); color: var(--navy); }
+.program-head.navy { background: var(--navy); }
+.program-head .code { font-size: clamp(56px, 5vw, 80px); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+.program-head h3 { margin: 8px 0 0; font-size: 17px; font-weight: 700; }
+.program-body { padding: 24px clamp(24px, 2.4vw, 36px) clamp(26px, 2.4vw, 36px); display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.program-body p { margin: 0; color: var(--muted); font-size: 15.5px; }
+.program-body .for { background: var(--paper); border-radius: 12px; padding: 12px 14px; font-size: 15px; flex: 1; }
+.program-body .for b { display: block; font-size: 13px; color: var(--muted); font-weight: 600; }
 .linkbtn { align-self: flex-start; background: none; border: 0; padding: 6px 0; font-weight: 700; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
 .linkbtn:hover { color: var(--blue-deep); }
 
-.live { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; }
-.live h3 { font-size: 18px; margin: 0 0 14px; }
-.items { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-.items li { padding: 18px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 6px; }
-.items .t { font-weight: 700; font-size: 17px; }
-.items .d { color: var(--muted); font-size: 14.5px; }
-.items .k { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.tag { font-size: 12.5px; font-weight: 600; color: var(--blue); background: var(--band-1); border-radius: 999px; padding: 2px 10px; }
-.empty { padding: 18px 0; color: var(--muted); border-bottom: 1px solid var(--rule); }
+.events { background: var(--navy); color: #fff; }
+.events .wrap { padding-top: var(--section); padding-bottom: var(--section); display: flex; flex-wrap: wrap; gap: clamp(40px, 5vw, 96px); align-items: stretch; }
+.events-media { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; }
+.events-media .intro { color: rgba(255,255,255,.75); margin-bottom: 28px; }
+.events-media img { width: 100%; flex: 1; min-height: clamp(260px, 24vw, 420px); object-fit: cover; border-radius: 22px; }
+.events-list { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.event-card { background: var(--white); color: var(--ink); border-radius: 22px; padding: 26px; display: flex; gap: 22px; align-items: flex-start; }
+.event-date { flex: none; width: 76px; border-radius: 16px; background: var(--sun); color: var(--navy); text-align: center; padding: 10px 0; }
+.event-date b { display: block; font-size: 30px; font-weight: 800; line-height: 1; }
+.event-date span { font-size: 13px; font-weight: 700; }
+.event-info { flex: 1; min-width: 0; }
+.event-info .kicker { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.event-info h3 { margin: 2px 0 6px; font-size: 21px; line-height: 1.3; }
+.event-info p { margin: 0 0 14px; color: var(--muted); font-size: 15px; }
+.outline-card { border: 1px solid rgba(255,255,255,.22); border-radius: 22px; padding: 24px 26px; }
+.outline-card .kicker { font-size: 13.5px; color: rgba(255,255,255,.7); font-weight: 600; }
+.outline-card h3 { margin: 2px 0 6px; font-size: 21px; line-height: 1.3; }
+.outline-card p { margin: 0 0 12px; color: rgba(255,255,255,.75); font-size: 15px; }
+.outline-card p:last-child { margin-bottom: 0; }
+.outline-card .linkbtn { color: var(--sun); }
+.outline-card .linkbtn:hover { color: var(--sun-hover); }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { background: rgba(255,255,255,.14); border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; }
+.event-card .tag { background: var(--tint); color: var(--blue); }
 
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; counter-reset: step; }
-.steps li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 18px 0; border-top: 1px solid var(--rule); }
-.steps li::before { content: counter(step); width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 15px; }
-.steps li.here::before { background: var(--sun); color: var(--ink); }
-.steps b { display: block; margin-bottom: 2px; }
-.steps .you { display: inline-block; margin-left: 8px; font-size: 12.5px; font-weight: 700; background: var(--sun-soft); border-radius: 999px; padding: 1px 9px; vertical-align: 2px; }
-.steps span.s { color: var(--muted); font-size: 15px; }
+.process { padding: var(--section) 0; }
+.process .intro { margin-bottom: 44px; }
+.steps-scroll { overflow-x: auto; padding-bottom: 4px; }
+.steps { list-style: none; margin: 0; padding: 0; min-width: 980px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(16px, 1.6vw, 28px); }
+.steps li { display: flex; flex-direction: column; gap: 12px; }
+.steps .line { display: flex; align-items: center; gap: 8px; }
+.steps .n { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 16px; background: var(--navy); color: #fff; }
+.steps li.here .n { background: var(--sun); color: var(--navy); }
+.steps .line i { flex: 1; height: 2px; background: var(--rule); }
+.steps b { font-size: 16.5px; }
+.steps span { font-size: 14.5px; color: var(--muted); }
 
-.faq { max-width: 820px; border-top: 1px solid var(--rule); }
+.faq-sec { background: var(--white); border-top: 1px solid var(--rule-soft); }
+.faq-sec .wrap { padding-top: var(--section); padding-bottom: var(--section); display: flex; flex-wrap: wrap; gap: clamp(40px, 6vw, 112px); }
+.faq-aside { flex: 1 1 340px; min-width: 0; max-width: 520px; }
+.faq-aside .intro { margin-bottom: 24px; }
+.faq-aside img { width: 100%; height: clamp(240px, 20vw, 340px); object-fit: cover; border-radius: 22px; }
+.faq { flex: 2 1 520px; min-width: 0; border-top: 1px solid var(--rule); }
 .faq details { border-bottom: 1px solid var(--rule); }
-.faq summary { cursor: pointer; list-style: none; padding: 20px 40px 20px 0; font-weight: 700; font-size: 17px; position: relative; }
+.faq summary { list-style: none; cursor: pointer; padding: 22px 0; font-weight: 700; font-size: clamp(16.5px, 1.2vw, 19px); display: flex; justify-content: space-between; gap: 16px; }
 .faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: ""; position: absolute; right: 8px; top: 50%; width: 10px; height: 10px; border-right: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: translateY(-70%) rotate(45deg); transition: transform .2s ease; }
-.faq details[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
-.faq details p { margin: 0 0 20px; color: var(--muted); max-width: 70ch; }
-.faq-note { margin: 18px 0 0; color: var(--muted); font-size: 15px; }
+.faq summary svg { flex: none; width: 20px; height: 20px; margin-top: 4px; transition: transform .2s ease; }
+.faq details[open] summary svg { transform: rotate(180deg); }
+.faq details p { margin: 0 0 20px; color: var(--muted); font-size: 15.5px; max-width: 68ch; }
 
-.final { background: var(--ink); color: #fff; padding: 64px 0; }
-.final .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; }
-.final h2 { margin: 0 0 8px; font-size: clamp(26px, 3.2vw, 36px); line-height: 1.15; font-weight: 800; letter-spacing: -.02em; }
-.final p { margin: 0; color: rgba(255,255,255,.78); max-width: 58ch; }
-.final .pill { height: 52px; padding: 0 26px; font-size: 16px; background: var(--sun); color: var(--ink); }
-.final .pill:hover { background: #ffcd2e; }
+.final { color: #fff; background: linear-gradient(90deg, rgba(8,36,59,.95) 0%, rgba(8,36,59,.8) 55%, rgba(8,36,59,.35) 100%), url("{{ url_for('static', filename='img/landing/cta.jpg') }}") center 30% / cover no-repeat var(--navy); }
+.final .wrap { padding-top: var(--section); padding-bottom: var(--section); display: flex; flex-wrap: wrap; gap: 32px; align-items: center; justify-content: space-between; }
+.final .copy { flex: 1 1 560px; max-width: 920px; }
+.final h2 { text-wrap: balance; }
+.final h2 { margin: 0 0 14px; font-size: clamp(32px, 3.6vw, 56px); line-height: 1.12; letter-spacing: -.02em; font-weight: 800; }
+.final p { margin: 0; font-size: clamp(17px, 1.3vw, 20px); color: rgba(255,255,255,.82); }
+.final .pill { height: 58px; padding: 0 30px; font-size: 17px; font-weight: 800; }
 
-.foot { padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
-.foot .wrap { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
+.foot { background: #061b2d; color: rgba(255,255,255,.72); font-size: 15px; }
+.foot a { color: rgba(255,255,255,.86); text-decoration: none; }
+.foot a:hover { color: #fff; text-decoration: underline; }
+.foot-main { padding-top: clamp(56px, 6vw, 88px); padding-bottom: 40px; display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 40px; }
+.foot-brand p { margin: 16px 0 0; max-width: 40ch; }
+.foot h3 { margin: 0 0 14px; color: #fff; font-size: 15px; font-weight: 700; }
+.foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.foot ul button { background: none; border: 0; padding: 0; color: rgba(255,255,255,.86); cursor: pointer; text-align: left; }
+.foot ul button:hover { color: #fff; text-decoration: underline; }
+.foot-bottom { border-top: 1px solid rgba(255,255,255,.12); }
+.foot-bottom .wrap { padding-top: 20px; padding-bottom: 28px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; color: rgba(255,255,255,.56); }
 
-@media (max-width: 1020px) {
+@media (max-width: 1100px) {
   .menu { display: none; }
-  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
-  .hero h1 { max-width: 16ch; }
+  .top-actions { margin-left: auto; }
+  .hero { min-height: 0; }
+  .hero-copy { max-width: none; }
+  .form-card { flex: 1 1 100%; }
+  .foot-main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .foot-brand { grid-column: 1 / -1; }
 }
-@media (max-width: 860px) {
-  .programs { grid-template-columns: 1fr; }
-  .program { border-left: 0; padding: 22px 0; border-top: 1px solid var(--rule); }
-  .program:first-child { border-top: 0; padding-top: 0; }
-  .live, .steps, .why { grid-template-columns: 1fr; }
-  .live { gap: 32px; }
-  .final .wrap { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  .hero-meta { grid-template-columns: 1fr; }
+  .hero-meta > div { border-left: 0; border-top: 1px solid rgba(255,255,255,.18); }
+  .hero-meta > div:first-child { border-top: 0; }
+  .reasons { grid-template-columns: 1fr; }
+  .mosaic { grid-template-rows: 180px 150px; }
+  .foot-main { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .wrap { padding: 0 18px; }
-  .brand-name { font-size: 13.5px; }
-  .top-actions .pill-solid { display: none; }
-  .hero { padding-top: 32px; }
-  .hero .lead { font-size: 16.5px; }
+  .brand-name { font-size: 14px; }
+  .top-actions .pill-sun { display: none; }
+  .hero-main { padding-top: 24px; gap: 36px; }
+  .lead { font-size: 16.5px; }
   .form-card { padding: 22px 18px; border-radius: 18px; }
   .f .two { grid-template-columns: 1fr; }
-  section.block { padding: 52px 0; }
+  .event-card { flex-direction: column; gap: 14px; }
+  :root { --header-h: 64px; }
+  .foot-main { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
+<header class="site-header" id="site-header">
+  <div class="wrap top">
     <a class="brand" href="{{ url_for('index') }}">
-      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v5c3.5 2.5 8.5 2.5 12 0v-5"/><path d="M22 9v6" stroke-linecap="round"/></svg></span>
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#08243b" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v5c3.5 2.5 8.5 2.5 12 0v-5"/><path d="M22 9v6" stroke-linecap="round"/></svg></span>
       <span class="brand-name">{{ config.site_name }}</span>
     </a>
     <nav class="menu" aria-label="Mục lục trang">
@@ -210,99 +287,107 @@ section.block .intro { color: var(--muted); margin: 0 0 40px; max-width: 60ch; f
       <a href="#hoi-dap">Hỏi đáp</a>
     </nav>
     <div class="top-actions">
-      <a class="pill pill-solid" href="#dang-ky">Đăng ký tư vấn</a>
-      <a class="pill pill-line" href="{{ url_for('login') }}">Đăng nhập</a>
+      <a class="pill pill-sun" href="#dang-ky">Đăng ký tư vấn</a>
+      <a class="pill pill-ghost" href="{{ url_for('login') }}">Đăng nhập</a>
     </div>
   </div>
 </header>
 
-<main>
-  <section class="hero">
-    <div class="wrap">
-      <div>
-        {% if overview.deadline_days is not none and overview.rounds %}
-        <div class="deadline"><b>Còn {{ overview.deadline_days }} ngày</b> đến hạn nộp hồ sơ {{ overview.rounds[0].name }}</div>
-        {% endif %}
-        <h1>Thạc sĩ quốc tế, lộ trình riêng cho bạn</h1>
-        <p class="lead">MBA, Marketing and Sales, Quản lý chuỗi cung ứng. Liên kết trường đối tác quốc tế, cơ hội bằng kép và học bổng. Để lại thông tin, một chuyên viên tuyển sinh sẽ tư vấn riêng cho bạn.</p>
-        <ul class="gets">
-          <li>{{ icons.check|safe }}<div><b>Chuyên viên phụ trách riêng</b><span>Liên hệ bạn trong giờ làm việc, theo khung giờ bạn chọn.</span></div></li>
-          <li>{{ icons.check|safe }}<div><b>Học phí và học bổng theo chương trình</b><span>Nhận bảng chi tiết cho đúng chương trình và khóa bạn quan tâm.</span></div></li>
-          <li>{{ icons.check|safe }}<div><b>Hướng dẫn hồ sơ đợt gần nhất</b><span>Checklist giấy tờ, lịch thi viết và phỏng vấn.</span></div></li>
-        </ul>
-        <div class="hero-meta">
-          <div><strong>{{ now.phase_short }}</strong>Giai đoạn tuyển sinh hiện tại</div>
-          <div><strong>Tháng {{ now.next_mba }}</strong>Đợt tuyển sinh MBA gần nhất</div>
-          {% if overview.events %}<div><strong>{{ overview.events[0].starts_at }}</strong>{{ overview.events[0].title }}</div>{% endif %}
-        </div>
-      </div>
-
-      <div class="form-card" id="dang-ky">
-        <form class="f" id="reg-form" novalidate>
-          <div>
-            <h2>Nhận tư vấn miễn phí</h2>
-            <p class="sub">Điền 1 phút, chuyên viên tuyển sinh sẽ liên hệ bạn.</p>
-          </div>
-          <div class="event-chip" id="event-chip" hidden><span></span><button type="button" id="event-clear">Bỏ chọn</button></div>
-          <input type="hidden" name="event_id" value="">
-          <label>Họ và tên<input name="full_name" autocomplete="name" required></label>
-          <div class="two">
-            <label>Số điện thoại<input name="phone" inputmode="tel" autocomplete="tel" placeholder="09xx xxx xxx"></label>
-            <label>Email<input name="email" type="email" autocomplete="email"></label>
-          </div>
-          <div>
-            <label style="margin-bottom:6px" id="pg-label">Chương trình quan tâm</label>
-            <div class="programs-pick" role="radiogroup" aria-labelledby="pg-label">
-              {% for code in ["MBA", "MMS", "MSCM"] %}
-              <label style="display:block;font-weight:inherit"><input type="radio" name="program" value="{{ code }}"><span>{{ code }}</span></label>
-              {% endfor %}
-              <label style="display:block;font-weight:inherit"><input type="radio" name="program" value="" checked><span style="font-weight:600;font-size:13px">Chưa chọn</span></label>
-            </div>
-          </div>
-          <div class="two">
-            <label>Liên hệ tôi
-              <select name="contact_time">
-                <option value="office">Trong giờ hành chính</option>
-                <option value="morning">Buổi sáng</option>
-                <option value="afternoon">Buổi chiều</option>
-                <option value="evening">Buổi tối</option>
-                <option value="weekend">Cuối tuần</option>
-              </select>
-            </label>
-            <label>Dự kiến nhập học
-              <select name="intake">
-                <option value="">Chưa xác định</option>
-                <option value="Tháng 5/{{ now.next_year }}">Tháng 5/{{ now.next_year }}</option>
-                <option value="Tháng 8/{{ now.next_year }}">Tháng 8/{{ now.next_year }}</option>
-              </select>
-            </label>
-          </div>
-          <label>Bạn muốn được tư vấn thêm điều gì? <textarea name="message" placeholder="Ví dụ: chưa có chứng chỉ tiếng Anh, muốn biết về học bổng"></textarea></label>
-          <label class="consent"><input type="checkbox" name="consent"> Tôi đồng ý cho trung tâm dùng thông tin này để liên hệ tư vấn tuyển sinh.</label>
-          <p class="form-error" id="form-error" role="alert"></p>
-          <button class="submit" type="submit" id="submit-btn">Gửi đăng ký tư vấn</button>
-        </form>
-        <div class="done" id="done" hidden>
-          <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0b7a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-          <h2>Đã nhận đăng ký của bạn</h2>
-          <p id="done-text"></p>
-          <ol>
-            <li>Chuyên viên tuyển sinh phụ trách gọi hoặc email cho bạn.</li>
-            <li>Bạn nhận thông tin chương trình, học phí, học bổng và hướng dẫn hồ sơ.</li>
-            <li>Chuyên viên đồng hành đến khi bạn nộp hồ sơ dự tuyển.</li>
-          </ol>
-          <p>Trong lúc chờ, bạn có thể hỏi nhanh trợ lý {{ config.name }} ở góc phải màn hình.</p>
-        </div>
-        <p class="trust">Thông tin chỉ dùng để tư vấn tuyển sinh.</p>
-      </div>
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-main">
+    <div class="hero-copy">
+      {% if overview.deadline_days is not none and overview.rounds %}
+      <div class="deadline"><b>Còn {{ overview.deadline_days }} ngày</b> đến hạn nộp hồ sơ {{ overview.rounds[0].name }}</div>
+      {% endif %}
+      <h1 id="hero-title">Thạc sĩ quốc tế, lộ trình riêng cho bạn</h1>
+      <p class="lead">MBA, Marketing and Sales, Quản lý chuỗi cung ứng. Liên kết trường đối tác quốc tế, cơ hội bằng kép và ba nguồn học bổng.</p>
+      <ul class="gets">
+        <li><span class="dot">{{ icons.check|safe }}</span><div><b>Chuyên viên phụ trách riêng</b><span>Liên hệ bạn trong giờ làm việc, theo khung giờ bạn chọn.</span></div></li>
+        <li><span class="dot">{{ icons.check|safe }}</span><div><b>Học phí và học bổng theo chương trình</b><span>Bảng chi tiết cho đúng chương trình và khóa bạn quan tâm.</span></div></li>
+        <li><span class="dot">{{ icons.check|safe }}</span><div><b>Hướng dẫn hồ sơ đợt gần nhất</b><span>Checklist giấy tờ, lịch thi viết và phỏng vấn.</span></div></li>
+      </ul>
     </div>
-  </section>
 
-  <section class="year" id="lich-tuyen-sinh" aria-label="Lịch tuyển sinh trong năm">
+    <div class="form-card" id="dang-ky">
+      <form class="f" id="reg-form" novalidate>
+        <div>
+          <h2>Nhận tư vấn miễn phí</h2>
+          <p class="sub">Điền 1 phút, chuyên viên tuyển sinh sẽ liên hệ bạn.</p>
+        </div>
+        <div class="event-chip" id="event-chip" hidden><span></span><button type="button" id="event-clear">Bỏ chọn</button></div>
+        <input type="hidden" name="event_id" value="">
+        <label>Họ và tên<input name="full_name" autocomplete="name" required></label>
+        <div class="two">
+          <label>Số điện thoại<input name="phone" inputmode="tel" autocomplete="tel" placeholder="09xx xxx xxx"></label>
+          <label>Email<input name="email" type="email" autocomplete="email"></label>
+        </div>
+        <div>
+          <span class="pick-label" id="pg-label">Chương trình quan tâm</span>
+          <div class="programs-pick" role="radiogroup" aria-labelledby="pg-label">
+            {% for code in ["MBA", "MMS", "MSCM"] %}
+            <label><input type="radio" name="program" value="{{ code }}"><span>{{ code }}</span></label>
+            {% endfor %}
+            <label><input type="radio" name="program" value="" checked><span class="none">Chưa chọn</span></label>
+          </div>
+        </div>
+        <div class="two">
+          <label>Liên hệ tôi
+            <select name="contact_time">
+              <option value="office">Giờ hành chính</option>
+              <option value="morning">Buổi sáng</option>
+              <option value="afternoon">Buổi chiều</option>
+              <option value="evening">Buổi tối</option>
+              <option value="weekend">Cuối tuần</option>
+            </select>
+          </label>
+          <label>Dự kiến nhập học
+            <select name="intake">
+              <option value="">Chưa xác định</option>
+              <option value="Tháng 5/{{ now.next_year }}">Tháng 5/{{ now.next_year }}</option>
+              <option value="Tháng 8/{{ now.next_year }}">Tháng 8/{{ now.next_year }}</option>
+            </select>
+          </label>
+        </div>
+        <label>Bạn muốn được tư vấn thêm điều gì? <textarea name="message" placeholder="Ví dụ: chưa có chứng chỉ tiếng Anh, muốn biết về học bổng"></textarea></label>
+        <label class="consent"><input type="checkbox" name="consent"> Tôi đồng ý cho trung tâm dùng thông tin này để liên hệ tư vấn tuyển sinh.</label>
+        <p class="form-error" id="form-error" role="alert"></p>
+        <button class="submit" type="submit" id="submit-btn">Gửi đăng ký tư vấn</button>
+      </form>
+      <div class="done" id="done" hidden>
+        <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0b7a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <h2>Đã nhận đăng ký của bạn</h2>
+        <p id="done-text"></p>
+        <ol>
+          <li>Chuyên viên tuyển sinh phụ trách gọi hoặc email cho bạn.</li>
+          <li>Bạn nhận thông tin chương trình, học phí, học bổng và hướng dẫn hồ sơ.</li>
+          <li>Chuyên viên đồng hành đến khi bạn nộp hồ sơ dự tuyển.</li>
+        </ol>
+        <p>Trong lúc chờ, bạn có thể hỏi nhanh trợ lý {{ config.name }} ở góc phải màn hình.</p>
+      </div>
+      <p class="trust">Thông tin chỉ dùng để tư vấn tuyển sinh.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero-meta">
+      <div><span>Giai đoạn hiện tại</span><strong>{{ now.phase_short }}</strong></div>
+      <div><span>Đợt tuyển sinh MBA gần nhất</span><strong>Tháng {{ now.next_mba }}</strong></div>
+      <div><span>Sự kiện tiếp theo</span><strong>{% if overview.events %}{{ overview.events[0].title }}{% if overview.events[0].day %}, {{ overview.events[0].day }}/{{ overview.events[0].month|replace('Th ', '') }}{% endif %}{% else %}Sẽ thông báo sớm{% endif %}</strong></div>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="year" id="lich-tuyen-sinh" aria-labelledby="year-title">
     <div class="wrap">
-      <h2>Lịch tuyển sinh trong năm</h2>
-      <p class="phase">Bây giờ là tháng {{ now.month }}/{{ now.year }}. {{ now.phase }}</p>
-      <div class="year-scroll">
+      <div class="year-head">
+        <div>
+          <h2 class="h2" id="year-title">Lịch tuyển sinh trong năm</h2>
+          <p class="phase">Bây giờ là tháng {{ now.month }}/{{ now.year }}. {{ now.phase }}</p>
+        </div>
+        <p class="note">Đăng ký sớm để kịp chuẩn bị chứng chỉ tiếng Anh và hồ sơ cho đợt gần nhất.</p>
+      </div>
+      <div class="year-card">
         <div class="year-grid">
           {% for m in months %}
           <div class="m{% if m.marked %} y{% endif %}" style="grid-row: 1; grid-column: {{ loop.index }}">{{ m.label }}</div>
@@ -315,137 +400,215 @@ section.block .intro { color: var(--muted); margin: 0 0 40px; max-width: 60ch; f
           <div class="today" style="left: {{ '%.2f'|format(now.position * 100) }}%" aria-hidden="true"><b>Hôm nay</b></div>
         </div>
       </div>
-      <p class="year-note">Đăng ký sớm trong giai đoạn tư vấn để chuẩn bị chứng chỉ tiếng Anh và hồ sơ kịp đợt tuyển sinh gần nhất.</p>
     </div>
   </section>
 
-  <section class="block">
+  <section class="why" aria-labelledby="why-title">
     <div class="wrap">
-      <h2 class="t">Vì sao học viên chọn chương trình của trung tâm</h2>
-      <p class="intro">Những điều bạn nhận được khi theo học, ngoài tấm bằng thạc sĩ.</p>
-      <div class="why">
-        <div>{{ icons.globe|safe }}<div><h3>Trao đổi quốc tế, bằng kép</h3><p>Trao đổi một học kỳ hoặc bằng kép tại trường đối tác, có hỗ trợ thủ tục visa và nhập cảnh.</p></div></div>
-        <div>{{ icons.award|safe }}<div><h3>Ba nguồn học bổng</h3><p>Học bổng của trung tâm, của trường đối tác và học bổng chính phủ nước đối tác.</p></div></div>
-        <div>{{ icons.people|safe }}<div><h3>Hội đồng tuyển sinh có cựu học viên</h3><p>Phỏng vấn cùng đại diện trung tâm, trường đối tác và cựu học viên, để hiểu đúng kỳ vọng của chương trình.</p></div></div>
-        <div>{{ icons.net|safe }}<div><h3>Mạng lưới cựu học viên</h3><p>Sau tốt nghiệp, bạn là thành viên mạng lưới cựu học viên của trung tâm.</p></div></div>
+      <div class="mosaic">
+        <img class="big" src="{{ url_for('static', filename='img/landing/group.jpg') }}" alt="Học viên thảo luận nhóm bên máy tính" loading="lazy">
+        <img class="small" src="{{ url_for('static', filename='img/landing/library.jpg') }}" alt="Học viên học tập tại thư viện" loading="lazy">
+        <div class="stat"><b>3</b><span>chương trình thạc sĩ, 2 đợt MBA mỗi năm</span></div>
+      </div>
+      <div class="why-copy">
+        <h2 class="h2" id="why-title">Vì sao học viên chọn trung tâm</h2>
+        <p class="intro">Những điều bạn nhận được ngoài tấm bằng thạc sĩ.</p>
+        <div class="reasons">
+          <div><div class="ic">{{ icons.globe|safe }}</div><h3>Trao đổi quốc tế, bằng kép</h3><p>Một học kỳ hoặc bằng kép tại trường đối tác, hỗ trợ visa.</p></div>
+          <div><div class="ic">{{ icons.award|safe }}</div><h3>Ba nguồn học bổng</h3><p>Của trung tâm, trường đối tác và chính phủ nước đối tác.</p></div>
+          <div><div class="ic">{{ icons.people|safe }}</div><h3>Hội đồng có cựu học viên</h3><p>Phỏng vấn cùng trung tâm, trường đối tác và cựu học viên.</p></div>
+          <div><div class="ic">{{ icons.net|safe }}</div><h3>Mạng lưới cựu học viên</h3><p>Kết nối với các khóa trước sau khi tốt nghiệp.</p></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="block" id="chuong-trinh">
+  <section class="programs-sec" id="chuong-trinh" aria-labelledby="programs-title">
     <div class="wrap">
-      <h2 class="t">Chọn chương trình phù hợp với công việc của bạn</h2>
-      <p class="intro">Chưa chắc chương trình nào hợp? Đăng ký và để chuyên viên tư vấn dựa trên kinh nghiệm của bạn.</p>
+      <div class="sec-head">
+        <h2 class="h2" id="programs-title">Chọn chương trình hợp với công việc của bạn</h2>
+        <p class="intro">Chưa chắc chương trình nào phù hợp? Đăng ký và để chuyên viên tư vấn dựa trên kinh nghiệm của bạn.</p>
+      </div>
       <div class="programs">
         <article class="program">
-          <div class="code">MBA</div>
-          <h3>Thạc sĩ Quản trị kinh doanh</h3>
-          <p>Liên kết trường đối tác quốc tế. Tuyển sinh hai đợt mỗi năm, tháng 5 và tháng 8.</p>
-          <div class="for"><b>Phù hợp với</b>Người đang làm quản lý hoặc chuẩn bị lên vị trí quản lý.</div>
-          <button class="linkbtn" type="button" data-program="MBA">Nhận tư vấn MBA</button>
+          <div class="program-head"><div class="code">MBA</div><h3>Thạc sĩ Quản trị kinh doanh</h3></div>
+          <div class="program-body">
+            <p>Liên kết trường đối tác quốc tế. Tuyển sinh hai đợt mỗi năm, tháng 5 và tháng 8.</p>
+            <div class="for"><b>Phù hợp với</b>Người đang làm quản lý hoặc chuẩn bị lên vị trí quản lý.</div>
+            <button class="linkbtn" type="button" data-program="MBA">Nhận tư vấn MBA</button>
+          </div>
         </article>
         <article class="program">
-          <div class="code">MMS</div>
-          <h3>Master in Marketing and Sales</h3>
-          <p>Thạc sĩ về Marketing và Bán hàng.</p>
-          <div class="for"><b>Phù hợp với</b>Người làm marketing, kinh doanh, phát triển thị trường.</div>
-          <button class="linkbtn" type="button" data-program="MMS">Nhận tư vấn MMS</button>
+          <div class="program-head sun"><div class="code">MMS</div><h3>Master in Marketing and Sales</h3></div>
+          <div class="program-body">
+            <p>Thạc sĩ về Marketing và Bán hàng.</p>
+            <div class="for"><b>Phù hợp với</b>Người làm marketing, kinh doanh, phát triển thị trường.</div>
+            <button class="linkbtn" type="button" data-program="MMS">Nhận tư vấn MMS</button>
+          </div>
         </article>
         <article class="program">
-          <div class="code">MSCM</div>
-          <h3>Master Supply Chain Management</h3>
-          <p>Thạc sĩ Quản lý chuỗi cung ứng.</p>
-          <div class="for"><b>Phù hợp với</b>Người làm logistics, mua hàng, sản xuất, vận hành.</div>
-          <button class="linkbtn" type="button" data-program="MSCM">Nhận tư vấn MSCM</button>
+          <div class="program-head navy"><div class="code">MSCM</div><h3>Master Supply Chain Management</h3></div>
+          <div class="program-body">
+            <p>Thạc sĩ Quản lý chuỗi cung ứng.</p>
+            <div class="for"><b>Phù hợp với</b>Người làm logistics, mua hàng, sản xuất, vận hành.</div>
+            <button class="linkbtn" type="button" data-program="MSCM">Nhận tư vấn MSCM</button>
+          </div>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="block" id="su-kien">
+  <section class="events" id="su-kien" aria-labelledby="events-title">
     <div class="wrap">
-      <h2 class="t">Đợt tuyển sinh và sự kiện sắp tới</h2>
-      <p class="intro">Gặp chuyên viên và cựu học viên tại Info Day, workshop trước khi quyết định.</p>
-      <div class="live">
-        <div>
-          <h3>Sự kiện sắp tới</h3>
-          <ul class="items">
-            {% for e in overview.events %}
-            <li>
-              <span class="t">{{ e.title }}</span>
-              <span class="d">{{ e.type }}{% if e.starts_at %}, {{ e.starts_at }}{% endif %}{% if e.location %}, {{ e.location }}{% endif %}</span>
-              <span class="k">{% for p in e.programs %}<span class="tag">{{ p }}</span>{% endfor %}
-                <button class="linkbtn" type="button" data-event="{{ e.id }}" data-event-title="{{ e.title }}, {{ e.starts_at }}">Đăng ký tham dự</button></span>
-            </li>
-            {% else %}
-            <li class="empty">Sự kiện mới sẽ được thông báo sớm. Đăng ký nhận tư vấn để được mời tham dự Info Day và workshop.</li>
-            {% endfor %}
-          </ul>
+      <div class="events-media">
+        <h2 class="h2" id="events-title">Gặp chúng tôi trước khi quyết định</h2>
+        <p class="intro">Info Day, workshop cùng chuyên viên và cựu học viên.</p>
+        <img src="{{ url_for('static', filename='img/landing/event.jpg') }}" alt="Buổi hội thảo tuyển sinh" loading="lazy">
+      </div>
+      <div class="events-list">
+        {% for e in overview.events %}
+        {% if loop.first %}
+        <div class="event-card">
+          {% if e.day %}<div class="event-date"><b>{{ e.day }}</b><span>{{ e.month }}</span></div>{% endif %}
+          <div class="event-info">
+            <div class="kicker">{{ e.type or "Sự kiện" }}{% if e.time %}, {{ e.time }}{% endif %}</div>
+            <h3>{{ e.title }}</h3>
+            {% if e.location %}<p>{{ e.location }}</p>{% endif %}
+            {% if e.programs %}<p class="tags">{% for p in e.programs %}<span class="tag">{{ p }}</span>{% endfor %}</p>{% endif %}
+            <button class="pill pill-blue" type="button" data-event="{{ e.id }}" data-event-title="{{ e.title }}, {{ e.starts_at }}">Đăng ký tham dự</button>
+          </div>
         </div>
-        <div>
-          <h3>Đợt đang nhận hồ sơ</h3>
-          <ul class="items">
-            {% for r in overview.rounds %}
-            <li>
-              <span class="t">{{ r.name }}</span>
-              <span class="d">{% if r.intake %}Khóa nhập học {{ r.intake }}. {% endif %}{% if r.closed_at %}Hạn nộp hồ sơ {{ r.closed_at }}.{% endif %}{% if r.exam_timeline %} Thi viết: {{ r.exam_timeline }}.{% endif %}{% if r.interview_timeline %} Phỏng vấn: {{ r.interview_timeline }}.{% endif %}</span>
-              {% if r.programs %}<span class="k">{% for p in r.programs %}<span class="tag">{{ p }}</span>{% endfor %}</span>{% endif %}
-            </li>
-            {% else %}
-            <li class="empty">Hiện chưa có đợt nào đang nhận hồ sơ. Đăng ký nhận tư vấn để được báo ngay khi mở đợt mới.</li>
-            {% endfor %}
-          </ul>
+        {% else %}
+        <div class="outline-card">
+          <div class="kicker">{{ e.type or "Sự kiện" }}{% if e.starts_at %}, {{ e.starts_at }}{% endif %}</div>
+          <h3>{{ e.title }}</h3>
+          {% if e.location %}<p>{{ e.location }}</p>{% endif %}
+          <button class="linkbtn" type="button" data-event="{{ e.id }}" data-event-title="{{ e.title }}, {{ e.starts_at }}">Đăng ký tham dự</button>
         </div>
+        {% endif %}
+        {% else %}
+        <div class="event-card">
+          <div class="event-info">
+            <div class="kicker">Sự kiện sắp tới</div>
+            <h3>Lịch Info Day và workshop sẽ được thông báo sớm</h3>
+            <p>Đăng ký nhận tư vấn để được mời tham dự khi có lịch.</p>
+            <a class="pill pill-blue" href="#dang-ky">Đăng ký nhận tư vấn</a>
+          </div>
+        </div>
+        {% endfor %}
+        {% for r in overview.rounds %}
+        <div class="outline-card">
+          <div class="kicker">Đợt đang nhận hồ sơ</div>
+          <h3>{{ r.name }}</h3>
+          <p>{% if r.intake %}Khóa nhập học {{ r.intake }}. {% endif %}{% if r.closed_at %}Hạn nộp hồ sơ {{ r.closed_at }}.{% endif %}{% if r.exam_timeline %} Thi viết: {{ r.exam_timeline }}.{% endif %}{% if r.interview_timeline %} Phỏng vấn: {{ r.interview_timeline }}.{% endif %}</p>
+          {% if r.programs %}<div class="tags">{% for p in r.programs %}<span class="tag">{{ p }}</span>{% endfor %}</div>{% endif %}
+        </div>
+        {% else %}
+        <div class="outline-card">
+          <div class="kicker">Đợt đang nhận hồ sơ</div>
+          <h3>Chưa mở đợt nhận hồ sơ</h3>
+          <p>Đăng ký nhận tư vấn để được báo ngay khi mở đợt mới.</p>
+        </div>
+        {% endfor %}
       </div>
     </div>
   </section>
 
-  <section class="block" id="quy-trinh">
+  <section class="process" id="quy-trinh" aria-labelledby="process-title">
     <div class="wrap">
-      <h2 class="t">Từ đăng ký tư vấn đến trúng tuyển</h2>
+      <h2 class="h2" id="process-title">Từ đăng ký tư vấn đến trúng tuyển</h2>
       <p class="intro">Bảy bước, có chuyên viên đồng hành từ bước đầu tiên.</p>
-      <ol class="steps">
-        <li class="here"><div><b>Tư vấn <span class="you">Bắt đầu từ đây</span></b><span class="s">Chuyên viên liên hệ, gửi thông tin chương trình, timeline và hướng dẫn hồ sơ.</span></div></li>
-        <li><div><b>Nộp hồ sơ</b><span class="s">Trung tâm kiểm tra, gửi checklist để bạn xác nhận và hướng dẫn bổ sung nếu thiếu.</span></div></li>
-        <li><div><b>Thi viết</b><span class="s">Ứng viên đủ điều kiện nhận phiếu báo thi có số báo danh.</span></div></li>
-        <li><div><b>Phỏng vấn</b><span class="s">Đăng ký lịch ngay sau ngày thi viết, phỏng vấn cùng hội đồng ba thành viên.</span></div></li>
-        <li><div><b>Kết quả đầu vào</b><span class="s">Điểm thi viết và điểm phỏng vấn được gửi tới từng ứng viên.</span></div></li>
-        <li><div><b>Xét duyệt trúng tuyển</b><span class="s">Hồ sơ, xác nhận văn bằng và chứng chỉ tiếng Anh được trường đại học chủ quản xét duyệt.</span></div></li>
-        <li><div><b>Thông báo trúng tuyển</b><span class="s">Nộp lệ phí và học phí theo hướng dẫn để trở thành học viên chính thức.</span></div></li>
-      </ol>
+      <div class="steps-scroll">
+        <ol class="steps">
+          {% for title, text in [
+            ("Tư vấn", "Chuyên viên liên hệ, gửi thông tin chương trình và hướng dẫn hồ sơ."),
+            ("Nộp hồ sơ", "Nhận checklist, bổ sung giấy tờ nếu còn thiếu."),
+            ("Thi viết", "Nhận phiếu báo thi có số báo danh."),
+            ("Phỏng vấn", "Hội đồng ba thành viên, có cựu học viên."),
+            ("Kết quả đầu vào", "Điểm thi viết và phỏng vấn gửi tới bạn."),
+            ("Xét duyệt", "Trường đại học chủ quản xét duyệt hồ sơ."),
+            ("Trúng tuyển", "Nộp học phí, trở thành học viên chính thức."),
+          ] %}
+          <li{% if loop.first %} class="here"{% endif %}>
+            <div class="line"><span class="n">{{ loop.index }}</span><i></i></div>
+            <b>{{ title }}</b>
+            <span>{{ text }}</span>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
     </div>
   </section>
 
   {% if overview.faqs %}
-  <section class="block" id="hoi-dap">
+  <section class="faq-sec" id="hoi-dap" aria-labelledby="faq-title">
     <div class="wrap">
-      <h2 class="t">Câu hỏi thường gặp</h2>
-      <p class="intro">Những câu người quan tâm hỏi nhiều nhất.</p>
+      <div class="faq-aside">
+        <h2 class="h2" id="faq-title">Câu hỏi thường gặp</h2>
+        <p class="intro">Câu khác? Hỏi trợ lý {{ config.name }} ở góc phải màn hình.</p>
+        <img src="{{ url_for('static', filename='img/landing/library.jpg') }}" alt="Học viên trao đổi bài" loading="lazy">
+      </div>
       <div class="faq">
         {% for f in overview.faqs %}
-        <details{% if loop.first %} open{% endif %}><summary>{{ f.question }}</summary><p>{{ f.answer }}</p></details>
+        <details{% if loop.first %} open{% endif %}><summary>{{ f.question }}{{ icons.chevron|safe }}</summary><p>{{ f.answer }}</p></details>
         {% endfor %}
       </div>
-      <p class="faq-note">Câu hỏi khác? Trợ lý {{ config.name }} ở góc phải màn hình trả lời ngay.</p>
     </div>
   </section>
   {% endif %}
 
-  <section class="final">
+  <section class="final" aria-labelledby="final-title">
     <div class="wrap">
-      <div>
-        <h2>Bắt đầu lộ trình thạc sĩ của bạn</h2>
-        <p>Đăng ký trong giai đoạn tư vấn để có đủ thời gian chuẩn bị hồ sơ và chứng chỉ tiếng Anh cho đợt tuyển sinh tháng {{ now.next_mba }}.</p>
+      <div class="copy">
+        <h2 id="final-title">Bắt đầu lộ trình thạc sĩ của bạn</h2>
+        <p>Đăng ký trong giai đoạn tư vấn để kịp chuẩn bị cho đợt tuyển sinh tháng {{ now.next_mba }}.</p>
       </div>
-      <a class="pill" href="#dang-ky">Đăng ký nhận tư vấn</a>
+      <a class="pill pill-sun" href="#dang-ky">Đăng ký nhận tư vấn</a>
     </div>
   </section>
 </main>
 
 <footer class="foot">
-  <div class="wrap">
-    <span>{{ config.site_name }}{% if config.hotline %}. Hotline {{ config.hotline }}{% endif %}{% if config.contact_email %}. Email <a href="mailto:{{ config.contact_email }}">{{ config.contact_email }}</a>{% endif %}</span>
-    <span>Học viên và cán bộ: <a href="{{ url_for('login') }}">đăng nhập SmartUni</a></span>
+  <div class="wrap foot-main">
+    <div class="foot-brand">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#08243b" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v5c3.5 2.5 8.5 2.5 12 0v-5"/><path d="M22 9v6" stroke-linecap="round"/></svg></span>
+        <span class="brand-name">{{ config.site_name }}</span>
+      </a>
+      <p>Chương trình thạc sĩ MBA, MMS, MSCM liên kết trường đối tác quốc tế, có chuyên viên tuyển sinh đồng hành từ bước tư vấn đầu tiên.</p>
+    </div>
+    <div>
+      <h3>Chương trình</h3>
+      <ul>
+        <li><button type="button" data-program="MBA">Thạc sĩ Quản trị kinh doanh</button></li>
+        <li><button type="button" data-program="MMS">Master in Marketing and Sales</button></li>
+        <li><button type="button" data-program="MSCM">Master Supply Chain Management</button></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Tìm hiểu</h3>
+      <ul>
+        <li><a href="#lich-tuyen-sinh">Lịch tuyển sinh</a></li>
+        <li><a href="#su-kien">Sự kiện</a></li>
+        <li><a href="#quy-trinh">Quy trình xét tuyển</a></li>
+        {% if overview.faqs %}<li><a href="#hoi-dap">Câu hỏi thường gặp</a></li>{% endif %}
+      </ul>
+    </div>
+    <div>
+      <h3>Liên hệ</h3>
+      <ul>
+        {% if config.hotline %}<li>Hotline <a href="tel:{{ config.hotline|replace(' ', '') }}">{{ config.hotline }}</a></li>{% endif %}
+        {% if config.contact_email %}<li><a href="mailto:{{ config.contact_email }}">{{ config.contact_email }}</a></li>{% endif %}
+        <li><a href="#dang-ky">Đăng ký nhận tư vấn</a></li>
+        <li>Hỏi nhanh trợ lý {{ config.name }} ở góc phải màn hình</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div class="wrap">
+      <span>{{ config.site_name }}</span>
+      <span>Học viên và cán bộ: <a href="{{ url_for('login') }}">đăng nhập SmartUni</a></span>
+    </div>
   </div>
 </footer>
 
@@ -457,6 +620,11 @@ section.block .intro { color: var(--muted); margin: 0 0 40px; max-width: 60ch; f
   var errEl = document.getElementById("form-error");
   var btn = document.getElementById("submit-btn");
   var chip = document.getElementById("event-chip");
+  var header = document.getElementById("site-header");
+
+  function syncHeader() { header.classList.toggle("solid", window.scrollY > 24); }
+  syncHeader();
+  window.addEventListener("scroll", syncHeader, { passive: true });
 
   function focusForm() {
     document.getElementById("dang-ky").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });

@@ -79,13 +79,31 @@ def admission_cycle(today: date) -> tuple[list[dict], dict]:
     return months, now
 
 
+def _stroke_icon(path: str, color: str = "#00528c", width: str = "2") -> str:
+    return (
+        f'<svg viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="{width}" '
+        f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{path}"/></svg>'
+    )
+
+
 ICONS = {
-    "check": '<svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="#dceaf6"/><path d="M8.5 14.5l3.6 3.6 7.4-8" fill="none" stroke="#00528c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    "globe": '<svg viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#dceaf6"/><g fill="none" stroke="#00528c" stroke-width="2"><circle cx="22" cy="22" r="10"/><path d="M12 22h20M22 12c3.5 3.2 3.5 16.8 0 20M22 12c-3.5 3.2-3.5 16.8 0 20"/></g></svg>',
-    "award": '<svg viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#fff4cc"/><g fill="none" stroke="#0b2a45" stroke-width="2" stroke-linejoin="round"><circle cx="22" cy="19" r="7"/><path d="M17.5 24.5 15 33l7-3 7 3-2.5-8.5"/></g></svg>',
-    "people": '<svg viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#dceaf6"/><g fill="none" stroke="#00528c" stroke-width="2" stroke-linecap="round"><circle cx="17" cy="18" r="4"/><circle cx="28" cy="18" r="4"/><path d="M10 31c0-4 3-7 7-7s7 3 7 7M21 31c0-4 3-7 7-7s7 3 7 7"/></g></svg>',
-    "net": '<svg viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#dceaf6"/><g fill="none" stroke="#00528c" stroke-width="2"><circle cx="22" cy="14" r="3"/><circle cx="13" cy="29" r="3"/><circle cx="31" cy="29" r="3"/><path d="M20.5 16.7 14.5 26.3M23.5 16.7l6 9.6M16 29h12"/></g></svg>',
+    "check": _stroke_icon("M5 12.5l4.5 4.5L19 7.5", "#f2b705", "3"),
+    "globe": _stroke_icon("M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"),
+    "award": _stroke_icon("M12 3a6 6 0 1 0 0 12a6 6 0 1 0 0-12zM8.5 13.5 7 21l5-2.5 5 2.5-1.5-7.5"),
+    "people": _stroke_icon("M9 11a3 3 0 1 0 0-6a3 3 0 0 0 0 6zM17 11a3 3 0 1 0 0-6M3 20c0-3 2.7-5 6-5s6 2 6 5M15 15c3.3 0 6 2 6 5"),
+    "net": _stroke_icon("M12 3a2.5 2.5 0 1 0 0 5a2.5 2.5 0 0 0 0-5zM5 16a2.5 2.5 0 1 0 0 5a2.5 2.5 0 0 0 0-5zM19 16a2.5 2.5 0 1 0 0 5a2.5 2.5 0 0 0 0-5zM11 8l-5 8M13 8l5 8M7.5 18.5h9"),
+    "chevron": _stroke_icon("M6 9l6 6 6-6", "#00528c", "2.4"),
 }
+
+
+def event_date_parts(value: str) -> dict:
+    parts = (value or "").split()
+    day_part = parts[-1] if parts else ""
+    time_part = parts[0] if len(parts) > 1 else ""
+    bits = day_part.split("/")
+    if len(bits) != 3:
+        return {"day": "", "month": "", "time": time_part}
+    return {"day": bits[0], "month": f"Th {int(bits[1])}", "time": time_part}
 
 
 def render_landing(api_base: str):
@@ -96,6 +114,8 @@ def render_landing(api_base: str):
             overview = {**overview, **resp.json()}
     except requests.RequestException:
         pass
+    for event in overview.get("events") or []:
+        event.update(event_date_parts(event.get("starts_at", "")))
     months, now = admission_cycle(date.today())
     return render_template(
         "public/landing.html",

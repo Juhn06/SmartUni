@@ -104,7 +104,7 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
         ") ORDER BY a.id",
         (prog, prog),
     ).fetchall()
-    enrolled = 0
+    enrolled = accounts = notices = 0
     cs_cols = {r[1] for r in cur.execute("PRAGMA table_info(class_students)").fetchall()}
     for app_id, full_name, email, mba_code, cccd, phone, person_id in apps:
         seq = cur.execute(
@@ -154,11 +154,12 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
         # Portal account for the student (login from email local-part or student_code)
         try:
             from e2e_pipeline import provision_student_account
+            from student_accounts import queue_credentials, temp_password
 
             login = (student_code or "").strip() or (
                 (email or "").split("@")[0] if email else f"hv{sid}"
             )
-            provision_student_account(
+            account = provision_student_account(
                 conn,
                 login=login,
                 display_name=f"{full_name} — Học viên {prog}",
@@ -166,7 +167,17 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
                 program_code=prog,
                 application_id=app_id,
                 class_student_id=sid,
+                password=temp_password(),
+                force_change=True,
+                reset_password=False,
             )
+            if account["created"]:
+                accounts += 1
+                if queue_credentials(
+                    conn, email=email or "", full_name=full_name, login=login,
+                    password=account["password"], program_code=prog,
+                ):
+                    notices += 1
         except Exception:
             pass
     conn.commit()
@@ -181,7 +192,9 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
         "class_name": meta[3],
         "program_code": prog,
         "enrolled": enrolled,
-        "handoff": "Hồ sơ official vào lớp trên cùng một người. Mã học viên giữ theo chương trình. Có sổ thu và tài khoản học viên.",
+        "accounts_created": accounts,
+        "credential_emails_queued": notices,
+        "handoff": "Hồ sơ official vào lớp trên cùng một người. Mã học viên giữ theo chương trình. Có sổ thu và tài khoản học viên (mật khẩu tạm, bắt đổi ở lần đăng nhập đầu, email báo tài khoản đã xếp hàng gửi).",
     }
 
 

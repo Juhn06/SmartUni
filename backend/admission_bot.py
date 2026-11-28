@@ -38,7 +38,7 @@ PROGRAM_KEYWORDS = {
 
 CCCD_RE = re.compile(r"(?<!\d)\d{12}(?!\d)")
 PERSONAL_LIST_LIMIT = 15
-SEED_VERSION = "2"
+SEED_VERSION = "4"
 
 REQUEST_STATUSES = {
     "new": "Mới, chờ liên hệ",
@@ -106,6 +106,7 @@ STOPWORDS = set(
 )
 
 NO_INFO_MARK = "[CHUA_CO_THONG_TIN]"
+NO_INFO_RE = re.compile(r"\[?\s*CHUA_CO_THONG_TIN\s*\]?", re.IGNORECASE)
 EN_HINTS = {"what", "how", "when", "where", "fee", "fees", "tuition", "requirement", "requirements", "deadline", "program", "programme", "apply", "the"}
 
 PHONE_RE = re.compile(r"(?<![\d+])(?:\+?84|0)(?:[\s.\-]?\d){9}(?!\d)")
@@ -326,6 +327,32 @@ def ensure_bot_tables(cur) -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS idx_bot_msg_conv ON bot_messages(conversation_id, id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_bot_conv_last ON bot_conversations(last_message_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_bot_gaps_status ON bot_gaps(status)")
+    for table in ("bot_kb_docs", "bot_faqs"):
+        try:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN audience TEXT DEFAULT 'public'")
+        except Exception:
+            pass
+    try:
+        cur.execute("ALTER TABLE bot_faqs ADD COLUMN variants TEXT DEFAULT ''")
+    except Exception:
+        pass
+    for column in (
+        "review_status TEXT DEFAULT 'approved'",
+        "effective_from TEXT DEFAULT ''",
+        "effective_to TEXT DEFAULT ''",
+        "reviewed_by TEXT",
+        "reviewed_at TEXT",
+        "review_note TEXT",
+    ):
+        try:
+            cur.execute(f"ALTER TABLE bot_kb_docs ADD COLUMN {column}")
+        except Exception:
+            pass
+    for column in ("review_status TEXT DEFAULT 'approved'", "reviewed_by TEXT", "reviewed_at TEXT", "review_note TEXT"):
+        try:
+            cur.execute(f"ALTER TABLE bot_faqs ADD COLUMN {column}")
+        except Exception:
+            pass
 
 
 def get_settings(conn) -> dict:
@@ -480,6 +507,11 @@ def extract_text_from_file(path: str, filename: str = "") -> str:
 
 
 SUPPORTED_EXTS = (".pdf", ".docx", ".xlsx", ".xlsm", ".txt", ".md", ".csv")
+AUDIENCES = ("public", "student")
+
+
+def clean_audience(value) -> str:
+    return value if value in AUDIENCES else "public"
 
 
 def redact_personal(text: str) -> tuple[str, int]:
@@ -509,16 +541,42 @@ def _clean_content(content: str) -> tuple[str, int]:
     return cleaned, hidden
 
 
-def add_document(conn, *, title: str, content: str, source_type: str = "text", program_code: str = "", file_name: str = "", created_by: str = "") -> dict:
+REVIEW_STATUSES = ("pending", "approved", "rejected")
+LIVE_DOC_SQL = (
+    "d.status = 'active' AND IFNULL(d.review_status, 'approved') = 'approved' "
+    "AND (IFNULL(d.effective_from, '') = '' OR d.effective_from <= date('now', 'localtime')) "
+    "AND (IFNULL(d.effective_to, '') = '' OR d.effective_to >= date('now', 'localtime'))"
+)
+
+
+def clean_day(value) -> str:
+    text = str(value or "").strip()[:10]
+    if not text:
+        return ""
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date().isoformat()
+    except ValueError:
+        raise ValueError("Ngày hiệu lực phải có dạng YYYY-MM-DD.")
+
+
+def add_document(conn, *, title: str, content: str, source_type: str = "text", program_code: str = "", file_name: str = "", created_by: str = "", audience: str = "public", review_status: str = "approved", effective_from: str = "", effective_to: str = "") -> dict:
     title = (title or "").strip() or (file_name or "Tài liệu")
     content, hidden = _clean_content(content)
     chunks = chunk_text(content)
+    start, end = clean_day(effective_from), clean_day(effective_to)
+    if start and end and end < start:
+        raise ValueError("Ngày hết hiệu lực phải sau ngày bắt đầu hiệu lực.")
+    review = review_status if review_status in REVIEW_STATUSES else "pending"
     cur = conn.cursor()
     now = _now()
     cur.execute(
-        "INSERT INTO bot_kb_docs (title, source_type, program_code, file_name, content, char_count, chunk_count, status, created_by, created_at, updated_at) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        (title, source_type, (program_code or "").upper(), file_name, content, len(content), len(chunks), "active", created_by, now, now),
+        "INSERT INTO bot_kb_docs (title, source_type, program_code, file_name, content, char_count, chunk_count, status, created_by, created_at, updated_at, audience, "
+        "review_status, effective_from, effective_to, reviewed_by, reviewed_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            title, source_type, (program_code or "").upper(), file_name, content, len(content), len(chunks), "active", created_by, now, now,
+            clean_audience(audience), review, start, end, created_by if review == "approved" else None, now if review == "approved" else None,
+        ),
     )
     doc_id = cur.lastrowid
     cur.executemany(
@@ -527,10 +585,10 @@ def add_document(conn, *, title: str, content: str, source_type: str = "text", p
     )
     conn.commit()
     _bump_kb_version(conn)
-    return {"id": doc_id, "title": title, "chunk_count": len(chunks), "char_count": len(content), "hidden_personal": hidden}
+    return {"id": doc_id, "title": title, "chunk_count": len(chunks), "char_count": len(content), "hidden_personal": hidden, "review_status": review}
 
 
-def import_file(conn, path: str, *, title: str = "", program_code: str = "", created_by: str = "", file_name: str = "") -> dict:
+def import_file(conn, path: str, *, title: str = "", program_code: str = "", created_by: str = "", file_name: str = "", audience: str = "public", **review) -> dict:
     name = file_name or Path(path).name
     text = extract_text_from_file(path, name)
     if not title and Path(name).suffix.lower() == ".md":
@@ -546,14 +604,22 @@ def import_file(conn, path: str, *, title: str = "", program_code: str = "", cre
         program_code=program_code or detect_program(name),
         file_name=name,
         created_by=created_by,
+        audience=audience,
+        **review,
     )
 
 
-def import_folder(conn, folder: str, created_by: str = "import") -> dict:
+def import_folder(conn, folder: str, created_by: str = "import", audience: str = "public") -> dict:
     root = Path(folder)
     if not root.is_dir():
         raise ValueError(f"Không tìm thấy thư mục {folder}")
-    existing = {r[0] for r in conn.execute("SELECT file_name FROM bot_kb_docs WHERE file_name IS NOT NULL").fetchall()}
+    existing = {
+        r[0]
+        for r in conn.execute(
+            "SELECT file_name FROM bot_kb_docs WHERE file_name IS NOT NULL AND IFNULL(audience, 'public') = ?",
+            (clean_audience(audience),),
+        ).fetchall()
+    }
     done, skipped, failed = [], [], []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in SUPPORTED_EXTS or path.name.startswith("~$"):
@@ -563,7 +629,7 @@ def import_folder(conn, folder: str, created_by: str = "import") -> dict:
             skipped.append(rel)
             continue
         try:
-            done.append(import_file(conn, str(path), created_by=created_by, file_name=rel))
+            done.append(import_file(conn, str(path), created_by=created_by, file_name=rel, audience=audience))
         except Exception as e:
             failed.append({"file": rel, "error": str(e)})
     return {"imported": done, "skipped": skipped, "failed": failed}
@@ -578,12 +644,16 @@ def bootstrap(conn, data_dir) -> dict:
     seed = Path(data_dir) / "admission_kb"
     if not seed.is_dir() or get_setting(conn, "botkb.seed_version", "") == SEED_VERSION:
         return out
-    seed_doc_ids = [r[0] for r in conn.execute("SELECT id FROM bot_kb_docs WHERE created_by = 'seed'").fetchall()]
+    seed_doc_ids = [
+        r[0]
+        for r in conn.execute("SELECT id FROM bot_kb_docs WHERE created_by = 'seed' AND IFNULL(audience, 'public') = 'public'").fetchall()
+    ]
     for doc_id in seed_doc_ids:
         conn.execute("DELETE FROM bot_kb_chunks WHERE doc_id = ?", (doc_id,))
         conn.execute("DELETE FROM bot_kb_docs WHERE id = ?", (doc_id,))
-    conn.execute("UPDATE bot_gaps SET faq_id = NULL WHERE faq_id IN (SELECT id FROM bot_faqs WHERE created_by = 'seed')")
-    conn.execute("DELETE FROM bot_faqs WHERE created_by = 'seed'")
+    seed_faq_filter = "created_by = 'seed' AND IFNULL(audience, 'public') = 'public'"
+    conn.execute(f"UPDATE bot_gaps SET faq_id = NULL WHERE faq_id IN (SELECT id FROM bot_faqs WHERE {seed_faq_filter})")
+    conn.execute(f"DELETE FROM bot_faqs WHERE {seed_faq_filter}")
     conn.commit()
     out["docs"] = len(import_folder(conn, str(seed), created_by="seed")["imported"])
     faq_file = seed / "faq.json"
@@ -595,10 +665,13 @@ def bootstrap(conn, data_dir) -> dict:
     return out
 
 
-def list_documents(conn) -> list[dict]:
+def list_documents(conn, audience: str = "public") -> list[dict]:
     rows = conn.execute(
-        "SELECT id, title, source_type, program_code, file_name, char_count, chunk_count, status, created_by, created_at, updated_at "
-        "FROM bot_kb_docs ORDER BY id DESC"
+        "SELECT id, title, source_type, program_code, file_name, char_count, chunk_count, status, created_by, created_at, updated_at, audience, "
+        "IFNULL(review_status, 'approved') AS review_status, IFNULL(effective_from, '') AS effective_from, IFNULL(effective_to, '') AS effective_to, "
+        "reviewed_by, reviewed_at, review_note "
+        "FROM bot_kb_docs WHERE IFNULL(audience, 'public') = ? ORDER BY id DESC",
+        (clean_audience(audience),),
     ).fetchall()
     return [dict(r) for r in rows]
 
@@ -631,10 +704,25 @@ def update_document(conn, doc_id: int, data: dict) -> dict:
             "UPDATE bot_kb_docs SET content = ?, char_count = ?, chunk_count = ? WHERE id = ?",
             (content.strip(), len(content.strip()), len(chunks), doc_id),
         )
+    start = clean_day(data["effective_from"]) if "effective_from" in data else (doc.get("effective_from") or "")
+    end = clean_day(data["effective_to"]) if "effective_to" in data else (doc.get("effective_to") or "")
+    if start and end and end < start:
+        raise ValueError("Ngày hết hiệu lực phải sau ngày bắt đầu hiệu lực.")
     cur.execute(
-        "UPDATE bot_kb_docs SET title = ?, program_code = ?, status = ?, updated_at = ? WHERE id = ?",
-        (title.strip(), program.upper(), status, _now(), doc_id),
+        "UPDATE bot_kb_docs SET title = ?, program_code = ?, status = ?, effective_from = ?, effective_to = ?, updated_at = ? WHERE id = ?",
+        (title.strip(), program.upper(), status, start, end, _now(), doc_id),
     )
+    if data.get("review_status") in REVIEW_STATUSES:
+        cur.execute(
+            "UPDATE bot_kb_docs SET review_status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ? WHERE id = ?",
+            (
+                data["review_status"],
+                data.get("reviewed_by") if data["review_status"] != "pending" else None,
+                _now() if data["review_status"] != "pending" else None,
+                (data.get("review_note") or "").strip() or None,
+                doc_id,
+            ),
+        )
     conn.commit()
     _bump_kb_version(conn)
     return get_document(conn, doc_id)
@@ -647,8 +735,11 @@ def delete_document(conn, doc_id: int) -> None:
     _bump_kb_version(conn)
 
 
-def list_faqs(conn) -> list[dict]:
-    rows = conn.execute("SELECT * FROM bot_faqs ORDER BY status, hits DESC, id DESC").fetchall()
+def list_faqs(conn, audience: str = "public") -> list[dict]:
+    rows = conn.execute(
+        "SELECT * FROM bot_faqs WHERE IFNULL(audience, 'public') = ? ORDER BY status, hits DESC, id DESC",
+        (clean_audience(audience),),
+    ).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -659,21 +750,32 @@ def save_faq(conn, data: dict, faq_id: int | None = None, actor: str = "") -> di
         raise ValueError("Cần câu hỏi và câu trả lời.")
     program = (data.get("program_code") or detect_program(question)).upper()
     status = data.get("status") if data.get("status") in ("active", "inactive") else "active"
+    raw_variants = data.get("variants") or []
+    if isinstance(raw_variants, str):
+        raw_variants = re.split(r"[\n|]", raw_variants)
+    variants = "\n".join(dict.fromkeys(v.strip() for v in raw_variants if v and v.strip() and v.strip() != question))
+    review = data.get("review_status") if data.get("review_status") in REVIEW_STATUSES else None
     now = _now()
     cur = conn.cursor()
     if faq_id:
         cur.execute(
-            "UPDATE bot_faqs SET question = ?, answer = ?, program_code = ?, status = ?, updated_at = ? WHERE id = ?",
-            (question, answer, program, status, now, faq_id),
+            "UPDATE bot_faqs SET question = ?, answer = ?, program_code = ?, status = ?, variants = ?, updated_at = ? WHERE id = ?",
+            (question, answer, program, status, variants, now, faq_id),
         )
         if cur.rowcount == 0:
             raise ValueError("Không tìm thấy FAQ.")
     else:
         cur.execute(
-            "INSERT INTO bot_faqs (question, answer, program_code, status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
-            (question, answer, program, status, actor, now, now),
+            "INSERT INTO bot_faqs (question, answer, program_code, status, created_by, created_at, updated_at, audience, variants) VALUES (?,?,?,?,?,?,?,?,?)",
+            (question, answer, program, status, actor, now, now, clean_audience(data.get("audience")), variants),
         )
         faq_id = cur.lastrowid
+    if review:
+        done = review != "pending"
+        cur.execute(
+            "UPDATE bot_faqs SET review_status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ? WHERE id = ?",
+            (review, actor if done else None, now if done else None, (data.get("review_note") or "").strip() or None, faq_id),
+        )
     conn.commit()
     _bump_kb_version(conn)
     return dict(conn.execute("SELECT * FROM bot_faqs WHERE id = ?", (faq_id,)).fetchone())
@@ -808,7 +910,8 @@ def public_overview(conn) -> dict:
         faqs = [
             {"question": f["question"], "answer": f["answer"], "program": f["program_code"] or ""}
             for f in conn.execute(
-                "SELECT question, answer, program_code FROM bot_faqs WHERE status = 'active' ORDER BY hits DESC, id LIMIT 6"
+                "SELECT question, answer, program_code FROM bot_faqs WHERE status = 'active' AND IFNULL(audience, 'public') = 'public' "
+                "ORDER BY hits DESC, id LIMIT 6"
             ).fetchall()
         ]
     except Exception:
@@ -860,7 +963,7 @@ class Bm25Index:
                 continue
             unit = self.units[i]
             if unit["kind"] == "faq":
-                score *= 1.4 if _faq_match(unit.get("question") or "", query, self.idf) >= 0.4 else 0.6
+                score *= 1.4 if _faq_match(_faq_text(unit), query, self.idf) >= 0.4 else 0.6
             elif unit["kind"] == "live":
                 score *= 1.6 if live_focus else 0.5
             if program and unit.get("program") and unit["program"] != program:
@@ -875,11 +978,15 @@ class Bm25Index:
         return results[:k]
 
 
-def _load_units(conn) -> list[dict]:
+def _load_units(conn, audience: str | None = None) -> list[dict]:
     units = []
+    doc_filter, params = "", []
+    if audience:
+        doc_filter, params = " AND IFNULL(d.audience, 'public') = ?", [clean_audience(audience)]
     rows = conn.execute(
         "SELECT c.id, c.doc_id, c.idx, c.text, d.title, d.program_code FROM bot_kb_chunks c "
-        "JOIN bot_kb_docs d ON d.id = c.doc_id WHERE d.status = 'active' ORDER BY c.doc_id, c.idx"
+        f"JOIN bot_kb_docs d ON d.id = c.doc_id WHERE {LIVE_DOC_SQL}{doc_filter} ORDER BY c.doc_id, c.idx",
+        params,
     ).fetchall()
     for r in rows:
         units.append({
@@ -891,28 +998,39 @@ def _load_units(conn) -> list[dict]:
             "text": r["text"],
             "program": (r["program_code"] or "").upper(),
         })
-    for r in conn.execute("SELECT id, question, answer, program_code FROM bot_faqs WHERE status = 'active'").fetchall():
+    faq_filter = " AND IFNULL(audience, 'public') = ?" if audience else ""
+    for r in conn.execute(
+        f"SELECT id, question, answer, program_code, IFNULL(variants, '') AS variants FROM bot_faqs "
+        f"WHERE status = 'active' AND IFNULL(review_status, 'approved') = 'approved'{faq_filter}",
+        params,
+    ).fetchall():
+        variants = [v for v in r["variants"].split("\n") if v.strip()]
         units.append({
             "key": f"f{r['id']}",
             "kind": "faq",
             "ref_id": r["id"],
             "title": r["question"],
             "question": r["question"],
+            "match_question": "\n".join([r["question"], *variants]),
             "text": r["answer"],
-            "search_text": f"{r['question']} {r['question']} {r['answer']}",
+            "search_text": " ".join([r["question"], r["question"], *variants, r["answer"]]),
             "program": (r["program_code"] or "").upper(),
         })
     return units
 
 
-def get_index(conn) -> Bm25Index:
-    live = live_units(conn)
-    key = (_kb_version(conn), tuple(u["text"] for u in live))
+def get_index(conn, audience: str = "public") -> Bm25Index:
+    audience = clean_audience(audience)
+    live = live_units(conn) if audience == "public" else []
+    key = (_kb_version(conn), date.today().isoformat(), tuple(u["text"] for u in live))
     with _index_lock:
-        if _index_cache["key"] != key:
-            _index_cache["index"] = Bm25Index(_load_units(conn) + live)
-            _index_cache["key"] = key
-        return _index_cache["index"]
+        slot = _index_cache.setdefault(audience, {"key": None, "index": None})
+        if slot["key"] != key:
+            slot["index"] = Bm25Index(_load_units(conn, audience) + live)
+            slot["key"] = key
+        if audience == "public":
+            _index_cache["index"] = slot["index"]
+        return slot["index"]
 
 
 def _vector_enabled() -> bool:
@@ -1006,9 +1124,39 @@ SYNONYMS = {
 }
 
 
+EN_QUERY_TERMS = (
+    (r"how long|duration|how many (years|months)", "thoi gian dao tao bao lau"),
+    (r"programs?|programmes?|courses? offered|master'?s? degrees?", "chuong trinh thac si"),
+    (r"requirements?|eligib\w*|qualif\w*|criteria", "dieu kien dau vao"),
+    (r"english|ielts|toeic|toefl", "tieng anh chung chi"),
+    (r"tuition|fees?|cost|price", "hoc phi"),
+    (r"scholarships?|financial aid", "hoc bong"),
+    (r"documents?|application|apply|paperwork", "ho so du tuyen"),
+    (r"interviews?", "phong van"),
+    (r"exams?|tests?|entrance", "thi viet"),
+    (r"online|remote", "truc tuyen"),
+    (r"schedule|timetable|weekends?|evenings?|working professionals?", "lich hoc buoi toi cuoi tuan"),
+    (r"degree|diploma|certificate awarded|graduat\w*", "van bang tot nghiep"),
+    (r"intakes?|admission rounds?|when .* (apply|start)", "dot tuyen sinh"),
+    (r"exchange|abroad", "trao doi"),
+    (r"language of instruction|taught in", "ngon ngu giang day"),
+)
+
+
+def english_query(question: str) -> str:
+    low = (question or "").lower()
+    mapped = [vi for pattern, vi in EN_QUERY_TERMS if re.search(rf"\b(?:{pattern})\b", low)]
+    codes = [code.lower() for code in PROGRAM_KEYWORDS if re.search(rf"\b{code.lower()}\b", low)]
+    return " ".join(mapped + codes)
+
+
 def query_variants(question: str) -> list[str]:
     folded = fold(question)
     variants = [question]
+    if is_english(question):
+        translated = english_query(question)
+        if translated:
+            variants.append(translated)
     for phrase, alternatives in SYNONYMS.items():
         if _has_phrase(folded, phrase):
             for alt in alternatives:
@@ -1026,8 +1174,8 @@ def _lexical_search(index: "Bm25Index", question: str, program: str, live_focus:
     return sorted(best.values(), key=lambda h: h["score"], reverse=True)[:12]
 
 
-def retrieve(conn, question: str, program: str = "", k: int = 6, intents: list[str] | None = None) -> list[dict]:
-    index = get_index(conn)
+def retrieve(conn, question: str, program: str = "", k: int = 6, intents: list[str] | None = None, audience: str = "public") -> list[dict]:
+    index = get_index(conn, audience)
     live_focus = bool(set(intents if intents is not None else detect_intents(question)) & {"deadline", "event"})
     lexical = _lexical_search(index, question, program, live_focus)
     vector_keys = _vector_search(question, k=10)
@@ -1051,6 +1199,9 @@ def retrieve(conn, question: str, program: str = "", k: int = 6, intents: list[s
         out.append(item)
         if len(out) >= k:
             break
+    top = lexical[0] if lexical else None
+    if top and top.get("coverage", 0) >= 0.5 and all(o["key"] != top["key"] for o in out):
+        out = [{**top, "fused": 0.0}] + out[: k - 1]
     return out
 
 
@@ -1081,11 +1232,17 @@ def _confidence(hits: list[dict], question: str) -> float:
     top = hits[0]
     base = top.get("coverage", 0.0)
     if top["kind"] == "faq":
-        base = max(base, _faq_match(top.get("question") or "", question))
+        base = max(base, _faq_match(_faq_text(top), question))
     return round(min(1.0, base), 3)
 
 
+def _faq_text(unit: dict) -> str:
+    return unit.get("match_question") or unit.get("question") or ""
+
+
 def _faq_match(faq_question: str, question: str, idf: dict | None = None) -> float:
+    if "\n" in faq_question:
+        return max(_faq_match(q, question, idf) for q in faq_question.split("\n") if q.strip())
     a = set(_words(faq_question))
     b = set(_words(question))
     if not a or not b:
@@ -1130,14 +1287,14 @@ def _line_score(line: str, q_words: set[str], q_bigrams: set[str]) -> float:
     return len(words & q_words) + 2.0 * len(bigrams & q_bigrams)
 
 
-def answer_offline(question: str, hits: list[dict], intents: list[str]) -> dict:
+def answer_offline(question: str, hits: list[dict], intents: list[str], prefix: str = "Theo thông tin tuyển sinh hiện có:") -> dict:
     if not hits:
         return {"answered": False}
     q_toks = [t for variant in query_variants(question) for t in tokens(variant)]
     q_words = {t for t in q_toks if "_" not in t}
     q_bigrams = {t for t in q_toks if "_" in t}
     top = hits[0]
-    if top["kind"] == "faq" and _faq_match(top.get("question") or "", question) >= 0.4:
+    if top["kind"] == "faq" and _faq_match(_faq_text(top), question) >= 0.4:
         return {"answered": True, "text": top["text"], "used": [top], "mode": "faq"}
     live_focus = bool(set(intents) & {"deadline", "event"})
     if top.get("coverage", 0) < 0.5 and not (top["kind"] == "live" and live_focus):
@@ -1146,7 +1303,7 @@ def answer_offline(question: str, hits: list[dict], intents: list[str]) -> dict:
     for rank, unit in enumerate(hits[:4]):
         if unit is not top and unit.get("coverage", 0) < 0.34:
             continue
-        if unit["kind"] == "faq" and _faq_match(unit.get("question") or "", question) < 0.4:
+        if unit["kind"] == "faq" and _faq_match(_faq_text(unit), question) < 0.4:
             continue
         if unit["kind"] == "live" and not live_focus:
             continue
@@ -1181,19 +1338,22 @@ def answer_offline(question: str, hits: list[dict], intents: list[str]) -> dict:
     if "fee" in intents and not any(re.search(r"\d", line) for _r, _p, line in picked):
         return {"answered": False}
     body = "\n".join(f"- {line}" for _r, _p, line in picked)
-    return {"answered": True, "text": f"Theo thông tin tuyển sinh hiện có:\n{body}", "used": used, "mode": "extractive"}
+    return {"answered": True, "text": f"{prefix}\n{body}", "used": used, "mode": "extractive"}
 
 
-def _llm_answer(settings: dict, question: str, hits: list[dict], history: list[dict], english: bool) -> dict:
+def _llm_answer(settings: dict, question: str, hits: list[dict], history: list[dict], english: bool, persona: str = "") -> dict:
     from rag_service import _get_client
 
+    hits = hits[: max(1, int(os.environ.get("BOT_LLM_HITS") or 6))]
+    history_limit = max(0, int(os.environ.get("BOT_LLM_HISTORY") or 6))
     context_lines = []
     for i, unit in enumerate(hits, 1):
         label = "Câu hỏi thường gặp: " + (unit.get("question") or "") if unit["kind"] == "faq" else unit["title"]
-        context_lines.append(f"[{i}] {label}\n{unit['text']}")
+        context_lines.append(f"[{i}] {label}\n{unit['text'][:700]}")
     context = "\n\n".join(context_lines) or "(không có tài liệu phù hợp)"
+    persona = persona or f"Bạn là {settings['bot.name']} của {settings['bot.org_name']}, tư vấn tuyển sinh các chương trình sau đại học."
     system = (
-        f"Bạn là {settings['bot.name']} của {settings['bot.org_name']}, tư vấn tuyển sinh các chương trình sau đại học.\n"
+        f"{persona}\n"
         "Quy tắc bắt buộc:\n"
         "1. Chỉ trả lời dựa trên TÀI LIỆU được cung cấp. Không dùng kiến thức bên ngoài, không suy đoán.\n"
         "2. Học phí, ngày tháng, điều kiện, con số phải chép đúng như trong tài liệu.\n"
@@ -1202,22 +1362,23 @@ def _llm_answer(settings: dict, question: str, hits: list[dict], history: list[d
         "5. Ngắn gọn, thân thiện, tối đa khoảng 120 từ; dùng gạch đầu dòng khi liệt kê.\n"
         "6. Ghi nguồn bằng ký hiệu [1], [2] tương ứng tài liệu đã dùng.\n"
         "7. Không hỏi thông tin cá nhân của người dùng.\n"
-        "8. Từ chối lịch sự các chủ đề ngoài tuyển sinh và chương trình đào tạo.\n"
+        "8. Từ chối lịch sự các chủ đề ngoài tuyển sinh, học vụ và chương trình đào tạo.\n"
         + ("9. Người dùng viết tiếng Anh: trả lời bằng tiếng Anh.\n" if english else "9. Trả lời bằng tiếng Việt.\n")
     )
     messages = [{"role": "system", "content": system}]
-    for m in history[-6:]:
+    for m in history[-history_limit:] if history_limit else []:
         role = "user" if m["role"] == "user" else "assistant"
         messages.append({"role": role, "content": m["content"][:800]})
     messages.append({"role": "user", "content": f"TÀI LIỆU:\n{context}\n\nCÂU HỎI: {question}"})
     resp = _get_client().chat.completions.create(
         model=os.environ.get("CHAT_MODEL", "qwen3:8b"),
         messages=messages,
-        temperature=0.2,
+        temperature=0,
         max_tokens=600,
     )
     text = THINK_RE.sub("", resp.choices[0].message.content or "").strip()
-    if not text or NO_INFO_MARK in text:
+    text = NO_INFO_RE.sub("", text).strip()
+    if len(_words(text)) < 4:
         return {"answered": False}
     cited = {int(n) for n in re.findall(r"\[(\d+)\]", text) if n.isdigit()}
     used = [hits[i - 1] for i in sorted(cited) if 1 <= i <= len(hits)] or hits[:2]
@@ -1424,26 +1585,37 @@ def _fallback_text(settings: dict, english: bool, has_contact: bool, intents: li
     return text
 
 
-def generate_reply(conn, question: str, *, program: str = "", intents: list[str] | None = None, history: list[dict] | None = None, settings: dict | None = None) -> dict:
+def generate_reply(
+    conn,
+    question: str,
+    *,
+    program: str = "",
+    intents: list[str] | None = None,
+    history: list[dict] | None = None,
+    settings: dict | None = None,
+    audience: str = "public",
+    persona: str = "",
+    prefix: str = "Theo thông tin tuyển sinh hiện có:",
+) -> dict:
     settings = settings or get_settings(conn)
     intents = intents if intents is not None else detect_intents(question)
     english = is_english(question)
-    hits = retrieve(conn, question, program=program, k=6, intents=intents)
+    hits = retrieve(conn, question, program=program, k=6, intents=intents, audience=audience)
     top_cov = hits[0]["coverage"] if hits else 0.0
     live_relevant = any(h["kind"] == "live" for h in hits) and bool(set(intents) & {"deadline", "event"})
     top_faq = hits[0] if hits and hits[0]["kind"] == "faq" else None
-    if top_faq and _faq_match(top_faq.get("question") or "", question) >= 0.6:
+    if top_faq and not english and _faq_match(_faq_text(top_faq), question) >= 0.6:
         result = {"answered": True, "text": top_faq["text"], "used": [top_faq], "mode": "faq"}
     elif hits and (top_cov >= 0.25 or live_relevant or top_faq):
         result = None
         if llm_status(conn)["enabled"]:
             try:
-                result = _llm_answer(settings, question, hits, history or [], english)
+                result = _llm_answer(settings, question, hits, history or [], english, persona)
             except Exception as e:
                 print(f"[BOT] LLM error, using extractive mode: {e}")
                 result = None
         if result is None:
-            result = answer_offline(question, hits, intents)
+            result = answer_offline(question, hits, intents, prefix)
     else:
         result = {"answered": False}
     result["hits"] = hits
@@ -2117,7 +2289,7 @@ def list_gaps(conn, status: str = "open") -> list[dict]:
     return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
 
-def resolve_gap(conn, gap_id: int, data: dict, actor: str = "") -> dict:
+def resolve_gap(conn, gap_id: int, data: dict, actor: str = "", review_status: str = "approved") -> dict:
     gap = conn.execute("SELECT * FROM bot_gaps WHERE id = ?", (gap_id,)).fetchone()
     if not gap:
         raise ValueError("Không tìm thấy câu hỏi.")
@@ -2131,6 +2303,7 @@ def resolve_gap(conn, gap_id: int, data: dict, actor: str = "") -> dict:
                 "question": data.get("question") or gap["question"],
                 "answer": data.get("answer") or "",
                 "program_code": data.get("program_code") or "",
+                "review_status": review_status,
             },
             actor=actor,
         )
@@ -2267,6 +2440,42 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
 
     def actor_name(actor):
         return str(actor.get("login") or actor.get("user_id") or "staff")
+
+    def can_publish(actor) -> bool:
+        return bool(actor.get("is_admin") or "admissions.chatbot_publish" in (actor.get("permission_codes") or []))
+
+    def review_for(actor) -> str:
+        return "approved" if can_publish(actor) else "pending"
+
+    def dates_from(data) -> dict:
+        return {"effective_from": (data.get("effective_from") or "").strip(), "effective_to": (data.get("effective_to") or "").strip()}
+
+    def review_action(conn, actor, save):
+        if not can_publish(actor):
+            return err("Chỉ người có quyền duyệt nội dung UniBot tuyển sinh được thực hiện.", 403)
+        data = request.get_json(silent=True) or {}
+        action = data.get("action")
+        if action not in ("approve", "reject"):
+            return err("Thao tác duyệt không hợp lệ.")
+        note = (data.get("note") or "").strip()
+        if action == "reject" and not note:
+            return err("Cần ghi lý do khi trả lại.")
+        try:
+            return jsonify(save("approved" if action == "approve" else "rejected", note))
+        except ValueError as e:
+            return err(str(e))
+
+    @app.route("/ops/chatbot/me", methods=["GET"])
+    def bot_me():
+        with get_db() as conn:
+            actor, problem = staff(conn)
+            if problem:
+                return problem
+            pending = {
+                "docs": conn.execute("SELECT COUNT(*) FROM bot_kb_docs WHERE IFNULL(audience, 'public') = 'public' AND review_status = 'pending'").fetchone()[0],
+                "faqs": conn.execute("SELECT COUNT(*) FROM bot_faqs WHERE IFNULL(audience, 'public') = 'public' AND review_status = 'pending'").fetchone()[0],
+            }
+            return jsonify({"login": actor_name(actor), "can_publish": can_publish(actor), "pending": pending})
 
     @app.route("/bot/public/config", methods=["GET"])
     def bot_public_config():
@@ -2452,7 +2661,7 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
             if problem:
                 return problem
             try:
-                return jsonify(resolve_gap(conn, gap_id, data, actor_name(actor)))
+                return jsonify(resolve_gap(conn, gap_id, data, actor_name(actor), review_for(actor)))
             except ValueError as e:
                 return err(str(e))
 
@@ -2463,8 +2672,9 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
             if problem:
                 return problem
             if request.method == "POST":
+                data = {**(request.get_json(silent=True) or {}), "review_status": review_for(actor)}
                 try:
-                    return jsonify(save_faq(conn, request.get_json(silent=True) or {}, actor=actor_name(actor))), 201
+                    return jsonify(save_faq(conn, data, actor=actor_name(actor))), 201
                 except ValueError as e:
                     return err(str(e))
             return jsonify(list_faqs(conn))
@@ -2478,10 +2688,28 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
             if request.method == "DELETE":
                 delete_faq(conn, faq_id)
                 return jsonify({"ok": True})
+            current = conn.execute("SELECT question, answer FROM bot_faqs WHERE id = ?", (faq_id,)).fetchone()
+            data = {k: v for k, v in (request.get_json(silent=True) or {}).items() if k not in ("review_status", "review_note")}
+            if current and ((data.get("question") or "").strip() != current["question"] or (data.get("answer") or "").strip() != current["answer"]):
+                data["review_status"] = review_for(actor)
             try:
-                return jsonify(save_faq(conn, request.get_json(silent=True) or {}, faq_id=faq_id, actor=actor_name(actor)))
+                return jsonify(save_faq(conn, data, faq_id=faq_id, actor=actor_name(actor)))
             except ValueError as e:
                 return err(str(e))
+
+    @app.route("/ops/chatbot/faqs/<int:faq_id>/review", methods=["POST"])
+    def bot_faq_review(faq_id):
+        with get_db() as conn:
+            actor, problem = staff(conn)
+            if problem:
+                return problem
+            row = conn.execute("SELECT * FROM bot_faqs WHERE id = ? AND IFNULL(audience, 'public') = 'public'", (faq_id,)).fetchone()
+            if not row:
+                return err("Không tìm thấy FAQ.", 404)
+            faq = dict(row)
+            return review_action(conn, actor, lambda status, note: save_faq(
+                conn, {**faq, "review_status": status, "review_note": note}, faq_id=faq_id, actor=actor_name(actor)
+            ))
 
     @app.route("/ops/chatbot/docs", methods=["GET", "POST"])
     def bot_docs():
@@ -2499,6 +2727,8 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
                         source_type="text",
                         program_code=data.get("program_code") or "",
                         created_by=actor_name(actor),
+                        review_status=review_for(actor),
+                        **dates_from(data),
                     )), 201
                 except ValueError as e:
                     return err(str(e))
@@ -2531,6 +2761,8 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
                         program_code=request.form.get("program_code") or "",
                         created_by=actor_name(actor),
                         file_name=name,
+                        review_status=review_for(actor),
+                        **dates_from(request.form),
                     ))
                 except Exception as e:
                     failed.append({"file": name, "error": str(e)})
@@ -2550,12 +2782,33 @@ def register_routes(app, get_db, auth_fn, uploads_dir: Path, db_path: str) -> No
                 delete_document(conn, doc_id)
                 return jsonify({"ok": True})
             if request.method == "PUT":
+                doc = get_document(conn, doc_id)
+                if not doc:
+                    return err("Không tìm thấy tài liệu.", 404)
+                data = {k: v for k, v in (request.get_json(silent=True) or {}).items() if k not in ("review_status", "reviewed_by", "review_note")}
+                changed = "content" in data and (data["content"] or "").strip() != (doc.get("content") or "").strip()
+                if changed or any(k in data and (data[k] or "") != (doc.get(k) or "") for k in ("effective_from", "effective_to")):
+                    data["review_status"] = review_for(actor)
+                    data["reviewed_by"] = actor_name(actor)
                 try:
-                    return jsonify(update_document(conn, doc_id, request.get_json(silent=True) or {}))
+                    return jsonify(update_document(conn, doc_id, data))
                 except ValueError as e:
                     return err(str(e))
             doc = get_document(conn, doc_id)
             return jsonify(doc) if doc else err("Không tìm thấy tài liệu.", 404)
+
+    @app.route("/ops/chatbot/docs/<int:doc_id>/review", methods=["POST"])
+    def bot_doc_review(doc_id):
+        with get_db() as conn:
+            actor, problem = staff(conn)
+            if problem:
+                return problem
+            doc = get_document(conn, doc_id)
+            if not doc or (doc.get("audience") or "public") != "public":
+                return err("Không tìm thấy tài liệu.", 404)
+            return review_action(conn, actor, lambda status, note: update_document(
+                conn, doc_id, {"review_status": status, "reviewed_by": actor_name(actor), "review_note": note}
+            ))
 
     @app.route("/ops/chatbot/settings", methods=["GET", "PUT"])
     def bot_settings():

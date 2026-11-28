@@ -641,6 +641,15 @@ def init_db():
         except Exception as e:
             print(f"Warning: admission bot tables failed: {e}")
 
+        try:
+            from student_bot import bootstrap as bootstrap_student_bot
+
+            seeded = bootstrap_student_bot(conn, DATA_DIR)
+            if seeded["docs"] or seeded["faqs"]:
+                print(f"Seeded student bot: {seeded['docs']} docs, {seeded['faqs']} FAQ")
+        except Exception as e:
+            print(f"Warning: student bot tables failed: {e}")
+
         conn.commit()
 
 
@@ -1041,9 +1050,12 @@ def login_user():
             return json_error("Account is locked", 403)
         from seed_org import get_user_access
         from rbac import build_nav_from_permissions
+        from student_accounts import must_change
 
         access = get_user_access(conn, row["id"])
+        force_change = must_change(conn, row["id"])
     user = row_to_user(row, include_password=False)
+    user["must_change_password"] = force_change
     user["departments"] = access["departments"]
     user["permissions"] = access["permission_codes"]
     user["program_scopes"] = access["program_scopes"]
@@ -1094,6 +1106,9 @@ def change_user_password(user_id):
             (new_password, user_id),
         )
         conn.commit()
+        from student_accounts import set_must_change
+
+        set_must_change(conn, user_id, False)
     return jsonify({"ok": True, "message": "Password updated"})
 
 
@@ -1357,13 +1372,19 @@ def admin_reset_user_password(user_id):
     if len(new_password) < 4:
         return json_error("New password must be at least 4 characters", 400)
     with get_db() as conn:
+        denied = _deny_unless(conn, "admin.users")
+        if denied:
+            return denied
         cur = conn.cursor()
         cur.execute("SELECT id FROM user WHERE id = ?", (user_id,))
         if not cur.fetchone():
             return json_error("User not found", 404)
         cur.execute("UPDATE user SET password = ? WHERE id = ?", (new_password, user_id))
         conn.commit()
-    return jsonify({"ok": True, "message": "Password reset"})
+        from student_accounts import set_must_change
+
+        set_must_change(conn, user_id, True)
+    return jsonify({"ok": True, "message": "Password reset", "must_change_password": True})
 
 
 @app.route("/users/<int:user_id>/departments", methods=["PUT"])
@@ -2938,6 +2959,16 @@ def _actor_can(actor: dict, *codes: str) -> bool:
     return any(code in granted for code in codes)
 
 
+def _deny_unless(conn, *codes: str):
+    """Server-side permission gate: the backend never trusts that the frontend already checked."""
+    actor = _resolve_ops_actor(conn)
+    if not actor.get("user_id"):
+        return json_error(actor.get("error") or "Unauthorized", 401)
+    if not _actor_can(actor, *codes):
+        return json_error("Bạn không có quyền thực hiện thao tác này.", 403)
+    return None
+
+
 @app.route("/ops/applications/<int:app_id>/register-exam", methods=["POST"])
 def ops_application_register_exam(app_id):
     """Ứng viên đăng ký thành thí sinh của đợt thi và mở lệ phí thi."""
@@ -3414,6 +3445,9 @@ def ops_class_grades_lock(class_id):
 def ops_class_student_patch(student_id):
     data = request.get_json(silent=True) or {}
     with get_db() as conn:
+        denied = _deny_unless(conn, "classes.manage", "teaching.grades", "students.manage")
+        if denied:
+            return denied
         from coord_ops import update_student_grade_meta
 
         try:
@@ -3426,7 +3460,12 @@ def ops_class_student_patch(student_id):
             refresh_from_class_students(conn, [student_id])
         except Exception:
             pass
-    return jsonify({"ok": True})
+        account = {}
+        if "lifecycle_status" in data:
+            from student_accounts import sync_with_lifecycle
+
+            account = sync_with_lifecycle(conn, student_id)
+    return jsonify({"ok": True, "account": account})
 
 
 @app.route("/ops/thesis-records", methods=["GET"])
@@ -7172,6 +7211,9 @@ def ops_application_doc_file(doc_id):
 def ops_official_convert_bulk():
     scopes = _parse_scopes_from_request()
     with get_db() as conn:
+        denied = _deny_unless(conn, "classes.manage")
+        if denied:
+            return denied
         from ops_crud import convert_all_official
 
         try:
@@ -7185,6 +7227,9 @@ def ops_official_convert_bulk():
 def ops_classes_create():
     data = request.get_json(silent=True) or {}
     with get_db() as conn:
+        denied = _deny_unless(conn, "classes.manage")
+        if denied:
+            return denied
         from ops_crud import create_class_group
         try:
             row = create_class_group(conn, data)
@@ -7197,6 +7242,9 @@ def ops_classes_create():
 def ops_class_enroll_official(class_id):
     """Enroll Officially Enrolled applicants into an existing class."""
     with get_db() as conn:
+        denied = _deny_unless(conn, "classes.manage")
+        if denied:
+            return denied
         from ops_crud import enroll_official_into_class
 
         try:
@@ -12938,6 +12986,15 @@ def set_project_chat_feedback(project_id, chat_id):
 from admission_bot import register_routes as _register_admission_bot
 
 _register_admission_bot(app, get_db, _crm_actor_ok, UPLOADS_DIR, DB_PATH_STR)
+
+from student_bot import register_routes as _register_student_bot
+
+_register_student_bot(app, get_db, UPLOADS_DIR)
+
+if os.environ.get("FLASK_DEBUG", "false").lower() != "true" or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    from email_outbox import start_worker as _start_email_worker
+
+    _start_email_worker(get_db)
 
 
 if __name__ == "__main__":

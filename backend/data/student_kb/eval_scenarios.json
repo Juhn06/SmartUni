@@ -1,0 +1,900 @@
+[
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "điểm các môn của tôi",
+  "must": [
+   "16.8",
+   "15.1",
+   "15.97"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "diem mon leadership",
+  "must": [
+   "MBA101",
+   "16.5"
+  ],
+  "must_not": [
+   "Business Game"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "môn nào tôi có điểm cao nhất",
+  "must": [
+   "16.8",
+   "Corporate Finance"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "môn nào điểm thấp nhất",
+  "must": [
+   "15.1",
+   "Business Game"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "tôi có môn nào bị trượt không",
+  "must": [
+   "không có môn nào chưa đạt"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "điểm trung bình tích lũy của tôi",
+  "must": [
+   "15.97"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "điểm kỳ 2 của tôi",
+  "must": [
+   "15.1"
+  ],
+  "must_not": [
+   "16.8"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "điểm",
+  "q": "điểm môn Marketing của tôi",
+  "must_any": [
+   "không thấy",
+   "không có",
+   "không tìm thấy"
+  ],
+  "must_not": [
+   "Marketing: 1"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "chuyên cần",
+  "q": "chuyên cần môn Business Game của tôi",
+  "must": [
+   "75%"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học phí",
+  "q": "tôi còn nợ học phí không",
+  "must": [
+   "40.000.000",
+   "kỳ 2"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học phí",
+  "q": "khoản tiếp theo tôi phải đóng là gì",
+  "must": [
+   "Học phí kỳ 2",
+   "20 ngày"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học phí",
+  "q": "tổng học phí toàn khóa của tôi là bao nhiêu",
+  "must": [
+   "95.000.000"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học phí",
+  "q": "tôi đã đóng bao nhiêu tiền rồi",
+  "must": [
+   "55.000.000"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học phí",
+  "q": "tôi có khoản nào quá hạn không",
+  "must": [
+   "không có khoản phí nào quá hạn"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "học bổng",
+  "q": "tôi có học bổng không",
+  "must": [
+   "không có học bổng"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "lịch",
+  "q": "lịch thi sắp tới của tôi",
+  "must": [
+   "chưa có lịch thi nào sắp tới"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "lịch",
+  "q": "tuần này tôi có lịch học không",
+  "must": [
+   "không có lịch học nào"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "luận văn",
+  "q": "ai hướng dẫn luận văn của tôi",
+  "must": [
+   "Lâm Quang Đức"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "luận văn",
+  "q": "hội đồng chấm luận văn của tôi gồm những ai",
+  "must": [
+   "Trịnh Minh Sơn"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "luận văn",
+  "q": "điểm luận văn của tôi",
+  "must": [
+   "16"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "trạng thái",
+  "q": "tôi tốt nghiệp chưa",
+  "must_any": [
+   "đã tốt nghiệp",
+   "đã xong"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "trạng thái",
+  "q": "tôi có đang bảo lưu không",
+  "must": [
+   "đã tốt nghiệp"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "hồ sơ",
+  "q": "mã học viên của tôi là gì",
+  "must": [
+   "E2EMBA001"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "hồ sơ",
+  "q": "tôi học lớp nào",
+  "must": [
+   "MBA E2E 2026"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "tiếng Anh",
+  "q": "What is my GPA?",
+  "must": [
+   "15.97"
+  ],
+  "must_not": [
+   "Điểm"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "tiếng Anh",
+  "q": "How much tuition do I still owe?",
+  "must": [
+   "40.000.000"
+  ],
+  "must_not": [
+   "Học phí"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "tiếng Anh",
+  "q": "Who is my thesis supervisor?",
+  "must": [
+   "Lâm Quang Đức"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "tiếng Anh",
+  "q": "Did I fail any course?",
+  "must": [
+   "not failed"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "lo lắng",
+  "q": "lo quá, không biết tôi có bị nợ học phí không",
+  "must": [
+   "Mình hiểu bạn đang lo",
+   "40.000.000"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "hồ sơ đầu vào",
+  "q": "điểm IELTS của tôi bao nhiêu",
+  "must": [
+   "IELTS 7.0",
+   "đã được xác minh"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "bẫy",
+  "q": "học phí năm sau có tăng không",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "tăng 5",
+   "tăng 10"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "cán bộ",
+  "q": "cho tôi gặp cán bộ",
+  "expect": "handoff"
+ },
+ {
+  "account": "E2eMms",
+  "group": "điểm",
+  "q": "điểm các môn của tôi",
+  "must": [
+   "12.7",
+   "miễn học",
+   "chưa có điểm"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "điểm",
+  "q": "điểm môn Brand Management",
+  "must": [
+   "chưa có điểm"
+  ],
+  "must_not": [
+   "12.7"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "điểm",
+  "q": "môn Consumer Behaviour của tôi thế nào",
+  "must": [
+   "miễn"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "điểm",
+  "q": "môn nào tôi có điểm cao nhất",
+  "must": [
+   "12.7"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "điểm",
+  "q": "tôi có trượt môn nào không",
+  "must": [
+   "không có môn nào chưa đạt",
+   "1 môn chưa có điểm"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "môn học",
+  "q": "tôi được miễn môn nào",
+  "must": [
+   "Consumer Behaviour"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "môn học",
+  "q": "kỳ này tôi học môn gì",
+  "must": [
+   "Brand Management"
+  ],
+  "must_not": [
+   "Marketing Strategy"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "môn học",
+  "q": "tôi đang học mấy môn",
+  "must": [
+   "1 môn đang học",
+   "Brand Management"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "chuyên cần",
+  "q": "chuyên cần môn Brand Management của tôi",
+  "must": [
+   "75%"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "lịch",
+  "q": "lịch thi sắp tới của tôi",
+  "must": [
+   "MMS103"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "lịch",
+  "q": "ngày mai tôi có buổi học nào không",
+  "must": [
+   "Session 1",
+   "MMS103"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "lịch",
+  "q": "hôm nay tôi có học không",
+  "must": [
+   "không có",
+   "hôm nay"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "học phí",
+  "q": "tôi còn nợ học phí không",
+  "must": [
+   "không còn khoản nào chưa đóng"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "học bổng",
+  "q": "tôi có học bổng không",
+  "must": [
+   "50%",
+   "20.000.000"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "học bổng",
+  "q": "học phí kỳ 1 của tôi",
+  "must": [
+   "được giảm 20.000.000"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "học phí",
+  "q": "tổng học phí toàn khóa của tôi",
+  "must": [
+   "55.000.000"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "luận văn",
+  "q": "luận văn của tôi",
+  "must": [
+   "đang chờ"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "trạng thái",
+  "q": "tôi tốt nghiệp chưa",
+  "must": [
+   "đang chờ"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "trạng thái",
+  "q": "tôi có đang bảo lưu không",
+  "must": [
+   "đang học bình thường"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "hồ sơ",
+  "q": "mã học viên của tôi",
+  "must": [
+   "E2EMMS001"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "tiếng Anh",
+  "q": "Which courses am I taking this semester?",
+  "must": [
+   "Brand Management"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "tiếng Anh",
+  "q": "Do I have a scholarship?",
+  "must": [
+   "50%"
+  ],
+  "must_not": [
+   "học bổng"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "tiếng Anh",
+  "q": "Do I have class tomorrow?",
+  "must": [
+   "tomorrow",
+   "MMS103"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "tiếng Anh",
+  "q": "What are my grades?",
+  "must": [
+   "12.7",
+   "exempted"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "lo lắng",
+  "q": "tôi lo không kịp ôn thi cuối kỳ, lịch thi của tôi khi nào",
+  "must": [
+   "Mình hiểu bạn đang lo",
+   "MMS103"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "bẫy",
+  "q": "học bổng của tôi có bị cắt nếu tôi trượt môn không",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "bị cắt ngay",
+   "chắc chắn bị cắt"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "bẫy",
+  "q": "điểm môn Leadership của tôi",
+  "must_any": [
+   "không thấy",
+   "không có",
+   "không tìm thấy"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "cán bộ",
+  "q": "tôi muốn nói chuyện với cán bộ về học bổng",
+  "expect": "handoff"
+ },
+ {
+  "account": "E2eMscm",
+  "group": "điểm",
+  "q": "điểm các môn của tôi",
+  "must": [
+   "9.7",
+   "chưa đạt",
+   "10.6"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "điểm",
+  "q": "tôi có môn nào bị trượt không",
+  "must": [
+   "Operations Management",
+   "9.7"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "điểm",
+  "q": "điểm môn Operations Management của tôi",
+  "must": [
+   "9",
+   "10"
+  ],
+  "must_not": [
+   "Supply Chain Fundamentals: 1"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "điểm",
+  "q": "điểm trung bình của tôi",
+  "must": [
+   "10.6"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "lịch",
+  "q": "khi nào tôi thi lại",
+  "must": [
+   "Retake MSCM102"
+  ],
+  "must_not": [
+   "Final MSCM103"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "lịch",
+  "q": "lịch thi sắp tới của tôi",
+  "must": [
+   "Retake MSCM102",
+   "Final MSCM103"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "lịch",
+  "q": "hôm nay tôi có buổi học nào không",
+  "must": [
+   "MSCM103",
+   "hôm nay"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "lịch",
+  "q": "tuần sau tôi có lịch gì",
+  "must_any": [
+   "không có",
+   "Session"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "chuyên cần",
+  "q": "chuyên cần môn Operations Management của tôi",
+  "must": [
+   "50%"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "chuyên cần",
+  "q": "chuyên cần môn Logistics của tôi",
+  "must": [
+   "40%"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học phí",
+  "q": "tôi có khoản nào quá hạn không",
+  "must": [
+   "Học phí kỳ 1",
+   "12 ngày",
+   "10.000.000"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học phí",
+  "q": "tôi còn nợ bao nhiêu tiền",
+  "must": [
+   "30.000.000"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học phí",
+  "q": "học phí kỳ 1 tôi đóng được bao nhiêu rồi",
+  "must": [
+   "đã đóng 10.000.000"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học phí",
+  "q": "khoản tiếp theo tôi phải đóng",
+  "must": [
+   "Học phí kỳ 1"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học bổng",
+  "q": "tôi có học bổng không",
+  "must": [
+   "50%",
+   "20.000.000"
+  ],
+  "must_not": [
+   "Lịch"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "luận văn",
+  "q": "ai hướng dẫn luận văn của tôi",
+  "must": [
+   "chưa phân công"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "luận văn",
+  "q": "luận văn của tôi đến đâu rồi",
+  "must": [
+   "đang thực hiện"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "luận văn",
+  "q": "những ai ngồi hội đồng chấm luận văn cho tôi",
+  "must": [
+   "chưa có thông tin"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "trạng thái",
+  "q": "tôi tốt nghiệp chưa",
+  "must": [
+   "đang chờ"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "tiếng Anh",
+  "q": "Did I fail any course?",
+  "must": [
+   "Operations Management",
+   "retake"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "tiếng Anh",
+  "q": "Do I have any overdue fees?",
+  "must": [
+   "12 days overdue"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "tiếng Anh",
+  "q": "When is my retake exam?",
+  "must": [
+   "Retake MSCM102"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "tiếng Anh",
+  "q": "Who is my thesis supervisor?",
+  "must": [
+   "not assigned"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "lo lắng",
+  "q": "tôi sợ trượt môn Operations Management lần nữa, khi nào thi lại",
+  "must": [
+   "Mình hiểu bạn đang lo",
+   "Retake MSCM102"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "bẫy",
+  "q": "nếu tôi trượt thi lại thì có bị đuổi học không",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "bị đuổi học ngay",
+   "chắc chắn bị đuổi"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "bẫy",
+  "q": "điểm thi lại của tôi là bao nhiêu",
+  "expect": [
+   "fallback",
+   "answer"
+  ],
+  "must_not": [
+   "điểm thi lại là 1",
+   "điểm thi lại: 1"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "cán bộ",
+  "q": "tôi muốn xin gia hạn học phí, cho tôi gặp cán bộ",
+  "expect": "handoff"
+ },
+ {
+  "account": "E2eMba",
+  "group": "hồ sơ đầu vào",
+  "q": "tôi tốt nghiệp đại học ngành gì",
+  "must": [
+   "Tài chính ngân hàng",
+   "Giỏi"
+  ]
+ },
+ {
+  "account": "E2eMba",
+  "group": "hồ sơ đầu vào",
+  "q": "điểm thi viết và phỏng vấn của tôi",
+  "must": [
+   "14.5",
+   "16"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "hồ sơ đầu vào",
+  "q": "chứng chỉ tiếng Anh của tôi",
+  "must": [
+   "TOEIC 820"
+  ],
+  "must_not": [
+   "IELTS"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "hồ sơ đầu vào",
+  "q": "What is my English certificate?",
+  "must": [
+   "TOEIC 820",
+   "verified"
+  ]
+ },
+ {
+  "account": "E2eMms",
+  "group": "học bổng",
+  "q": "tôi có học bổng không, có buổi học nào sắp tới không",
+  "must": [
+   "50%",
+   "MMS103"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "hồ sơ đầu vào",
+  "q": "điểm IELTS của tôi bao nhiêu",
+  "must": [
+   "IELTS 5.5"
+  ],
+  "must_not": [
+   "7.0"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "hồ sơ đầu vào",
+  "q": "hồ sơ đầu vào của tôi",
+  "must": [
+   "IELTS 5.5",
+   "Logistics và quản lý chuỗi cung ứng",
+   "11.5"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "hồ sơ đầu vào",
+  "q": "tôi tốt nghiệp đại học trường nào",
+  "must": [
+   "Hải Đăng"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "hồ sơ đầu vào",
+  "q": "What is my IELTS score?",
+  "must": [
+   "IELTS 5.5",
+   "verified"
+  ],
+  "must_not": [
+   "Chứng chỉ"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "môn học",
+  "q": "tôi được miễn môn nào",
+  "must": [
+   "Procurement"
+  ],
+  "must_not": [
+   "Operations Management"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "học bổng",
+  "q": "học phí kỳ 2 của tôi được giảm bao nhiêu",
+  "must": [
+   "được giảm 20.000.000",
+   "50%"
+  ]
+ },
+ {
+  "account": "E2eMscm",
+  "group": "tiếng Anh",
+  "q": "Do I have a scholarship?",
+  "must": [
+   "50%"
+  ],
+  "must_not": [
+   "Học phí"
+  ]
+ }
+]

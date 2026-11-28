@@ -1,65 +1,19 @@
 """
-End-to-end pipeline demo: 3 candidates (MBA / MMS / MSCM) through
+End-to-end pipeline demo: student personas (see e2e_personas.py) through
 admissions → interview → fee → official → class → courses → grades →
 exams → thesis → graduation, with hoc_vien portal accounts + timeline.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
+from e2e_personas import PERSONAS, admission_fields, apply_plan, apply_tuition, plan_signature
 from seed_org import TEMP_PASSWORD
 
 E2E_MARKER = "E2E-PIPELINE"
 E2E_PASSWORD = TEMP_PASSWORD  # 123!
 
-# One candidate per program — full lifecycle for sync checks
-E2E_CANDIDATES = [
-    {
-        "program_code": "MBA",
-        "full_name": "E2E Nguyễn Minh Anh",
-        "cccd": "099000000001",
-        "email": "e2e.mba@smartuni.test",
-        "phone": "0909000001",
-        "login": "E2eMba",
-        "cfvg_app_no": "E2E-MBA-001",
-        "student_code": "E2EMBA001",
-        "company": "Techcombank",
-        "job_title": "Chuyên viên Digital",
-        "intake_session": "August",
-        "class_name": "MBA E2E 2026",
-        "thesis_title": "Digital transformation in retail banking",
-    },
-    {
-        "program_code": "MMS",
-        "full_name": "E2E Trần Thu Hà",
-        "cccd": "099000000002",
-        "email": "e2e.mms@smartuni.test",
-        "phone": "0909000002",
-        "login": "E2eMms",
-        "cfvg_app_no": "E2E-MMS-001",
-        "student_code": "E2EMMS001",
-        "company": "Vinamilk",
-        "job_title": "Marketing Manager",
-        "intake_session": "May",
-        "class_name": "MMS E2E 2026",
-        "thesis_title": "Brand strategy for FMCG in Vietnam",
-    },
-    {
-        "program_code": "MSCM",
-        "full_name": "E2E Lê Quốc Bảo",
-        "cccd": "099000000003",
-        "email": "e2e.mscm@smartuni.test",
-        "phone": "0909000003",
-        "login": "E2eMscm",
-        "cfvg_app_no": "E2E-MSCM-001",
-        "student_code": "E2EMSCM001",
-        "company": "Shopee Express",
-        "job_title": "Supply Chain Analyst",
-        "intake_session": "May",
-        "class_name": "MSCM E2E 2026",
-        "thesis_title": "Last-mile logistics optimization",
-    },
-]
+E2E_CANDIDATES = PERSONAS
 
 
 def ensure_e2e_columns(cur) -> None:
@@ -157,26 +111,40 @@ def provision_student_account(
     program_code: str,
     application_id: int | None = None,
     class_student_id: int | None = None,
+    password: str | None = None,
+    force_change: bool = False,
+    reset_password: bool = True,
 ) -> dict:
-    """Create/update hoc_vien portal user; link to application & class_student."""
+    """Create/update hoc_vien portal user; link to application & class_student.
+
+    Demo accounts reset to the shared demo password. Real enrollments pass a temporary password,
+    force a change at first login and never overwrite a password the student already set.
+    """
+    from student_accounts import ensure_account_columns
+
     cur = conn.cursor()
     ensure_e2e_columns(cur)
+    ensure_account_columns(cur)
     login = (login or "").strip()
     if not login:
         raise ValueError("login required")
+    initial = password or E2E_PASSWORD
     cur.execute("SELECT id FROM user WHERE lower(email) = lower(?)", (login,))
     row = cur.fetchone()
     if row:
         user_id = row[0]
-        cur.execute(
-            "UPDATE user SET name = ?, password = ?, is_locked = 0, is_admin = 0 WHERE id = ?",
-            (display_name, E2E_PASSWORD, user_id),
-        )
+        if reset_password:
+            cur.execute(
+                "UPDATE user SET name = ?, password = ?, is_locked = 0, is_admin = 0, must_change_password = ? WHERE id = ?",
+                (display_name, initial, 1 if force_change else 0, user_id),
+            )
+        else:
+            cur.execute("UPDATE user SET name = ?, is_admin = 0 WHERE id = ?", (display_name, user_id))
         created = False
     else:
         cur.execute(
-            "INSERT INTO user (name, email, password, is_admin, is_locked) VALUES (?,?,?,0,0)",
-            (display_name, login, E2E_PASSWORD),
+            "INSERT INTO user (name, email, password, is_admin, is_locked, must_change_password) VALUES (?,?,?,0,0,?)",
+            (display_name, login, initial, 1 if force_change else 0),
         )
         user_id = cur.lastrowid
         created = True
@@ -214,7 +182,7 @@ def provision_student_account(
     return {
         "user_id": user_id,
         "login": login,
-        "password": E2E_PASSWORD,
+        "password": initial if (created or reset_password) else None,
         "email": email,
         "program_code": program_code,
         "created": created,
@@ -234,7 +202,7 @@ def _upsert_application(cur, round_id: int, c: dict) -> int:
         cccd=c["cccd"],
         email=c["email"],
         phone=c["phone"],
-        status="official",
+        status=c.get("app_status", "official"),
         notes=f"{E2E_MARKER} full lifecycle demo",
         cfvg_app_no=c["cfvg_app_no"],
         company=c.get("company") or "",
@@ -244,9 +212,9 @@ def _upsert_application(cur, round_id: int, c: dict) -> int:
         final_result="Admitted",
         confirmation_status="Confirmed",
         board_decision="Admitted",
-        written_score=14.5,
-        interview_score=16.0,
-        avg_score=15.25,
+        written_score=c["admission"]["written"],
+        interview_score=c["admission"]["interview"],
+        avg_score=round((c["admission"]["written"] + c["admission"]["interview"]) / 2, 2),
         written_exam_no=f"SBD-{c['program_code']}-E2E",
         written_exam_date=(date.today() - timedelta(days=40)).isoformat(),
         written_exam_room="P.E2E",
@@ -259,6 +227,7 @@ def _upsert_application(cur, round_id: int, c: dict) -> int:
         transferred_at=(date.today() - timedelta(days=45)).isoformat(),
         transferred_by="E2E:NhungLH",
         e2e_marker=E2E_MARKER,
+        **admission_fields(c),
     )
     if existing:
         app_id = existing[0]
@@ -370,12 +339,15 @@ def _ensure_student(cur, class_id: int, app_id: int, c: dict) -> int:
         sid = row[0]
         cur.execute(
             "UPDATE class_students SET class_id=?, full_name=?, email=?, student_code=?, "
-            "lifecycle_status='graduated', company=?, job_title=?, intake_session=? WHERE id=?",
+            "lifecycle_status=?, reserve_note=?, scholarship_type=?, company=?, job_title=?, intake_session=? WHERE id=?",
             (
                 class_id,
                 c["full_name"],
                 c["email"],
                 c["student_code"],
+                c.get("lifecycle") or "active",
+                c.get("reserve_note") or "",
+                c.get("scholarship") or "",
                 c.get("company") or "",
                 c.get("job_title") or "",
                 c.get("intake_session") or "",
@@ -385,14 +357,17 @@ def _ensure_student(cur, class_id: int, app_id: int, c: dict) -> int:
         return sid
     cur.execute(
         "INSERT INTO class_students "
-        "(class_id, application_id, full_name, email, student_code, lifecycle_status, "
-        "company, job_title, intake_session) VALUES (?,?,?,?,?,'graduated',?,?,?)",
+        "(class_id, application_id, full_name, email, student_code, lifecycle_status, reserve_note, scholarship_type, "
+        "company, job_title, intake_session) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         (
             class_id,
             app_id,
             c["full_name"],
             c["email"],
             c["student_code"],
+            c.get("lifecycle") or "active",
+            c.get("reserve_note") or "",
+            c.get("scholarship") or "",
             c.get("company") or "",
             c.get("job_title") or "",
             c.get("intake_session") or "",
@@ -401,157 +376,8 @@ def _ensure_student(cur, class_id: int, app_id: int, c: dict) -> int:
     return cur.lastrowid
 
 
-def _ensure_academic(cur, class_id: int, student_id: int, pvid: int, c: dict) -> dict:
-    out = {"grades": 0, "attendance": 0, "exams": 0, "thesis": 0}
-    courses = cur.execute(
-        "SELECT id, code, name FROM courses WHERE program_version_id = ? ORDER BY sort_order",
-        (pvid,),
-    ).fetchall()
-    for course_id, code, name in courses:
-        ta = cur.execute(
-            "SELECT id FROM teaching_assignments WHERE class_id=? AND course_id=?",
-            (class_id, course_id),
-        ).fetchone()
-        if ta:
-            ta_id = ta[0]
-        else:
-            cur.execute(
-                "INSERT INTO teaching_assignments (class_id, course_id, status) "
-                "VALUES (?,?, 'in_teaching')",
-                (class_id, course_id),
-            )
-            ta_id = cur.lastrowid
-
-        ga, fe = 14.0, 15.5
-        score = round(ga * 0.3 + fe * 0.7, 1)
-        g = cur.execute(
-            "SELECT id FROM course_grades WHERE class_id=? AND course_id=? AND student_id=?",
-            (class_id, course_id, student_id),
-        ).fetchone()
-        if g:
-            try:
-                cur.execute(
-                    "UPDATE course_grades SET score=?, group_assignment=?, final_exam=?, "
-                    "locked=1, remarks='E2E completed' WHERE id=?",
-                    (score, ga, fe, g[0]),
-                )
-            except Exception:
-                cur.execute(
-                    "UPDATE course_grades SET score=?, locked=1 WHERE id=?",
-                    (score, g[0]),
-                )
-        else:
-            try:
-                cur.execute(
-                    "INSERT INTO course_grades "
-                    "(class_id, course_id, student_id, score, locked, group_assignment, final_exam, remarks) "
-                    "VALUES (?,?,?,?,1,?,?,?)",
-                    (class_id, course_id, student_id, score, ga, fe, "E2E completed"),
-                )
-            except Exception:
-                cur.execute(
-                    "INSERT INTO course_grades (class_id, course_id, student_id, score, locked) "
-                    "VALUES (?,?,?,?,1)",
-                    (class_id, course_id, student_id, score),
-                )
-        out["grades"] += 1
-
-        sess_date = (date.today() - timedelta(days=20)).isoformat()
-        sess = cur.execute(
-            "SELECT id FROM attendance_sessions WHERE assignment_id=? AND session_date=?",
-            (ta_id, sess_date),
-        ).fetchone()
-        if sess:
-            sess_id = sess[0]
-        else:
-            cur.execute(
-                "INSERT INTO attendance_sessions "
-                "(assignment_id, session_no, session_label, session_date, present_count, absent_count) "
-                "VALUES (?,?,?,?,1,0)",
-                (ta_id, 1, f"E2E {code}", sess_date),
-            )
-            sess_id = cur.lastrowid
-        mark = cur.execute(
-            "SELECT id FROM attendance_marks WHERE attendance_session_id=? AND student_id=?",
-            (sess_id, student_id),
-        ).fetchone()
-        if mark:
-            try:
-                cur.execute(
-                    "UPDATE attendance_marks SET present=1, present_after_break=1, "
-                    "check_in=1, check_out=1 WHERE id=?",
-                    (mark[0],),
-                )
-            except Exception:
-                cur.execute("UPDATE attendance_marks SET present=1 WHERE id=?", (mark[0],))
-        else:
-            try:
-                cur.execute(
-                    "INSERT INTO attendance_marks "
-                    "(attendance_session_id, student_id, present, present_after_break, "
-                    "check_in, check_out) VALUES (?,?,1,1,1,1)",
-                    (sess_id, student_id),
-                )
-            except Exception:
-                cur.execute(
-                    "INSERT INTO attendance_marks "
-                    "(attendance_session_id, student_id, present) VALUES (?,?,1)",
-                    (sess_id, student_id),
-                )
-        out["attendance"] += 1
-
-        exam_date = (date.today() - timedelta(days=10)).isoformat()
-        ex = cur.execute(
-            "SELECT id FROM exam_schedules WHERE class_id=? AND course_id=? AND exam_type='final'",
-            (class_id, course_id),
-        ).fetchone()
-        if not ex:
-            cur.execute(
-                "INSERT INTO exam_schedules "
-                "(class_id, course_id, title, exam_date, exam_type, room, status) "
-                "VALUES (?,?,?,?, 'final', 'P.E2E', 'completed')",
-                (class_id, course_id, f"Final {code} — {name}", exam_date),
-            )
-        else:
-            cur.execute(
-                "UPDATE exam_schedules SET status='completed', exam_date=?, room='P.E2E' WHERE id=?",
-                (exam_date, ex[0]),
-            )
-        out["exams"] += 1
-
-    th = cur.execute(
-        "SELECT id FROM thesis_records WHERE student_id = ?", (student_id,)
-    ).fetchone()
-    defense = (date.today() - timedelta(days=3)).isoformat()
-    if th:
-        cur.execute(
-            "UPDATE thesis_records SET title=?, status='defended', total_grade=15.5, "
-            "defense_date=?, program_code=?, full_name=?, email=? WHERE id=?",
-            (c["thesis_title"], defense, c["program_code"], c["full_name"], c["email"], th[0]),
-        )
-    else:
-        cur.execute(
-            "INSERT INTO thesis_records "
-            "(class_id, student_id, program_code, full_name, email, title, "
-            "tutor, status, total_grade, defense_date, room) "
-            "VALUES (?,?,?,?,?,?,?,'defended',15.5,?,'P.Defense')",
-            (
-                class_id,
-                student_id,
-                c["program_code"],
-                c["full_name"],
-                c["email"],
-                c["thesis_title"],
-                "E2E Tutor",
-                defense,
-            ),
-        )
-    out["thesis"] = 1
-    return out
-
-
 def seed_e2e_pipeline(conn) -> dict:
-    """Idempotent: 3 candidates MBA/MMS/MSCM through full lifecycle + portal accounts."""
+    """Idempotent: demo student personas in different situations + portal accounts."""
     from mba_ops import ensure_mba_tables, promote_graduated_to_alumni
     from coord_ops import ensure_coord_tables
     from ops_data import ensure_ops_tables
@@ -566,15 +392,24 @@ def seed_e2e_pipeline(conn) -> dict:
 
     round_id = _ensure_round(cur)
     summary = {"candidates": [], "accounts": []}
+    from app_settings import ensure_app_settings, get_setting, set_setting
+
+    ensure_app_settings(cur)
+    signature = plan_signature()
+    rebuild = get_setting(conn, "e2e.plan_signature", "") != signature
 
     for c in E2E_CANDIDATES:
         pvid = _ensure_program_version(cur, c["program_code"])
-        class_id = _ensure_class(cur, c["program_code"], c["class_name"], pvid)
         app_id = _upsert_application(cur, round_id, c)
         fee_id = _ensure_fee(cur, app_id)
         interview_id = _ensure_interview(cur, round_id, app_id, c)
-        student_id = _ensure_student(cur, class_id, app_id, c)
-        academic = _ensure_academic(cur, class_id, student_id, pvid, c)
+        class_id = student_id = None
+        academic: dict = {}
+        if c.get("enrolled", True):
+            class_id = _ensure_class(cur, c["program_code"], c["class_name"], pvid)
+            student_id = _ensure_student(cur, class_id, app_id, c)
+            if rebuild:
+                academic = apply_plan(cur, class_id, student_id, pvid, c)
         conn.commit()
 
         try:
@@ -586,11 +421,18 @@ def seed_e2e_pipeline(conn) -> dict:
 
             ensure_inscription_charge(conn, app_id)
             open_tuition_plan_after_official(conn, app_id)
-            link_charges_to_student(conn, app_id, student_id)
+            if student_id:
+                link_charges_to_student(conn, app_id, student_id)
+            if rebuild:
+                apply_tuition(conn, app_id, c)
         except Exception:
             pass
 
-        promote_graduated_to_alumni(conn, student_id)
+        if student_id and c.get("lifecycle") == "graduated":
+            promote_graduated_to_alumni(conn, student_id)
+        elif student_id:
+            cur.execute("DELETE FROM alumni_members WHERE class_student_id = ? OR lower(IFNULL(email, '')) = lower(?)", (student_id, c["email"]))
+            conn.commit()
 
         acct = provision_student_account(
             conn,
@@ -630,6 +472,7 @@ def seed_e2e_pipeline(conn) -> dict:
                 **academic,
             }
         )
+    set_setting(conn, "e2e.plan_signature", signature)
     conn.commit()
     return summary
 
