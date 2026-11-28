@@ -105,6 +105,7 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
         (prog, prog),
     ).fetchall()
     enrolled = accounts = notices = 0
+    account_errors: list[str] = []
     cs_cols = {r[1] for r in cur.execute("PRAGMA table_info(class_students)").fetchall()}
     for app_id, full_name, email, mba_code, cccd, phone, person_id in apps:
         seq = cur.execute(
@@ -178,8 +179,9 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
                     password=account["password"], program_code=prog,
                 ):
                     notices += 1
-        except Exception:
-            pass
+        except Exception as e:
+            account_errors.append(f"{student_code or full_name}: {e}")
+            print(f"[ENROLL] không tạo được tài khoản học viên {student_code or full_name}: {e}")
     conn.commit()
     try:
         from admission_ops import sync_candidate_link_tables
@@ -194,6 +196,7 @@ def enroll_official_into_class(conn, class_id: int, *, program_code: str | None 
         "enrolled": enrolled,
         "accounts_created": accounts,
         "credential_emails_queued": notices,
+        "account_errors": account_errors,
         "handoff": "Hồ sơ official vào lớp trên cùng một người. Mã học viên giữ theo chương trình. Có sổ thu và tài khoản học viên (mật khẩu tạm, bắt đổi ở lần đăng nhập đầu, email báo tài khoản đã xếp hàng gửi).",
     }
 

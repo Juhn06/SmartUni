@@ -347,6 +347,9 @@ def _backfill_admission_axes(cur) -> None:
             elif st in ("submitted", "approved_ts", "interview"):
                 sets.append("selection_status = ?")
                 params.append("pending")
+        if st == "official" and decision.strip().lower() in ("approved", "draft"):
+            sets.append("decision_status = ?")
+            params.append("effective")
         if _blank(decision):
             if st == "official":
                 sets.append("decision_status = ?")

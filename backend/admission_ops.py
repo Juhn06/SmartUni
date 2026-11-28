@@ -523,6 +523,18 @@ def assert_can_mark_official(row: dict) -> None:
         raise ValueError(msg)
 
 
+def mark_decision_effective(cur, app_id: int) -> None:
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(applications)").fetchall()}
+    if "decision_status" not in cols:
+        return
+    cur.execute(
+        "UPDATE applications SET decision_status = 'effective', "
+        "selection_status = CASE WHEN IFNULL(selection_status, '') IN ('', 'pending') THEN 'admitted' ELSE selection_status END "
+        "WHERE id = ? AND IFNULL(decision_status, '') IN ('', 'draft', 'approved')",
+        (app_id,),
+    )
+
+
 def create_candidate_applications(conn, data: dict) -> dict:
     """Create one independent dossier per selected program (upsert by CCCD+program)."""
     from coord_ops import ensure_coord_tables

@@ -51,7 +51,7 @@ app.config["JSON_SORT_KEYS"] = False
 @contextmanager
 def get_db():
     """Context manager for database connections (uses string path for sqlite3)."""
-    conn = sqlite3.connect(DB_PATH_STR)
+    conn = sqlite3.connect(DB_PATH_STR, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
@@ -1771,6 +1771,10 @@ def ops_summary():
     """Dashboard counts + cross-dept pipeline for BGD / Trợ lý / Admin."""
     scopes = _parse_scopes_from_request()
     with get_db() as conn:
+        actor = _resolve_ops_actor(conn)
+        depts = set(actor.get("dept_codes") or [])
+        if actor.get("user_id") and not actor.get("is_admin") and depts and depts <= {"hoc_vien", "cuu_hoc_vien"}:
+            return json_error("Số liệu tổng hợp chỉ dành cho cán bộ.", 403)
         cur = conn.cursor()
         from ops_data import _scopes_sql
 
@@ -2929,6 +2933,9 @@ def ops_application_status(app_id):
                     400,
                 )
             open_tuition_plan_after_official(conn, app_id)
+            from admission_ops import mark_decision_effective
+
+            mark_decision_effective(cur, app_id)
         conn.commit()
         try:
             from crm_ops import sync_profile_from_application
@@ -3691,6 +3698,9 @@ def ops_fee_mark_official(fee_id):
                 "final_result = COALESCE(NULLIF(final_result,''), 'Admitted') WHERE id = ?",
                 (app_id,),
             )
+            from admission_ops import mark_decision_effective
+
+            mark_decision_effective(cur, app_id)
             conn.commit()
         from treasury_ops import ensure_inscription_charge, open_tuition_plan_after_official
 

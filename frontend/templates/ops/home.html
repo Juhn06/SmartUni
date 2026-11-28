@@ -21,6 +21,7 @@
   </p>
   {% endif %}
 
+  {% if summary %}
   <section class="ops-dash-section" aria-labelledby="ops-dash-heading">
     <h2 id="ops-dash-heading" class="ops-section-title">{{ t('dashboard_section') }}</h2>
     {% set links = summary_links or {} %}
@@ -46,6 +47,7 @@
       {{ kpi('alumni', summary.alumni, 'Alumni') }}
     </div>
   </section>
+  {% endif %}
 
   {% if summary.pipeline %}
   <section class="ops-dash-section" aria-labelledby="ops-pipeline-heading">
