@@ -107,18 +107,6 @@
   </section>
   {% endif %}
 
-  {% if show_workflow_hints %}
-  <ol class="ops-flow">
-    <li><strong>1.</strong> {% if ui_lang == 'en' %}Admissions{% else %}Tuyển sinh{% endif %}</li>
-    <li><strong>2.</strong> {% if ui_lang == 'en' %}Enrollment fee{% else %}Ghi danh / phí{% endif %}</li>
-    <li><strong>3.</strong> {% if ui_lang == 'en' %}Program version{% else %}Chương trình{% endif %}</li>
-    <li><strong>4.</strong> {% if ui_lang == 'en' %}Class{% else %}Lớp học{% endif %}</li>
-    <li><strong>5.</strong> {% if ui_lang == 'en' %}Teaching{% else %}Giảng dạy{% endif %}</li>
-    <li><strong>6.</strong> {% if ui_lang == 'en' %}Grades & exams{% else %}Điểm & thi{% endif %}</li>
-    <li><strong>7.</strong> Alumni</li>
-  </ol>
-  {% endif %}
-
   <h2 class="ops-section-title">{{ t('modules_section') }}</h2>
   {% set ns = namespace(prev=None) %}
   {% for code, m in modules %}

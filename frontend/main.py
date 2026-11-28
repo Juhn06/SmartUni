@@ -387,7 +387,10 @@ def _fetch_deployment_mode() -> str:
 
 
 def _show_workflow_hints() -> bool:
-    """Hide 'Luồng: …' guides when Admin sets Production."""
+    """Hide 'Luồng: …' guides when Admin sets Production, and always for student accounts."""
+    depts = {d.get("code") for d in ((session.get("user") or {}).get("departments") or []) if isinstance(d, dict)}
+    if depts and depts <= {"hoc_vien", "cuu_hoc_vien"}:
+        return False
     return _fetch_deployment_mode() != "production"
 
 
